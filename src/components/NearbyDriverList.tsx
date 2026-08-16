@@ -1,4 +1,5 @@
 import { Clock, Navigation } from 'lucide-react'
+import DriverAvatar from './DriverAvatar'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { formatDistance } from '../lib/geo'
 
@@ -33,9 +34,15 @@ export default function NearbyDriverList() {
                       : 'border-line bg-card hover:border-mist/40'
                   }`}
                 >
-                  <span>
-                    <span className="block text-sm font-semibold text-snow">{driver.name}</span>
-                    <span className="block text-[11px] text-mist">{driver.vehicle}</span>
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <DriverAvatar src={driver.driverPhoto} name={driver.name} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-snow">{driver.name}</span>
+                      <span className="block truncate text-[11px] text-mist">
+                        {driver.vehicle}
+                        {driver.licensePlate ? ` · ${driver.licensePlate}` : ''}
+                      </span>
+                    </span>
                   </span>
                   <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-mist">
                     {active ? (

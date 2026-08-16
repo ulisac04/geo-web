@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
+import PhotoUploadField from './PhotoUploadField'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
 import { EMPTY_DRAFT, ZONES } from '../lib/fleet'
 
@@ -29,6 +30,9 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             name: driver.name,
             phone: driver.phone,
             vehicle: driver.vehicle,
+            licensePlate: driver.licensePlate,
+            driverPhoto: driver.driverPhoto,
+            vehiclePhoto: driver.vehiclePhoto,
             status: driver.status,
             zone: driver.zone,
             notes: driver.notes,
@@ -41,8 +45,8 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!draft.name.trim() || !draft.phone.trim() || !draft.vehicle.trim()) {
-      setError('Nombre, teléfono y vehículo son obligatorios.')
+    if (!draft.name.trim() || !draft.phone.trim() || !draft.vehicle.trim() || !draft.licensePlate.trim()) {
+      setError('Nombre, teléfono, vehículo y placa son obligatorios.')
       return
     }
     onSubmit(draft)
@@ -51,7 +55,7 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-panel p-5 shadow-none">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-line bg-panel p-5 shadow-none">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-snow">
             {driver ? 'Editar conductor' : 'Nuevo conductor'}
@@ -72,18 +76,36 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             value={draft.name}
             onChange={(value) => setDraft((prev) => ({ ...prev, name: value }))}
           />
+          <Field
+            label="Teléfono"
+            value={draft.phone}
+            onChange={(value) => setDraft((prev) => ({ ...prev, phone: value }))}
+            placeholder="58414..."
+          />
           <div className="grid grid-cols-2 gap-2">
-            <Field
-              label="Teléfono"
-              value={draft.phone}
-              onChange={(value) => setDraft((prev) => ({ ...prev, phone: value }))}
-              placeholder="58414..."
-            />
             <Field
               label="Vehículo"
               value={draft.vehicle}
               onChange={(value) => setDraft((prev) => ({ ...prev, vehicle: value }))}
               placeholder="Moto Empire 150"
+            />
+            <Field
+              label="Placa"
+              value={draft.licensePlate}
+              onChange={(value) => setDraft((prev) => ({ ...prev, licensePlate: value.toUpperCase() }))}
+              placeholder="AB123CD"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <PhotoUploadField
+              label="Foto del conductor"
+              value={draft.driverPhoto}
+              onChange={(value) => setDraft((prev) => ({ ...prev, driverPhoto: value }))}
+            />
+            <PhotoUploadField
+              label="Foto del carro"
+              value={draft.vehiclePhoto}
+              onChange={(value) => setDraft((prev) => ({ ...prev, vehiclePhoto: value }))}
             />
           </div>
           <div className="grid grid-cols-2 gap-2">

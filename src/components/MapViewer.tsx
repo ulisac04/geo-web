@@ -172,7 +172,7 @@ export default function MapViewer({
         .setLngLat(driver.coords)
         .setPopup(
           new Popup({ offset: 16, closeButton: false }).setHTML(
-            `<strong>${driver.name}</strong><br/><span class="popup-muted">${driver.vehicle}</span><br/>Batería ${driver.battery}% · ${driver.status === 'available' ? 'Disponible' : 'Ocupado'}`,
+            `<strong>${driver.name}</strong><br/><span class="popup-muted">${driver.vehicle}${driver.licensePlate ? ` · ${driver.licensePlate}` : ''}</span><br/>Batería ${driver.battery}% · ${driver.status === 'available' ? 'Disponible' : 'Ocupado'}`,
           ),
         )
         .addTo(map)

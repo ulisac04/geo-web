@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { MessageCircle, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
 import { useFleet } from '../context/FleetContext'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
@@ -32,6 +33,7 @@ export default function DriversPage() {
         driver.name.toLowerCase().includes(q) ||
         driver.phone.includes(q) ||
         driver.vehicle.toLowerCase().includes(q) ||
+        driver.licensePlate.toLowerCase().includes(q) ||
         driver.zone.toLowerCase().includes(q)
       return matchesFilter && matchesQuery
     })
@@ -77,7 +79,7 @@ export default function DriversPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre, teléfono, zona o vehículo…"
+            placeholder="Buscar por nombre, teléfono, placa, zona o vehículo…"
             className="w-full rounded-lg border border-line bg-panel py-2 pr-3 pl-9 text-sm text-snow placeholder:text-mist/50 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
           />
         </div>
@@ -115,11 +117,32 @@ export default function DriversPage() {
             {visible.map((driver) => (
               <tr key={driver.id} className="border-b border-line/70 hover:bg-panel/70">
                 <td className="py-3 pr-3">
-                  <p className="font-medium text-snow">{driver.name}</p>
-                  {driver.notes ? <p className="text-xs text-mist">{driver.notes}</p> : null}
+                  <div className="flex items-center gap-3">
+                    <DriverAvatar src={driver.driverPhoto} name={driver.name} />
+                    <div>
+                      <p className="font-medium text-snow">{driver.name}</p>
+                      {driver.notes ? <p className="text-xs text-mist">{driver.notes}</p> : null}
+                    </div>
+                  </div>
                 </td>
                 <td className="py-3 pr-3 text-mist">{driver.phone}</td>
-                <td className="py-3 pr-3 text-mist">{driver.vehicle}</td>
+                <td className="py-3 pr-3">
+                  <div className="flex items-center gap-2">
+                    {driver.vehiclePhoto ? (
+                      <img
+                        src={driver.vehiclePhoto}
+                        alt={driver.vehicle}
+                        className="size-9 shrink-0 rounded-md border border-line object-cover"
+                      />
+                    ) : null}
+                    <div>
+                      <p className="text-mist">{driver.vehicle}</p>
+                      <p className="font-mono text-[11px] tracking-wide text-snow">
+                        {driver.licensePlate || '—'}
+                      </p>
+                    </div>
+                  </div>
+                </td>
                 <td className="py-3 pr-3 text-mist">{driver.zone || '—'}</td>
                 <td className="py-3 pr-3">
                   <select

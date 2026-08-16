@@ -1,4 +1,5 @@
 import { CheckCircle2, Copy, MessageCircle, Plus, Send } from 'lucide-react'
+import DriverAvatar from './DriverAvatar'
 import { useDispatchFlow } from '../context/DispatchContext'
 
 export default function ConfirmationStep() {
@@ -19,11 +20,15 @@ export default function ConfirmationStep() {
     <div className="space-y-4">
       <div className="flex items-start gap-3 rounded-lg border border-signal/30 bg-signal/10 px-3 py-3">
         <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-signal" />
+        <DriverAvatar src={selectedDriver.driverPhoto} name={selectedDriver.name} />
         <div>
           <p className="text-sm font-semibold text-snow">
             Servicio asignado a {selectedDriver.name}
           </p>
-          <p className="text-xs text-mist">{selectedDriver.vehicle}</p>
+          <p className="text-xs text-mist">
+            {selectedDriver.vehicle}
+            {selectedDriver.licensePlate ? ` · ${selectedDriver.licensePlate}` : ''}
+          </p>
         </div>
       </div>
 

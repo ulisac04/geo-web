@@ -1,4 +1,5 @@
 import { Clock, MapPin, UserCheck } from 'lucide-react'
+import DriverAvatar from './DriverAvatar'
 import type { Driver } from '../types'
 import { formatDistance } from '../lib/geo'
 
@@ -29,9 +30,15 @@ export default function CandidateCard({
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-snow">{driver.name}</h3>
-          <p className="text-xs text-mist">{driver.vehicle}</p>
+        <div className="flex min-w-0 items-start gap-2.5">
+          <DriverAvatar src={driver.driverPhoto} name={driver.name} size="sm" />
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-snow">{driver.name}</h3>
+            <p className="truncate text-xs text-mist">{driver.vehicle}</p>
+            {driver.licensePlate ? (
+              <p className="font-mono text-[11px] tracking-wide text-snow">{driver.licensePlate}</p>
+            ) : null}
+          </div>
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] text-mist">
           <Clock className="size-3" />
