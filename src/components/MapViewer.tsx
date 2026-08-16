@@ -163,7 +163,7 @@ export default function MapViewer({
         focusedDriverId === driver.id ||
         selectedDriver?.id === driver.id
       el.className = `driver-marker ${driver.status}${highlighted ? ' highlighted' : ''}`
-      el.innerHTML = motorcycleSvg()
+      fillDriverMarker(el, driver)
       el.addEventListener('click', (event) => {
         event.stopPropagation()
       })
@@ -297,6 +297,27 @@ function createPin(
     .addTo(map)
 }
 
-function motorcycleSvg(): string {
-  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--on-signal)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M8 17h5l3-6h3"/><path d="M6 12h4l2-4h4"/></svg>`
+function fillDriverMarker(el: HTMLDivElement, driver: Driver) {
+  if (driver.driverPhoto) {
+    const img = document.createElement('img')
+    img.src = driver.driverPhoto
+    img.alt = driver.name
+    el.append(img)
+    return
+  }
+
+  const initials = document.createElement('span')
+  initials.className = 'driver-marker-initials'
+  initials.textContent = driverInitials(driver.name)
+  el.append(initials)
+}
+
+function driverInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
 }
