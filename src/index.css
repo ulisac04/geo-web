@@ -1,0 +1,104 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #07090d;
+  --color-panel: #0c1118;
+  --color-card: #121821;
+  --color-elevated: #18202b;
+  --color-line: #243041;
+  --color-mist: #8b9bb0;
+  --color-snow: #e8eef6;
+  --color-signal: #34d399;
+  --color-signal-dim: #065f46;
+  --color-warn: #fbbf24;
+  --color-danger: #f43f5e;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-snow);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #243041 transparent;
+}
+
+.driver-marker {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #07090d;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.driver-marker.available {
+  background: #059669;
+}
+
+.driver-marker.busy {
+  background: #d97706;
+}
+
+.driver-marker.highlighted {
+  transform: scale(1.28);
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.35);
+  z-index: 10;
+}
+
+.order-pin {
+  width: 28px;
+  height: 36px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.maplibregl-popup-content {
+  background: #121821;
+  color: #e8eef6;
+  border: 1px solid #243041;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: none;
+  font-family: var(--font-sans);
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: #121821;
+}
+
+.maplibregl-ctrl-group {
+  background: #121821;
+  border: 1px solid #243041;
+}
+
+.maplibregl-ctrl-group button {
+  background: #121821;
+}
+
+.maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(1.4);
+}
+
+.maplibregl-ctrl-attrib {
+  background: rgba(7, 9, 13, 0.7);
+  color: #8b9bb0;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: #8b9bb0;
+}
