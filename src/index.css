@@ -71,6 +71,22 @@ body {
   scrollbar-color: var(--scrollbar) transparent;
 }
 
+.driver-pin {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+}
+
+.driver-pin.highlighted {
+  z-index: 10;
+}
+
+.driver-pin.highlighted .driver-marker {
+  transform: scale(1.28);
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.35);
+}
+
 .driver-marker {
   width: 34px;
   height: 34px;
@@ -80,7 +96,6 @@ body {
   place-items: center;
   border: 2px solid var(--on-signal);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
-  cursor: pointer;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
@@ -88,18 +103,59 @@ html.light .driver-marker {
   box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
 }
 
-.driver-marker.available {
+.driver-pin.available .driver-marker {
   background: #059669;
 }
 
-.driver-marker.busy {
+.driver-pin.busy .driver-marker {
   background: #d97706;
 }
 
-.driver-marker.highlighted {
-  transform: scale(1.28);
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.35);
-  z-index: 10;
+.driver-marker-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: max-content;
+  max-width: 140px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 3px 7px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.driver-marker-label strong {
+  max-width: 126px;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--snow);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.driver-marker-label span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--mist);
+}
+
+.driver-marker-label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 5px solid transparent;
+  border-top-color: var(--panel);
+  transform: translateX(-50%);
 }
 
 .driver-marker img {

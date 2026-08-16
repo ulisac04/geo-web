@@ -120,7 +120,7 @@ export default function MapViewer({
     map.on('styledata', ensureRouteLayer)
     map.on('click', (event) => {
       const target = event.originalEvent.target
-      if (target instanceof Element && target.closest('.driver-marker, .order-pin')) {
+      if (target instanceof Element && target.closest('.driver-pin, .order-pin')) {
         return
       }
       onSetPickupRef.current([event.lngLat.lng, event.lngLat.lat])
@@ -157,24 +157,17 @@ export default function MapViewer({
     markersRef.current = []
 
     for (const driver of drivers) {
-      const el = document.createElement('div')
       const highlighted =
         hoveredDriverId === driver.id ||
         focusedDriverId === driver.id ||
         selectedDriver?.id === driver.id
-      el.className = `driver-marker ${driver.status}${highlighted ? ' highlighted' : ''}`
-      fillDriverMarker(el, driver)
+      const el = createDriverPin(driver, highlighted)
       el.addEventListener('click', (event) => {
         event.stopPropagation()
       })
 
       const marker = new Marker({ element: el, anchor: 'center' })
         .setLngLat(driver.coords)
-        .setPopup(
-          new Popup({ offset: 16, closeButton: false }).setHTML(
-            `<strong>${driver.name}</strong><br/><span class="popup-muted">${driver.vehicle}${driver.licensePlate ? ` · ${driver.licensePlate}` : ''}</span><br/>Batería ${driver.battery}% · ${driver.status === 'available' ? 'Disponible' : 'Ocupado'}`,
-          ),
-        )
         .addTo(map)
 
       markersRef.current.push(marker)
@@ -295,6 +288,29 @@ function createPin(
     .setLngLat(coords)
     .setPopup(new Popup({ offset: 18, closeButton: false }).setText(label))
     .addTo(map)
+}
+
+function createDriverPin(driver: Driver, highlighted: boolean): HTMLDivElement {
+  const pin = document.createElement('div')
+  pin.className = `driver-pin ${driver.status}${highlighted ? ' highlighted' : ''}`
+
+  const label = document.createElement('div')
+  label.className = 'driver-marker-label'
+  const name = document.createElement('strong')
+  name.textContent = driver.name
+  label.append(name)
+  if (driver.licensePlate) {
+    const plate = document.createElement('span')
+    plate.textContent = driver.licensePlate
+    label.append(plate)
+  }
+
+  const face = document.createElement('div')
+  face.className = 'driver-marker'
+  fillDriverMarker(face, driver)
+
+  pin.append(label, face)
+  return pin
 }
 
 function fillDriverMarker(el: HTMLDivElement, driver: Driver) {
