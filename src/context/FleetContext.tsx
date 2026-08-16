@@ -2,12 +2,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
-import { createDriver, loadFleet, persistFleet } from '../lib/fleet'
+import { createDriver, loadFleet, nudgeFleet, persistFleet } from '../lib/fleet'
+import { useSettings } from './SettingsContext'
 
 interface FleetContextValue {
   drivers: Driver[]
@@ -20,7 +22,19 @@ interface FleetContextValue {
 const FleetContext = createContext<FleetContextValue | null>(null)
 
 export function FleetProvider({ children }: { children: ReactNode }) {
+  const { settings } = useSettings()
   const [drivers, setDrivers] = useState<Driver[]>(() => loadFleet())
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setDrivers((current) => {
+        const next = nudgeFleet(current)
+        persistFleet(next)
+        return next
+      })
+    }, settings.mapRefreshSeconds * 1000)
+    return () => window.clearInterval(id)
+  }, [settings.mapRefreshSeconds])
 
   const commit = useCallback((next: Driver[]) => {
     setDrivers(next)

@@ -1,10 +1,13 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import CostsPage from './pages/CostsPage'
 import DashboardPage from './pages/DashboardPage'
 import DriversPage from './pages/DriversPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LoginPage from './pages/LoginPage'
+import ServicesPage from './pages/ServicesPage'
+import SettingsPage from './pages/SettingsPage'
 
 export default function App() {
   return (
@@ -21,6 +24,9 @@ export default function App() {
         >
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/conductores" element={<DriversPage />} />
+          <Route path="/servicios" element={<ServicesPage />} />
+          <Route path="/costos" element={<CostsPage />} />
+          <Route path="/configuracion" element={<SettingsPage />} />
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

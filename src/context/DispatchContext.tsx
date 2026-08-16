@@ -8,6 +8,7 @@ import {
 } from 'react'
 import type { DispatchStep, Driver, InputTab, OrderDraft } from '../types'
 import { delay, extractOrderFromText } from '../lib/extract'
+import { haversineMeters } from '../lib/geo'
 import {
   EMPTY_ORDER,
   NEARBY_RADIUS_M,
@@ -16,6 +17,7 @@ import {
 } from '../lib/mock-data'
 import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
+import { useServices } from './ServicesContext'
 
 interface DispatchContextValue {
   step: DispatchStep
@@ -54,6 +56,7 @@ const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
   const { drivers: fleet } = useFleet()
+  const { types, addRecord } = useServices()
   const [step, setStep] = useState<DispatchStep>(1)
   const [order, setOrder] = useState<OrderDraft>(EMPTY_ORDER)
   const [candidates, setCandidates] = useState<Driver[]>([])
@@ -110,12 +113,38 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setStep(3)
   }, [fleet, order.originCoords])
 
-  const assignDriver = useCallback((driver: Driver) => {
-    setSelectedDriver(driver)
-    setFocusedDriverId(driver.id)
-    setHoveredDriverId(driver.id)
-    setStep(4)
-  }, [])
+  const assignDriver = useCallback(
+    (driver: Driver) => {
+      setSelectedDriver(driver)
+      setFocusedDriverId(driver.id)
+      setHoveredDriverId(driver.id)
+      setStep(4)
+
+      const type = types.find((item) => item.id === order.serviceTypeId)
+      const distanceM =
+        order.originCoords && order.destCoords
+          ? Math.round(haversineMeters(order.originCoords, order.destCoords))
+          : 0
+
+      addRecord({
+        typeId: order.serviceTypeId,
+        typeName: type?.name ?? 'Sin tipo',
+        origin: order.origin,
+        destination: order.destination,
+        originCoords: order.originCoords,
+        destCoords: order.destCoords,
+        clientName: order.clientName,
+        clientPhone: order.clientPhone,
+        driverId: driver.id,
+        driverName: driver.name,
+        paymentMethod: order.paymentMethod,
+        amount: order.amount,
+        distanceM,
+        status: 'assigned',
+      })
+    },
+    [addRecord, order, types],
+  )
 
   const resetOrder = useCallback(() => {
     setStep(1)

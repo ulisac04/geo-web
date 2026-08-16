@@ -38,6 +38,21 @@ export function persistFleet(drivers: Driver[]): void {
   localStorage.setItem(FLEET_KEY, JSON.stringify(drivers))
 }
 
+const NUDGE_DEG = 0.0004
+
+export function nudgeFleet(drivers: Driver[]): Driver[] {
+  return drivers.map((driver) => {
+    if (driver.status === 'offline') return driver
+    return {
+      ...driver,
+      coords: [
+        driver.coords[0] + (Math.random() - 0.5) * NUDGE_DEG * 2,
+        driver.coords[1] + (Math.random() - 0.5) * NUDGE_DEG * 2,
+      ],
+    }
+  })
+}
+
 export function coordsForZone(zone: string): [number, number] {
   return (
     resolvePlace(zone) ?? [

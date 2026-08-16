@@ -42,6 +42,7 @@ export function extractOrderFromText(raw: string): OrderDraft {
     clientPhone: clientPhone.replace(/\s+/g, ' '),
     paymentMethod: method,
     amount,
+    serviceTypeId: EMPTY_ORDER.serviceTypeId,
   }
 }
 

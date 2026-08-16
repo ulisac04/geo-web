@@ -1,11 +1,24 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Contact, LayoutDashboard, LogOut, Moon, RadioTower, Sun } from 'lucide-react'
+import {
+  Briefcase,
+  CircleDollarSign,
+  Contact,
+  LayoutDashboard,
+  LogOut,
+  Moon,
+  RadioTower,
+  Settings,
+  Sun,
+} from 'lucide-react'
 import { getSession, logout } from '../lib/auth'
 import { useTheme } from '../context/ThemeContext'
 
 const LINKS = [
   { to: '/dashboard', label: 'Despacho', icon: LayoutDashboard },
   { to: '/conductores', label: 'Agenda', icon: Contact },
+  { to: '/servicios', label: 'Servicios', icon: Briefcase },
+  { to: '/costos', label: 'Costos', icon: CircleDollarSign },
+  { to: '/configuracion', label: 'Config', icon: Settings },
 ]
 
 export default function AppNav() {

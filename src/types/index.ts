@@ -1,6 +1,10 @@
 export type DriverStatus = 'available' | 'busy' | 'offline'
 export type DispatchStep = 1 | 2 | 3 | 4
 export type InputTab = 'text' | 'screenshot'
+export type ServiceStatus = 'assigned' | 'completed' | 'cancelled'
+export type CostRuleType = 'distance' | 'night'
+export type SurchargeType = 'fixed' | 'percent'
+export type MapRefreshSeconds = 5 | 10 | 15 | 30 | 60
 
 export interface Driver {
   id: string
@@ -40,6 +44,75 @@ export interface OrderDraft {
   clientPhone: string
   paymentMethod: string
   amount: string
+  serviceTypeId: string
+}
+
+export interface AppSettings {
+  mapRefreshSeconds: MapRefreshSeconds
+}
+
+export interface ServiceType {
+  id: string
+  name: string
+  description: string
+  active: boolean
+}
+
+export interface ServiceTypeDraft {
+  name: string
+  description: string
+  active: boolean
+}
+
+export interface ServiceRecord {
+  id: string
+  typeId: string
+  typeName: string
+  origin: string
+  destination: string
+  originCoords: [number, number] | null
+  destCoords: [number, number] | null
+  clientName: string
+  clientPhone: string
+  driverId: string
+  driverName: string
+  paymentMethod: string
+  amount: string
+  distanceM: number
+  createdAt: string
+  status: ServiceStatus
+}
+
+export interface CostRule {
+  id: string
+  name: string
+  enabled: boolean
+  type: CostRuleType
+  pricePerKm?: number
+  startHour?: number
+  endHour?: number
+  surchargeType?: SurchargeType
+  surchargeValue?: number
+}
+
+export interface CostRuleDraft {
+  name: string
+  enabled: boolean
+  type: CostRuleType
+  pricePerKm: number
+  startHour: number
+  endHour: number
+  surchargeType: SurchargeType
+  surchargeValue: number
+}
+
+export interface FareEstimate {
+  distanceM: number
+  distanceKm: number
+  distanceSubtotal: number
+  nightSurcharge: number
+  total: number
+  appliedNightRules: string[]
 }
 
 export interface Session {
