@@ -27,7 +27,7 @@ export default function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="space-y-5">
-        <div className="rounded-lg border border-signal/30 bg-signal/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-lg border border-signal/30 bg-signal/10 px-4 py-3 text-sm text-snow">
           Si el correo <span className="font-medium text-snow">{email}</span> está
           registrado, enviaremos un enlace de recuperación en los próximos minutos.
         </div>
@@ -75,7 +75,7 @@ export default function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-signal py-2.5 text-sm font-semibold text-ink transition hover:bg-emerald-300 disabled:opacity-60"
+        className="w-full rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal transition hover:bg-emerald-300 disabled:opacity-60"
       >
         {loading ? 'Enviando…' : 'Enviar enlace de recuperación'}
       </button>

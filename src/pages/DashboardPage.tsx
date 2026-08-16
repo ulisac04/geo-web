@@ -13,7 +13,15 @@ export default function DashboardPage() {
 }
 
 function DashboardLayout() {
-  const { fleet, order, hoveredDriverId, selectedDriver } = useDispatchFlow()
+  const {
+    fleet,
+    order,
+    hoveredDriverId,
+    focusedDriverId,
+    selectedDriver,
+    focusDriver,
+    setPickupFromMap,
+  } = useDispatchFlow()
   const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
 
   return (
@@ -30,7 +38,10 @@ function DashboardLayout() {
           drivers={liveFleet}
           order={order}
           hoveredDriverId={hoveredDriverId}
+          focusedDriverId={focusedDriverId}
           selectedDriver={selectedDriver}
+          onSelectDriver={(driver) => focusDriver(driver.id)}
+          onSetPickup={setPickupFromMap}
         />
       </Suspense>
     </div>

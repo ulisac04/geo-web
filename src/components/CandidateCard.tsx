@@ -6,6 +6,7 @@ interface CandidateCardProps {
   driver: Driver
   highlighted: boolean
   onHover: (id: string | null) => void
+  onFocus: (id: string) => void
   onAssign: (driver: Driver) => void
 }
 
@@ -13,13 +14,15 @@ export default function CandidateCard({
   driver,
   highlighted,
   onHover,
+  onFocus,
   onAssign,
 }: CandidateCardProps) {
   return (
     <article
       onMouseEnter={() => onHover(driver.id)}
       onMouseLeave={() => onHover(null)}
-      className={`rounded-lg border p-3 transition ${
+      onClick={() => onFocus(driver.id)}
+      className={`cursor-pointer rounded-lg border p-3 transition ${
         highlighted
           ? 'border-signal/60 bg-signal/10'
           : 'border-line bg-card hover:border-mist/40'
@@ -43,8 +46,11 @@ export default function CandidateCard({
         </span>
         <button
           type="button"
-          onClick={() => onAssign(driver)}
-          className="inline-flex items-center gap-1.5 rounded-md bg-signal px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-emerald-300"
+          onClick={(event) => {
+            event.stopPropagation()
+            onAssign(driver)
+          }}
+          className="inline-flex items-center gap-1.5 rounded-md bg-signal px-2.5 py-1.5 text-xs font-semibold text-on-signal hover:bg-emerald-300"
         >
           <UserCheck className="size-3.5" />
           Asignar Conductor

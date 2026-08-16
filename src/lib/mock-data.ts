@@ -25,7 +25,7 @@ export const PLACES: Record<string, [number, number]> = {
 export const EMPTY_ORDER: OrderDraft = {
   origin: '',
   destination: '',
-  originCoords: null,
+  originCoords: CITY_CENTER,
   destCoords: null,
   clientName: '',
   clientPhone: '',

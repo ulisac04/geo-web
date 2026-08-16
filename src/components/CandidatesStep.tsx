@@ -2,7 +2,15 @@ import { useDispatchFlow } from '../context/DispatchContext'
 import CandidateCard from './CandidateCard'
 
 export default function CandidatesStep() {
-  const { candidates, hoveredDriverId, hoverDriver, assignDriver } = useDispatchFlow()
+  const {
+    candidates,
+    hoveredDriverId,
+    focusedDriverId,
+    selectedDriver,
+    hoverDriver,
+    focusDriver,
+    assignDriver,
+  } = useDispatchFlow()
 
   if (candidates.length === 0) {
     return (
@@ -21,8 +29,13 @@ export default function CandidatesStep() {
         <CandidateCard
           key={driver.id}
           driver={driver}
-          highlighted={hoveredDriverId === driver.id}
+          highlighted={
+            hoveredDriverId === driver.id ||
+            focusedDriverId === driver.id ||
+            selectedDriver?.id === driver.id
+          }
           onHover={hoverDriver}
+          onFocus={focusDriver}
           onAssign={assignDriver}
         />
       ))}

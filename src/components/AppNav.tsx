@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Contact, LayoutDashboard, LogOut, RadioTower } from 'lucide-react'
+import { Contact, LayoutDashboard, LogOut, Moon, RadioTower, Sun } from 'lucide-react'
 import { getSession, logout } from '../lib/auth'
+import { useTheme } from '../context/ThemeContext'
 
 const LINKS = [
   { to: '/dashboard', label: 'Despacho', icon: LayoutDashboard },
@@ -9,6 +10,7 @@ const LINKS = [
 
 export default function AppNav() {
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme()
   const session = getSession()
   const initials = (session?.operator ?? 'OP')
     .split(' ')
@@ -53,6 +55,15 @@ export default function AppNav() {
       </div>
 
       <div className="flex flex-col items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="rounded-md p-2 text-mist hover:bg-elevated hover:text-snow"
+          aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+        >
+          {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        </button>
         <div
           className="grid size-9 place-items-center rounded-full bg-elevated text-[11px] font-semibold text-snow"
           title={session?.operator}

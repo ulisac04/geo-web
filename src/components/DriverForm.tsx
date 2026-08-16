@@ -150,7 +150,7 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-ink hover:bg-emerald-300"
+              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300"
             >
               {driver ? 'Guardar cambios' : 'Agregar a la agenda'}
             </button>

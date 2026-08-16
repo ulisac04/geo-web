@@ -18,6 +18,7 @@ interface DispatchContextValue {
   fleet: Driver[]
   candidates: Driver[]
   hoveredDriverId: string | null
+  focusedDriverId: string | null
   selectedDriver: Driver | null
   inputTab: InputTab
   rawText: string
@@ -34,6 +35,8 @@ interface DispatchContextValue {
   extractWithAI: () => Promise<void>
   searchDrivers: () => Promise<void>
   hoverDriver: (id: string | null) => void
+  focusDriver: (id: string | null) => void
+  setPickupFromMap: (coords: [number, number]) => void
   assignDriver: (driver: Driver) => void
   resetOrder: () => void
   copyMessage: () => Promise<void>
@@ -49,6 +52,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [order, setOrder] = useState<OrderDraft>(EMPTY_ORDER)
   const [candidates, setCandidates] = useState<Driver[]>([])
   const [hoveredDriverId, setHoveredDriverId] = useState<string | null>(null)
+  const [focusedDriverId, setFocusedDriverId] = useState<string | null>(null)
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [inputTab, setInputTab] = useState<InputTab>('text')
   const [rawText, setRawText] = useState('')
@@ -62,6 +66,18 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const updateOrder = useCallback((patch: Partial<OrderDraft>) => {
     setOrder((prev) => ({ ...prev, ...patch }))
+  }, [])
+
+  const setPickupFromMap = useCallback((coords: [number, number]) => {
+    setOrder((prev) => ({
+      ...prev,
+      originCoords: coords,
+      origin: prev.origin.trim() ? prev.origin : 'Punto en el mapa',
+    }))
+  }, [])
+
+  const focusDriver = useCallback((id: string | null) => {
+    setFocusedDriverId(id)
   }, [])
 
   const extractWithAI = useCallback(async () => {
@@ -85,6 +101,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const assignDriver = useCallback((driver: Driver) => {
     setSelectedDriver(driver)
+    setFocusedDriverId(driver.id)
     setHoveredDriverId(driver.id)
     setStep(4)
   }, [])
@@ -94,6 +111,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setOrder(EMPTY_ORDER)
     setCandidates([])
     setHoveredDriverId(null)
+    setFocusedDriverId(null)
     setSelectedDriver(null)
     setRawText('')
     setScreenshotPreview(null)
@@ -126,6 +144,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       fleet,
       candidates,
       hoveredDriverId,
+      focusedDriverId,
       selectedDriver,
       inputTab,
       rawText,
@@ -142,6 +161,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       extractWithAI,
       searchDrivers,
       hoverDriver: setHoveredDriverId,
+      focusDriver,
+      setPickupFromMap,
       assignDriver,
       resetOrder,
       copyMessage,
@@ -154,6 +175,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       fleet,
       candidates,
       hoveredDriverId,
+      focusedDriverId,
       selectedDriver,
       inputTab,
       rawText,
@@ -164,8 +186,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       availableCount,
       busyCount,
       updateOrder,
+      setPickupFromMap,
       extractWithAI,
       searchDrivers,
+      focusDriver,
       assignDriver,
       resetOrder,
       copyMessage,

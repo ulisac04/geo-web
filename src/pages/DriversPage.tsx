@@ -64,7 +64,7 @@ export default function DriversPage() {
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-ink hover:bg-emerald-300"
+          className="inline-flex items-center gap-2 rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300"
         >
           <Plus className="size-4" />
           Nuevo conductor

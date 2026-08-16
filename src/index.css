@@ -3,17 +3,53 @@
 
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #07090d;
-  --color-panel: #0c1118;
-  --color-card: #121821;
-  --color-elevated: #18202b;
-  --color-line: #243041;
-  --color-mist: #8b9bb0;
-  --color-snow: #e8eef6;
-  --color-signal: #34d399;
-  --color-signal-dim: #065f46;
-  --color-warn: #fbbf24;
-  --color-danger: #f43f5e;
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-card: var(--card);
+  --color-elevated: var(--elevated);
+  --color-line: var(--line);
+  --color-mist: var(--mist);
+  --color-snow: var(--snow);
+  --color-signal: var(--signal);
+  --color-signal-dim: var(--signal-dim);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-on-signal: var(--on-signal);
+}
+
+:root,
+html.dark {
+  --ink: #07090d;
+  --panel: #0c1118;
+  --card: #121821;
+  --elevated: #18202b;
+  --line: #243041;
+  --mist: #8b9bb0;
+  --snow: #e8eef6;
+  --signal: #34d399;
+  --signal-dim: #065f46;
+  --warn: #fbbf24;
+  --danger: #f43f5e;
+  --on-signal: #07090d;
+  --pin-hole: #07090d;
+  --scrollbar: #243041;
+}
+
+html.light {
+  --ink: #f4f6f9;
+  --panel: #ffffff;
+  --card: #ffffff;
+  --elevated: #eef2f6;
+  --line: #d5dde7;
+  --mist: #5b6b7c;
+  --snow: #121821;
+  --signal: #059669;
+  --signal-dim: #a7f3d0;
+  --warn: #d97706;
+  --danger: #e11d48;
+  --on-signal: #06281f;
+  --pin-hole: #ffffff;
+  --scrollbar: #c5d0dc;
 }
 
 html,
@@ -21,8 +57,8 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background: var(--color-ink);
-  color: var(--color-snow);
+  background: var(--ink);
+  color: var(--snow);
 }
 
 body {
@@ -32,7 +68,7 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #243041 transparent;
+  scrollbar-color: var(--scrollbar) transparent;
 }
 
 .driver-marker {
@@ -41,10 +77,14 @@ body {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  border: 2px solid #07090d;
+  border: 2px solid var(--on-signal);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
   cursor: pointer;
   transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+html.light .driver-marker {
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
 }
 
 .driver-marker.available {
@@ -68,37 +108,45 @@ body {
 }
 
 .maplibregl-popup-content {
-  background: #121821;
-  color: #e8eef6;
-  border: 1px solid #243041;
+  background: var(--card);
+  color: var(--snow);
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px 12px;
   box-shadow: none;
   font-family: var(--font-sans);
 }
 
+.maplibregl-popup-content .popup-muted {
+  color: var(--mist);
+}
+
 .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-  border-top-color: #121821;
+  border-top-color: var(--card);
 }
 
 .maplibregl-ctrl-group {
-  background: #121821;
-  border: 1px solid #243041;
+  background: var(--card);
+  border: 1px solid var(--line);
 }
 
 .maplibregl-ctrl-group button {
-  background: #121821;
+  background: var(--card);
 }
 
 .maplibregl-ctrl button .maplibregl-ctrl-icon {
   filter: invert(1) brightness(1.4);
 }
 
+html.light .maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: none;
+}
+
 .maplibregl-ctrl-attrib {
-  background: rgba(7, 9, 13, 0.7);
-  color: #8b9bb0;
+  background: color-mix(in srgb, var(--ink) 70%, transparent);
+  color: var(--mist);
 }
 
 .maplibregl-ctrl-attrib a {
-  color: #8b9bb0;
+  color: var(--mist);
 }

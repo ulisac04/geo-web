@@ -60,7 +60,7 @@ export default function SidebarDispatch() {
                   <span
                     className={`grid size-6 place-items-center rounded-full text-[11px] font-semibold ${
                       current || done
-                        ? 'bg-signal text-ink'
+                        ? 'bg-signal text-on-signal'
                         : 'bg-elevated text-mist'
                     }`}
                   >

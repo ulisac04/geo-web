@@ -163,7 +163,7 @@ export default function OrderInputStep() {
         type="button"
         disabled={!canExtract || extracting}
         onClick={() => void extractWithAI()}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-2.5 text-sm font-semibold text-ink transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {extracting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
         {extracting ? 'Extrayendo datos…' : 'Extraer Datos con IA'}
