@@ -8,8 +8,9 @@ import {
 } from 'react'
 import type { DispatchStep, Driver, InputTab, OrderDraft } from '../types'
 import { delay, extractOrderFromText } from '../lib/extract'
-import { EMPTY_ORDER, getFleet, rankCandidates, SCREENSHOT_ORDER } from '../lib/mock-data'
+import { EMPTY_ORDER, rankCandidates, SCREENSHOT_ORDER } from '../lib/mock-data'
 import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
+import { useFleet } from './FleetContext'
 
 interface DispatchContextValue {
   step: DispatchStep
@@ -43,9 +44,9 @@ interface DispatchContextValue {
 const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
+  const { drivers: fleet } = useFleet()
   const [step, setStep] = useState<DispatchStep>(1)
   const [order, setOrder] = useState<OrderDraft>(EMPTY_ORDER)
-  const [fleet] = useState<Driver[]>(() => getFleet())
   const [candidates, setCandidates] = useState<Driver[]>([])
   const [hoveredDriverId, setHoveredDriverId] = useState<string | null>(null)
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)

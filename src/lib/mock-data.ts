@@ -49,6 +49,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8508, 10.4996],
     battery: 86,
+    zone: 'Altamira',
+    notes: 'Turno mañana · cubre Chacao',
   },
   {
     id: 'drv-02',
@@ -58,6 +60,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8572, 10.4941],
     battery: 72,
+    zone: 'Chacao',
+    notes: '',
   },
   {
     id: 'drv-03',
@@ -67,6 +71,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8479, 10.4928],
     battery: 94,
+    zone: 'Chacao',
+    notes: 'Prefiere pedidos de centro comercial',
   },
   {
     id: 'drv-04',
@@ -76,6 +82,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8614, 10.5012],
     battery: 61,
+    zone: 'La Castellana',
+    notes: '',
   },
   {
     id: 'drv-05',
@@ -85,6 +93,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8446, 10.5054],
     battery: 48,
+    zone: 'Los Palos Grandes',
+    notes: '',
   },
   {
     id: 'drv-06',
@@ -94,6 +104,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8691, 10.4896],
     battery: 91,
+    zone: 'El Rosal',
+    notes: '',
   },
   {
     id: 'drv-07',
@@ -103,6 +115,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8398, 10.4872],
     battery: 77,
+    zone: 'Las Mercedes',
+    notes: '',
   },
   {
     id: 'drv-08',
@@ -112,6 +126,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'available',
     coords: [-66.8588, 10.5088],
     battery: 55,
+    zone: 'La Castellana',
+    notes: '',
   },
   {
     id: 'drv-09',
@@ -121,6 +137,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'busy',
     coords: [-66.8724, 10.4964],
     battery: 33,
+    zone: 'Plaza Venezuela',
+    notes: 'En servicio hasta las 18:00',
   },
   {
     id: 'drv-10',
@@ -130,6 +148,8 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
     status: 'busy',
     coords: [-66.8412, 10.4988],
     battery: 41,
+    zone: 'Altamira',
+    notes: '',
   },
 ]
 

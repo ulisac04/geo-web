@@ -1,4 +1,4 @@
-export type DriverStatus = 'available' | 'busy'
+export type DriverStatus = 'available' | 'busy' | 'offline'
 export type DispatchStep = 1 | 2 | 3 | 4
 export type InputTab = 'text' | 'screenshot'
 
@@ -12,6 +12,17 @@ export interface Driver {
   battery: number
   distanceM: number
   etaMin: number
+  zone: string
+  notes: string
+}
+
+export interface DriverDraft {
+  name: string
+  phone: string
+  vehicle: string
+  status: DriverStatus
+  zone: string
+  notes: string
 }
 
 export interface OrderDraft {

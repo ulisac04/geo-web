@@ -14,6 +14,7 @@ export default function DashboardPage() {
 
 function DashboardLayout() {
   const { fleet, order, hoveredDriverId, selectedDriver } = useDispatchFlow()
+  const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
 
   return (
     <div className="flex h-full overflow-hidden bg-ink">
@@ -26,7 +27,7 @@ function DashboardLayout() {
         }
       >
         <MapViewer
-          drivers={fleet}
+          drivers={liveFleet}
           order={order}
           hoveredDriverId={hoveredDriverId}
           selectedDriver={selectedDriver}
