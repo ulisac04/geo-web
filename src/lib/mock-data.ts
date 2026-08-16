@@ -161,10 +161,13 @@ export function getFleet(): Driver[] {
   }))
 }
 
+export const NEARBY_RADIUS_M = 1500
+
 export function rankCandidates(
   drivers: Driver[],
   origin: [number, number],
   limit = 5,
+  maxDistanceM = Infinity,
 ): Driver[] {
   return drivers
     .filter((driver) => driver.status === 'available')
@@ -176,6 +179,7 @@ export function rankCandidates(
         etaMin: etaFromMeters(distanceM),
       }
     })
+    .filter((driver) => driver.distanceM <= maxDistanceM)
     .sort((a, b) => a.distanceM - b.distanceM)
     .slice(0, limit)
 }

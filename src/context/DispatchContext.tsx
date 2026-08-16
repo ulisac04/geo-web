@@ -8,7 +8,12 @@ import {
 } from 'react'
 import type { DispatchStep, Driver, InputTab, OrderDraft } from '../types'
 import { delay, extractOrderFromText } from '../lib/extract'
-import { EMPTY_ORDER, rankCandidates, SCREENSHOT_ORDER } from '../lib/mock-data'
+import {
+  EMPTY_ORDER,
+  NEARBY_RADIUS_M,
+  rankCandidates,
+  SCREENSHOT_ORDER,
+} from '../lib/mock-data'
 import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 
@@ -17,6 +22,7 @@ interface DispatchContextValue {
   order: OrderDraft
   fleet: Driver[]
   candidates: Driver[]
+  nearbyDrivers: Driver[]
   hoveredDriverId: string | null
   focusedDriverId: string | null
   selectedDriver: Driver | null
@@ -63,6 +69,11 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
+
+  const nearbyDrivers = useMemo(() => {
+    if (!order.originCoords) return []
+    return rankCandidates(fleet, order.originCoords, 4, NEARBY_RADIUS_M)
+  }, [fleet, order.originCoords])
 
   const updateOrder = useCallback((patch: Partial<OrderDraft>) => {
     setOrder((prev) => ({ ...prev, ...patch }))
@@ -143,6 +154,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       order,
       fleet,
       candidates,
+      nearbyDrivers,
       hoveredDriverId,
       focusedDriverId,
       selectedDriver,
@@ -174,6 +186,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       order,
       fleet,
       candidates,
+      nearbyDrivers,
       hoveredDriverId,
       focusedDriverId,
       selectedDriver,

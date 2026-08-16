@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, typ
 import { FileText, Image, Loader2, Sparkles, Upload } from 'lucide-react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
+import NearbyDriverList from './NearbyDriverList'
 
 export default function OrderInputStep() {
   const {
@@ -168,6 +169,8 @@ export default function OrderInputStep() {
         {extracting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
         {extracting ? 'Extrayendo datos…' : 'Extraer Datos con IA'}
       </button>
+
+      <NearbyDriverList />
     </div>
   )
 }

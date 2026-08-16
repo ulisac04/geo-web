@@ -19,7 +19,6 @@ function DashboardLayout() {
     hoveredDriverId,
     focusedDriverId,
     selectedDriver,
-    focusDriver,
     setPickupFromMap,
   } = useDispatchFlow()
   const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
@@ -40,7 +39,6 @@ function DashboardLayout() {
           hoveredDriverId={hoveredDriverId}
           focusedDriverId={focusedDriverId}
           selectedDriver={selectedDriver}
-          onSelectDriver={(driver) => focusDriver(driver.id)}
           onSetPickup={setPickupFromMap}
         />
       </Suspense>

@@ -5,13 +5,17 @@ import {
   Marker,
   NavigationControl,
   Popup,
+  setWorkerUrl,
   type GeoJSONSource,
   type StyleSpecification,
 } from 'maplibre-gl'
+import maplibreWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Driver, OrderDraft } from '../types'
 import { useTheme } from '../context/ThemeContext'
 import { CITY_CENTER } from '../lib/mock-data'
 import { fetchDrivingRoute } from '../lib/routing'
+
+setWorkerUrl(maplibreWorker)
 
 type RouteFeature = {
   type: 'Feature'
@@ -53,7 +57,6 @@ interface MapViewerProps {
   hoveredDriverId: string | null
   focusedDriverId: string | null
   selectedDriver: Driver | null
-  onSelectDriver: (driver: Driver) => void
   onSetPickup: (coords: [number, number]) => void
 }
 
@@ -63,7 +66,6 @@ export default function MapViewer({
   hoveredDriverId,
   focusedDriverId,
   selectedDriver,
-  onSelectDriver,
   onSetPickup,
 }: MapViewerProps) {
   const { theme } = useTheme()
@@ -73,10 +75,8 @@ export default function MapViewer({
   const readyRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
   const skipThemeStyleRef = useRef(true)
-  const onSelectDriverRef = useRef(onSelectDriver)
   const onSetPickupRef = useRef(onSetPickup)
 
-  onSelectDriverRef.current = onSelectDriver
   onSetPickupRef.current = onSetPickup
 
   useEffect(() => {
@@ -166,7 +166,6 @@ export default function MapViewer({
       el.innerHTML = motorcycleSvg()
       el.addEventListener('click', (event) => {
         event.stopPropagation()
-        onSelectDriverRef.current(driver)
       })
 
       const marker = new Marker({ element: el, anchor: 'center' })
@@ -212,6 +211,8 @@ export default function MapViewer({
         return
       }
 
+      applyCoordinates(map, [routeDriver.coords, order.originCoords])
+
       const controller = new AbortController()
       abortRef.current = controller
 
@@ -225,7 +226,6 @@ export default function MapViewer({
         applyCoordinates(map, route.coordinates)
       } catch (error) {
         if (controller.signal.aborted) return
-        applyCoordinates(map, [routeDriver.coords, order.originCoords])
         console.warn('Ruta OSRM no disponible, se usa línea recta', error)
       }
     }
@@ -252,7 +252,8 @@ export default function MapViewer({
       <div className="pointer-events-none absolute top-4 left-4 rounded-lg border border-line bg-panel/90 px-3 py-2 text-xs text-mist backdrop-blur">
         <p className="font-medium text-snow">Flota en tiempo real</p>
         <p>Verde: disponible · Ámbar: ocupado</p>
-        <p className="mt-1">Click en el mapa para mover el punto de recogida.</p>
+        <p className="mt-1">Click en el mapa para mover el pickup.</p>
+        <p>Elige un conductor cercano en el panel para ver la ruta.</p>
       </div>
     </section>
   )
@@ -289,6 +290,7 @@ function createPin(
   const el = document.createElement('div')
   el.className = 'order-pin'
   el.innerHTML = `<svg viewBox="0 0 24 32" width="28" height="36"><path d="M12 0C6.5 0 2 4.4 2 9.8c0 7.2 10 22.2 10 22.2s10-15 10-22.2C22 4.4 17.5 0 12 0z" fill="${color}"/><circle cx="12" cy="10" r="3.4" fill="var(--pin-hole)"/></svg>`
+  el.addEventListener('click', (event) => event.stopPropagation())
   return new Marker({ element: el, anchor: 'bottom' })
     .setLngLat(coords)
     .setPopup(new Popup({ offset: 18, closeButton: false }).setText(label))
