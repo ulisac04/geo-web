@@ -14,6 +14,7 @@ export default function OrderInputStep() {
     setScreenshot,
     extractWithAI,
     extracting,
+    extractError,
   } = useDispatchFlow()
   const [dragging, setDragging] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -71,7 +72,8 @@ export default function OrderInputStep() {
     return () => window.removeEventListener('paste', onWindowPaste)
   }, [inputTab, setScreenshot])
 
-  const canExtract = inputTab === 'screenshot' || rawText.trim().length > 0
+  const canExtract =
+    inputTab === 'screenshot' ? Boolean(screenshotPreview) : rawText.trim().length > 0
 
   return (
     <div className="space-y-4">
@@ -145,9 +147,7 @@ export default function OrderInputStep() {
             <>
               <Upload className="mb-2 size-6 text-mist" />
               <p className="text-sm text-snow">Arrastra una imagen o pégala (Ctrl + V)</p>
-              <p className="mt-1 text-xs text-mist">
-                PNG, JPG · clic para seleccionar · o extrae un pedido de demostración
-              </p>
+              <p className="mt-1 text-xs text-mist">PNG, JPG · clic para seleccionar</p>
             </>
           )}
           <input
@@ -169,6 +169,12 @@ export default function OrderInputStep() {
         {extracting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
         {extracting ? 'Extrayendo datos…' : 'Extraer Datos con IA'}
       </button>
+
+      {extractError ? (
+        <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-rose-300">
+          {extractError}
+        </p>
+      ) : null}
 
       <NearbyDriverList />
     </div>

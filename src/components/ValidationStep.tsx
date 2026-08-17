@@ -1,14 +1,21 @@
 import { useMemo } from 'react'
-import { Loader2, Navigation } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { useCosts } from '../context/CostsContext'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
 import { estimateFare, formatFare } from '../lib/costs'
 import { formatDistance, haversineMeters } from '../lib/geo'
-import { resolvePlace } from '../lib/mock-data'
+import PlaceSearchField from './PlaceSearchField'
 
 export default function ValidationStep() {
-  const { order, updateOrder, searchDrivers, searching } = useDispatchFlow()
+  const {
+    order,
+    updateOrder,
+    acceptService,
+    searching,
+    activePin,
+    setActivePin,
+  } = useDispatchFlow()
   const { types } = useServices()
   const { rules } = useCosts()
 
@@ -27,15 +34,18 @@ export default function ValidationStep() {
   }, [order.originCoords, order.destCoords, rules])
 
   const ready =
-    order.origin.trim() &&
-    order.destination.trim() &&
-    order.clientName.trim() &&
-    order.clientPhone.trim()
+    Boolean(order.originCoords) &&
+    Boolean(order.destCoords) &&
+    Boolean(order.origin.trim()) &&
+    Boolean(order.destination.trim()) &&
+    Boolean(order.clientName.trim()) &&
+    Boolean(order.clientPhone.trim())
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-mist">
-        Revisa y corrige los campos extraídos antes de buscar conductores.
+        Busca el punto exacto o arrastra los pines A y B en el mapa. El click coloca el punto
+        activo.
       </p>
 
       {typeOptions.length > 0 ? (
@@ -57,22 +67,28 @@ export default function ValidationStep() {
         </label>
       ) : null}
 
-      <Field
+      <PlaceSearchField
         label="Origen (Punto A)"
         value={order.origin}
-        onChange={(value) =>
-          updateOrder({ origin: value, originCoords: resolvePlace(value) ?? order.originCoords })
-        }
+        active={activePin === 'origin'}
+        placeholder="Buscar dirección de recogida…"
+        onActivate={() => setActivePin('origin')}
+        onQueryChange={(value) => updateOrder({ origin: value })}
+        onSelect={(hit) => {
+          setActivePin('dest')
+          updateOrder({ origin: hit.label, originCoords: hit.coords })
+        }}
       />
-      <Field
+      <PlaceSearchField
         label="Destino (Punto B)"
         value={order.destination}
-        onChange={(value) =>
-          updateOrder({
-            destination: value,
-            destCoords: resolvePlace(value) ?? order.destCoords,
-          })
-        }
+        active={activePin === 'dest'}
+        placeholder="Buscar dirección de entrega…"
+        onActivate={() => setActivePin('dest')}
+        onQueryChange={(value) => updateOrder({ destination: value })}
+        onSelect={(hit) => {
+          updateOrder({ destination: hit.label, destCoords: hit.coords })
+        }}
       />
       <div className="grid grid-cols-2 gap-2">
         <Field
@@ -98,6 +114,11 @@ export default function ValidationStep() {
           onChange={(value) => updateOrder({ amount: value })}
         />
       </div>
+      <Field
+        label="Notas"
+        value={order.notes}
+        onChange={(value) => updateOrder({ notes: value })}
+      />
 
       {estimate ? (
         <div className="rounded-lg border border-line bg-card px-3 py-2">
@@ -121,16 +142,20 @@ export default function ValidationStep() {
             Usar tarifa
           </button>
         </div>
-      ) : null}
+      ) : (
+        <p className="rounded-lg border border-line bg-ink px-3 py-2 text-xs text-mist">
+          Coloca A y B para ver la ruta y la tarifa.
+        </p>
+      )}
 
       <button
         type="button"
         disabled={!ready || searching}
-        onClick={() => void searchDrivers()}
+        onClick={() => void acceptService()}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {searching ? <Loader2 className="size-4 animate-spin" /> : <Navigation className="size-4" />}
-        {searching ? 'Buscando cercanos…' : 'Buscar Conductores Cercanos'}
+        {searching ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+        {searching ? 'Creando servicio…' : 'Aceptar servicio'}
       </button>
     </div>
   )

@@ -22,7 +22,8 @@ interface ServicesContextValue {
   addType: (draft: ServiceTypeDraft) => void
   updateType: (id: string, draft: ServiceTypeDraft) => void
   removeType: (id: string) => void
-  addRecord: (draft: Omit<ServiceRecord, 'id' | 'createdAt'>) => void
+  addRecord: (draft: Omit<ServiceRecord, 'id' | 'createdAt'>) => ServiceRecord
+  updateRecord: (id: string, patch: Partial<ServiceRecord>) => void
 }
 
 const ServicesContext = createContext<ServicesContextValue | null>(null)
@@ -66,14 +67,25 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
 
   const addRecord = useCallback(
     (draft: Omit<ServiceRecord, 'id' | 'createdAt'>) => {
-      commitRecords([createServiceRecord(draft), ...records])
+      const record = createServiceRecord(draft)
+      commitRecords([record, ...records])
+      return record
+    },
+    [commitRecords, records],
+  )
+
+  const updateRecord = useCallback(
+    (id: string, patch: Partial<ServiceRecord>) => {
+      commitRecords(
+        records.map((record) => (record.id === id ? { ...record, ...patch } : record)),
+      )
     },
     [commitRecords, records],
   )
 
   const value = useMemo(
-    () => ({ types, records, addType, updateType, removeType, addRecord }),
-    [types, records, addType, updateType, removeType, addRecord],
+    () => ({ types, records, addType, updateType, removeType, addRecord, updateRecord }),
+    [types, records, addType, updateType, removeType, addRecord, updateRecord],
   )
 
   return <ServicesContext.Provider value={value}>{children}</ServicesContext.Provider>

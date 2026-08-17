@@ -9,6 +9,7 @@ export function buildDispatchMessage(order: OrderDraft, driver: Driver): string 
     `👤 Cliente: ${order.clientName}`,
     `📞 Tel: ${order.clientPhone}`,
     `💳 Pago: ${order.paymentMethod} — ${order.amount}`,
+    ...(order.notes.trim() ? ['', `📝 ${order.notes.trim()}`] : []),
     '',
     'Andina Logistics · Despacho',
   ].join('\n')

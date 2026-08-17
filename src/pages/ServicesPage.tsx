@@ -14,12 +14,14 @@ const TABS: { value: Tab; label: string }[] = [
 
 const STATUS_FILTERS: { value: 'all' | ServiceStatus; label: string }[] = [
   { value: 'all', label: 'Todos' },
+  { value: 'pending', label: 'Pendientes' },
   { value: 'assigned', label: 'Asignados' },
   { value: 'completed', label: 'Completados' },
   { value: 'cancelled', label: 'Cancelados' },
 ]
 
 const STATUS_LABEL: Record<ServiceStatus, string> = {
+  pending: 'Pendiente',
   assigned: 'Asignado',
   completed: 'Completado',
   cancelled: 'Cancelado',
@@ -282,7 +284,7 @@ function HistoryTable({ records }: { records: ServiceRecord[] }) {
                 </p>
               </td>
               <td className="py-3 pr-3 text-mist">{record.clientName}</td>
-              <td className="py-3 pr-3 text-mist">{record.driverName}</td>
+              <td className="py-3 pr-3 text-mist">{record.driverName || '—'}</td>
               <td className="py-3 pr-3 font-medium text-snow">{record.amount || '—'}</td>
               <td className="py-3 text-mist">{STATUS_LABEL[record.status]}</td>
             </tr>

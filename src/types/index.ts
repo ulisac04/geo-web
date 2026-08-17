@@ -1,7 +1,8 @@
 export type DriverStatus = 'available' | 'busy' | 'offline'
 export type DispatchStep = 1 | 2 | 3 | 4
 export type InputTab = 'text' | 'screenshot'
-export type ServiceStatus = 'assigned' | 'completed' | 'cancelled'
+export type ServiceStatus = 'pending' | 'assigned' | 'completed' | 'cancelled'
+export type PinFocus = 'origin' | 'dest'
 export type CostRuleType = 'distance' | 'night'
 export type SurchargeType = 'fixed' | 'percent'
 export type MapRefreshSeconds = 5 | 10 | 15 | 30 | 60
@@ -44,6 +45,7 @@ export interface OrderDraft {
   clientPhone: string
   paymentMethod: string
   amount: string
+  notes: string
   serviceTypeId: string
 }
 

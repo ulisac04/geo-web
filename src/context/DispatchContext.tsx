@@ -6,15 +6,12 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { DispatchStep, Driver, InputTab, OrderDraft } from '../types'
-import { delay, extractOrderFromText } from '../lib/extract'
+import type { DispatchStep, Driver, InputTab, OrderDraft, PinFocus } from '../types'
+import { delay } from '../lib/extract'
+import { geocodeBest } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
-import {
-  EMPTY_ORDER,
-  NEARBY_RADIUS_M,
-  rankCandidates,
-  SCREENSHOT_ORDER,
-} from '../lib/mock-data'
+import { EMPTY_ORDER, NEARBY_RADIUS_M, rankCandidates } from '../lib/mock-data'
+import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
@@ -32,19 +29,24 @@ interface DispatchContextValue {
   rawText: string
   screenshotPreview: string | null
   extracting: boolean
+  extractError: string | null
   searching: boolean
   copied: boolean
   availableCount: number
   busyCount: number
+  activePin: PinFocus
   setInputTab: (tab: InputTab) => void
   setRawText: (value: string) => void
   setScreenshot: (dataUrl: string | null) => void
+  setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
   extractWithAI: () => Promise<void>
-  searchDrivers: () => Promise<void>
+  acceptService: () => Promise<void>
   hoverDriver: (id: string | null) => void
   focusDriver: (id: string | null) => void
-  setPickupFromMap: (coords: [number, number]) => void
+  setPinFromMap: (coords: [number, number]) => void
+  moveOrigin: (coords: [number, number]) => void
+  moveDest: (coords: [number, number]) => void
   assignDriver: (driver: Driver) => void
   resetOrder: () => void
   copyMessage: () => Promise<void>
@@ -56,7 +58,7 @@ const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
   const { drivers: fleet } = useFleet()
-  const { types, addRecord } = useServices()
+  const { types, addRecord, updateRecord } = useServices()
   const [step, setStep] = useState<DispatchStep>(1)
   const [order, setOrder] = useState<OrderDraft>(EMPTY_ORDER)
   const [candidates, setCandidates] = useState<Driver[]>([])
@@ -67,8 +69,11 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [rawText, setRawText] = useState('')
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
   const [extracting, setExtracting] = useState(false)
+  const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [activePin, setActivePin] = useState<PinFocus>('origin')
+  const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
@@ -82,51 +87,86 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setOrder((prev) => ({ ...prev, ...patch }))
   }, [])
 
-  const setPickupFromMap = useCallback((coords: [number, number]) => {
-    setOrder((prev) => ({
-      ...prev,
-      originCoords: coords,
-      origin: prev.origin.trim() ? prev.origin : 'Punto en el mapa',
-    }))
+  const moveOrigin = useCallback((coords: [number, number]) => {
+    setOrder((prev) => ({ ...prev, originCoords: coords }))
   }, [])
+
+  const moveDest = useCallback((coords: [number, number]) => {
+    setOrder((prev) => ({ ...prev, destCoords: coords }))
+  }, [])
+
+  const setPinFromMap = useCallback(
+    (coords: [number, number]) => {
+      if (!order.originCoords) {
+        setOrder((prev) => ({
+          ...prev,
+          originCoords: coords,
+          origin: prev.origin.trim() ? prev.origin : 'Punto A en el mapa',
+        }))
+        setActivePin('dest')
+        return
+      }
+      if (!order.destCoords) {
+        setOrder((prev) => ({
+          ...prev,
+          destCoords: coords,
+          destination: prev.destination.trim() ? prev.destination : 'Punto B en el mapa',
+        }))
+        return
+      }
+      if (activePin === 'origin') {
+        setOrder((prev) => ({ ...prev, originCoords: coords }))
+        return
+      }
+      setOrder((prev) => ({ ...prev, destCoords: coords }))
+    },
+    [activePin, order.destCoords, order.originCoords],
+  )
 
   const focusDriver = useCallback((id: string | null) => {
     setFocusedDriverId(id)
   }, [])
 
   const extractWithAI = useCallback(async () => {
+    setExtractError(null)
     setExtracting(true)
-    await delay(1100)
-    const next =
-      inputTab === 'screenshot' ? SCREENSHOT_ORDER : extractOrderFromText(rawText)
-    setOrder(next)
-    setExtracting(false)
-    setStep(2)
-  }, [inputTab, rawText])
+    try {
+      const extracted = await extractOrder(
+        inputTab === 'screenshot'
+          ? { imageDataUrl: screenshotPreview }
+          : { rawText },
+      )
+      const draft = extractedToDraft(extracted, order.serviceTypeId)
+      const [originCoords, destCoords] = await Promise.all([
+        geocodeBest(draft.origin),
+        geocodeBest(draft.destination),
+      ])
+      setOrder({ ...draft, originCoords, destCoords })
+      setActivePin(originCoords ? 'dest' : 'origin')
+      setAcceptedServiceId(null)
+      setStep(2)
+    } catch (error) {
+      const message =
+        error instanceof ParserError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'No se pudo extraer el pedido'
+      setExtractError(message)
+    } finally {
+      setExtracting(false)
+    }
+  }, [inputTab, order.serviceTypeId, rawText, screenshotPreview])
 
-  const searchDrivers = useCallback(async () => {
-    if (!order.originCoords) return
+  const acceptService = useCallback(async () => {
+    if (!order.originCoords || !order.destCoords) return
+    if (!order.clientName.trim() || !order.clientPhone.trim()) return
+
     setSearching(true)
-    await delay(800)
-    setCandidates(rankCandidates(fleet, order.originCoords, 5))
-    setSearching(false)
-    setStep(3)
-  }, [fleet, order.originCoords])
-
-  const assignDriver = useCallback(
-    (driver: Driver) => {
-      setSelectedDriver(driver)
-      setFocusedDriverId(driver.id)
-      setHoveredDriverId(driver.id)
-      setStep(4)
-
+    try {
       const type = types.find((item) => item.id === order.serviceTypeId)
-      const distanceM =
-        order.originCoords && order.destCoords
-          ? Math.round(haversineMeters(order.originCoords, order.destCoords))
-          : 0
-
-      addRecord({
+      const distanceM = Math.round(haversineMeters(order.originCoords, order.destCoords))
+      const record = addRecord({
         typeId: order.serviceTypeId,
         typeName: type?.name ?? 'Sin tipo',
         origin: order.origin,
@@ -135,15 +175,37 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         destCoords: order.destCoords,
         clientName: order.clientName,
         clientPhone: order.clientPhone,
-        driverId: driver.id,
-        driverName: driver.name,
+        driverId: '',
+        driverName: '',
         paymentMethod: order.paymentMethod,
         amount: order.amount,
         distanceM,
+        status: 'pending',
+      })
+      setAcceptedServiceId(record.id)
+      await delay(400)
+      setCandidates(rankCandidates(fleet, order.originCoords, 5))
+      setStep(3)
+    } finally {
+      setSearching(false)
+    }
+  }, [addRecord, fleet, order, types])
+
+  const assignDriver = useCallback(
+    (driver: Driver) => {
+      setSelectedDriver(driver)
+      setFocusedDriverId(driver.id)
+      setHoveredDriverId(driver.id)
+      setStep(4)
+
+      if (!acceptedServiceId) return
+      updateRecord(acceptedServiceId, {
+        driverId: driver.id,
+        driverName: driver.name,
         status: 'assigned',
       })
     },
-    [addRecord, order, types],
+    [acceptedServiceId, updateRecord],
   )
 
   const resetOrder = useCallback(() => {
@@ -157,6 +219,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setScreenshotPreview(null)
     setInputTab('text')
     setCopied(false)
+    setExtractError(null)
+    setActivePin('origin')
+    setAcceptedServiceId(null)
   }, [])
 
   const getFormattedMessage = useCallback(() => {
@@ -191,19 +256,24 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       rawText,
       screenshotPreview,
       extracting,
+      extractError,
       searching,
       copied,
       availableCount,
       busyCount,
+      activePin,
       setInputTab,
       setRawText,
       setScreenshot: setScreenshotPreview,
+      setActivePin,
       updateOrder,
       extractWithAI,
-      searchDrivers,
+      acceptService,
       hoverDriver: setHoveredDriverId,
       focusDriver,
-      setPickupFromMap,
+      setPinFromMap,
+      moveOrigin,
+      moveDest,
       assignDriver,
       resetOrder,
       copyMessage,
@@ -223,15 +293,19 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       rawText,
       screenshotPreview,
       extracting,
+      extractError,
       searching,
       copied,
       availableCount,
       busyCount,
+      activePin,
       updateOrder,
-      setPickupFromMap,
       extractWithAI,
-      searchDrivers,
+      acceptService,
       focusDriver,
+      setPinFromMap,
+      moveOrigin,
+      moveDest,
       assignDriver,
       resetOrder,
       copyMessage,

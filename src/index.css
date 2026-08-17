@@ -176,6 +176,12 @@ html.light .driver-marker {
   width: 28px;
   height: 36px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+  cursor: grab;
+}
+
+.order-pin.is-active {
+  z-index: 8;
+  filter: drop-shadow(0 0 0 3px rgba(52, 211, 153, 0.45)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 
 .maplibregl-popup-content {

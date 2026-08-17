@@ -25,12 +25,13 @@ export const PLACES: Record<string, [number, number]> = {
 export const EMPTY_ORDER: OrderDraft = {
   origin: '',
   destination: '',
-  originCoords: CITY_CENTER,
+  originCoords: null,
   destCoords: null,
   clientName: '',
   clientPhone: '',
   paymentMethod: '',
   amount: '',
+  notes: '',
   serviceTypeId: 'svc-traslado',
 }
 
@@ -232,5 +233,6 @@ export const SCREENSHOT_ORDER: OrderDraft = {
   clientPhone: '0414-622-7741',
   paymentMethod: 'Pago móvil',
   amount: '$22',
+  notes: '',
   serviceTypeId: 'svc-delivery',
 }
