@@ -337,7 +337,7 @@ export default function MapViewer({
   }, [driverLat, driverLng, originCoords, theme])
 
   return (
-    <section className="relative h-full w-[70%] min-w-0">
+    <section className="relative h-full w-full min-w-0">
       <div ref={containerRef} className="h-full w-full" />
       <div className="pointer-events-none absolute top-4 left-4 rounded-lg border border-line bg-panel/90 px-3 py-2 text-xs text-mist backdrop-blur">
         <p className="font-medium text-snow">Ruta A → B</p>
