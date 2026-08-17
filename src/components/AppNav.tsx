@@ -5,16 +5,19 @@ import {
   Contact,
   LayoutDashboard,
   LogOut,
+  MapPinned,
   Moon,
   RadioTower,
   Settings,
   Sun,
 } from 'lucide-react'
 import { getSession, logout } from '../lib/auth'
+import { useSettings } from '../context/SettingsContext'
 import { useTheme } from '../context/ThemeContext'
 
 const LINKS = [
   { to: '/dashboard', label: 'Despacho', icon: LayoutDashboard },
+  { to: '/ciudades', label: 'Ciudad', icon: MapPinned },
   { to: '/conductores', label: 'Agenda', icon: Contact },
   { to: '/servicios', label: 'Servicios', icon: Briefcase },
   { to: '/costos', label: 'Costos', icon: CircleDollarSign },
@@ -24,6 +27,7 @@ const LINKS = [
 export default function AppNav() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { city } = useSettings()
   const session = getSession()
   const initials = (session?.operator ?? 'OP')
     .split(' ')
@@ -44,6 +48,13 @@ export default function AppNav() {
       >
         <RadioTower className="size-5" />
       </div>
+      <NavLink
+        to="/ciudades"
+        title={city.name}
+        className="mt-2 rounded-md bg-elevated px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-snow"
+      >
+        {city.code}
+      </NavLink>
 
       <div className="mt-6 flex flex-1 flex-col gap-1">
         {LINKS.map((link) => {

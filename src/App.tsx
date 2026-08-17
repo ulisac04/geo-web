@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import CitiesPage from './pages/CitiesPage'
 import CostsPage from './pages/CostsPage'
 import DashboardPage from './pages/DashboardPage'
 import DriversPage from './pages/DriversPage'
@@ -23,6 +24,7 @@ export default function App() {
           }
         >
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/ciudades" element={<CitiesPage />} />
           <Route path="/conductores" element={<DriversPage />} />
           <Route path="/servicios" element={<ServicesPage />} />
           <Route path="/costos" element={<CostsPage />} />

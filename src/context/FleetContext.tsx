@@ -22,7 +22,7 @@ interface FleetContextValue {
 const FleetContext = createContext<FleetContextValue | null>(null)
 
 export function FleetProvider({ children }: { children: ReactNode }) {
-  const { settings } = useSettings()
+  const { settings, city } = useSettings()
   const [drivers, setDrivers] = useState<Driver[]>(() => loadFleet())
 
   useEffect(() => {
@@ -43,20 +43,20 @@ export function FleetProvider({ children }: { children: ReactNode }) {
 
   const addDriver = useCallback(
     (draft: DriverDraft) => {
-      commit([...drivers, createDriver(draft)])
+      commit([...drivers, createDriver(draft, undefined, city)])
     },
-    [commit, drivers],
+    [city, commit, drivers],
   )
 
   const updateDriver = useCallback(
     (id: string, draft: DriverDraft) => {
       commit(
         drivers.map((driver) =>
-          driver.id === id ? createDriver(draft, driver) : driver,
+          driver.id === id ? createDriver(draft, driver, city) : driver,
         ),
       )
     },
-    [commit, drivers],
+    [city, commit, drivers],
   )
 
   const removeDriver = useCallback(

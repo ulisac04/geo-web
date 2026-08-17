@@ -51,6 +51,7 @@ export const SEED_SERVICE_RECORDS: ServiceRecord[] = [
     distanceM: 980,
     createdAt: '2026-08-15T14:22:00.000Z',
     status: 'assigned',
+    cityId: 'caracas',
   },
   {
     id: 'rec-02',
@@ -69,6 +70,7 @@ export const SEED_SERVICE_RECORDS: ServiceRecord[] = [
     distanceM: 3100,
     createdAt: '2026-08-14T18:05:00.000Z',
     status: 'completed',
+    cityId: 'caracas',
   },
   {
     id: 'rec-03',
@@ -87,6 +89,7 @@ export const SEED_SERVICE_RECORDS: ServiceRecord[] = [
     distanceM: 8900,
     createdAt: '2026-08-13T22:40:00.000Z',
     status: 'cancelled',
+    cityId: 'caracas',
   },
   {
     id: 'rec-04',
@@ -105,6 +108,7 @@ export const SEED_SERVICE_RECORDS: ServiceRecord[] = [
     distanceM: 4200,
     createdAt: '2026-08-12T09:15:00.000Z',
     status: 'completed',
+    cityId: 'caracas',
   },
 ]
 
@@ -132,7 +136,10 @@ export function persistServiceTypes(types: ServiceType[]): void {
 }
 
 export function loadServiceRecords(): ServiceRecord[] {
-  return readList(RECORDS_KEY, SEED_SERVICE_RECORDS)
+  return readList(RECORDS_KEY, SEED_SERVICE_RECORDS).map((record) => ({
+    ...record,
+    cityId: record.cityId ?? 'caracas',
+  }))
 }
 
 export function persistServiceRecords(records: ServiceRecord[]): void {

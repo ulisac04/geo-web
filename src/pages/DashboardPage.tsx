@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import SidebarDispatch from '../components/SidebarDispatch'
 import { DispatchProvider, useDispatchFlow } from '../context/DispatchContext'
+import { useSettings } from '../context/SettingsContext'
 
 const MapViewer = lazy(() => import('../components/MapViewer'))
 
@@ -13,6 +14,7 @@ export default function DashboardPage() {
 }
 
 function DashboardLayout() {
+  const { city } = useSettings()
   const {
     fleet,
     order,
@@ -43,6 +45,7 @@ function DashboardLayout() {
           focusedDriverId={focusedDriverId}
           selectedDriver={selectedDriver}
           activePin={activePin}
+          center={city.center}
           onSetPin={setPinFromMap}
           onMoveOrigin={moveOrigin}
           onMoveDest={moveDest}

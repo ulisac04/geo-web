@@ -12,7 +12,6 @@ import {
 import maplibreWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Driver, OrderDraft, PinFocus } from '../types'
 import { useTheme } from '../context/ThemeContext'
-import { CITY_CENTER } from '../lib/mock-data'
 import { fetchDrivingRoute } from '../lib/routing'
 
 setWorkerUrl(maplibreWorker)
@@ -58,6 +57,7 @@ interface MapViewerProps {
   focusedDriverId: string | null
   selectedDriver: Driver | null
   activePin: PinFocus
+  center: [number, number]
   onSetPin: (coords: [number, number]) => void
   onMoveOrigin: (coords: [number, number]) => void
   onMoveDest: (coords: [number, number]) => void
@@ -70,6 +70,7 @@ export default function MapViewer({
   focusedDriverId,
   selectedDriver,
   activePin,
+  center,
   onSetPin,
   onMoveOrigin,
   onMoveDest,
@@ -101,7 +102,7 @@ export default function MapViewer({
       style: document.documentElement.classList.contains('light')
         ? LIGHT_STYLE
         : DARK_STYLE,
-      center: CITY_CENTER,
+      center,
       zoom: 13.2,
       attributionControl: { compact: true },
     })
@@ -179,6 +180,12 @@ export default function MapViewer({
     }
     map.setStyle(theme === 'light' ? LIGHT_STYLE : DARK_STYLE)
   }, [theme])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    map.easeTo({ center, zoom: 13.2, duration: 900 })
+  }, [center])
 
   useEffect(() => {
     const map = mapRef.current

@@ -3,6 +3,7 @@ import { MessageCircle, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
 import { useFleet } from '../context/FleetContext'
+import { useSettings } from '../context/SettingsContext'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
 
 const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
@@ -13,6 +14,7 @@ const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
 ]
 
 export default function DriversPage() {
+  const { city } = useSettings()
   const { drivers, addDriver, updateDriver, removeDriver, setStatus } = useFleet()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | DriverStatus>('all')
@@ -20,13 +22,18 @@ export default function DriversPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
-  const available = drivers.filter((d) => d.status === 'available').length
-  const busy = drivers.filter((d) => d.status === 'busy').length
-  const offline = drivers.filter((d) => d.status === 'offline').length
+  const cityDrivers = useMemo(
+    () => drivers.filter((driver) => driver.cityId === city.id),
+    [city.id, drivers],
+  )
+
+  const available = cityDrivers.filter((d) => d.status === 'available').length
+  const busy = cityDrivers.filter((d) => d.status === 'busy').length
+  const offline = cityDrivers.filter((d) => d.status === 'offline').length
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return drivers.filter((driver) => {
+    return cityDrivers.filter((driver) => {
       const matchesFilter = filter === 'all' || driver.status === filter
       const matchesQuery =
         !q ||
@@ -37,7 +44,7 @@ export default function DriversPage() {
         driver.zone.toLowerCase().includes(q)
       return matchesFilter && matchesQuery
     })
-  }, [drivers, filter, query])
+  }, [cityDrivers, filter, query])
 
   function openCreate() {
     setEditing(null)
@@ -60,7 +67,8 @@ export default function DriversPage() {
         <div>
           <h1 className="text-lg font-semibold text-snow">Agenda de conductores</h1>
           <p className="text-xs text-mist">
-            {available} disponibles · {busy} ocupados · {offline} fuera de servicio
+            Mostrando {city.name} · {available} disponibles · {busy} ocupados · {offline} fuera de
+            servicio
           </p>
         </div>
         <button

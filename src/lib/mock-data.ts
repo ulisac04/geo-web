@@ -1,32 +1,18 @@
 import type { Driver, OrderDraft } from '../types'
 import { etaFromMeters, haversineMeters } from './geo'
+import { getCity } from './cities'
 
-export const CITY_CENTER: [number, number] = [-66.8542, 10.496]
+export const CITY_CENTER: [number, number] = getCity('caracas').center
 
-export const PLACES: Record<string, [number, number]> = {
-  altamira: [-66.8531, 10.4984],
-  'av. francisco de miranda': [-66.8531, 10.4984],
-  'francisco de miranda': [-66.8531, 10.4984],
-  chacao: [-66.8538, 10.4912],
-  sambil: [-66.8546, 10.4888],
-  'cc sambil': [-66.8546, 10.4888],
-  'las mercedes': [-66.8554, 10.4802],
-  'la castellana': [-66.8548, 10.5016],
-  'plaza venezuela': [-66.8858, 10.4972],
-  'el hatillo': [-66.8248, 10.4241],
-  ccct: [-66.8559, 10.4881],
-  'los palos grandes': [-66.8482, 10.5038],
-  'el rosal': [-66.8586, 10.4968],
-  'san bernardino': [-66.8774, 10.5112],
-  'la california': [-66.8264, 10.4936],
-  'el recleo': [-66.8516, 10.4924],
-}
+export const PLACES: Record<string, [number, number]> = getCity('caracas').places
 
 export const EMPTY_ORDER: OrderDraft = {
   origin: '',
   destination: '',
   originCoords: null,
   destCoords: null,
+  originHint: '',
+  destHint: '',
   clientName: '',
   clientPhone: '',
   paymentMethod: '',
@@ -42,7 +28,7 @@ Cliente: María González
 Tel: 0412-555-0189
 Pago: Efectivo $15`
 
-const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
+const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
   {
     id: 'drv-01',
     name: 'Juan Pérez',
@@ -188,6 +174,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin'>[] = [
 export function getFleet(): Driver[] {
   return BASE_DRIVERS.map((driver) => ({
     ...driver,
+    cityId: 'caracas',
     distanceM: 0,
     etaMin: 0,
   }))
@@ -229,6 +216,8 @@ export const SCREENSHOT_ORDER: OrderDraft = {
   destination: 'Los Palos Grandes, Av. Andrés Bello',
   originCoords: PLACES['las mercedes'],
   destCoords: PLACES['los palos grandes'],
+  originHint: 'Las Mercedes',
+  destHint: 'Los Palos Grandes',
   clientName: 'Ricardo Blanco',
   clientPhone: '0414-622-7741',
   paymentMethod: 'Pago móvil',

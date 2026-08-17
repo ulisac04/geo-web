@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import ServiceTypeForm from '../components/ServiceTypeForm'
 import { useServices } from '../context/ServicesContext'
+import { useSettings } from '../context/SettingsContext'
 import { formatDistance } from '../lib/geo'
 import type { ServiceRecord, ServiceStatus, ServiceType, ServiceTypeDraft } from '../types'
 
@@ -28,6 +29,7 @@ const STATUS_LABEL: Record<ServiceStatus, string> = {
 }
 
 export default function ServicesPage() {
+  const { city } = useSettings()
   const { types, records, addType, updateType, removeType } = useServices()
   const [tab, setTab] = useState<Tab>('catalog')
   const [query, setQuery] = useState('')
@@ -49,6 +51,7 @@ export default function ServicesPage() {
   const visibleRecords = useMemo(() => {
     const q = query.trim().toLowerCase()
     return records.filter((record) => {
+      if (record.cityId !== city.id) return false
       const matchesStatus = statusFilter === 'all' || record.status === statusFilter
       const matchesQuery =
         !q ||
@@ -59,7 +62,7 @@ export default function ServicesPage() {
         record.driverName.toLowerCase().includes(q)
       return matchesStatus && matchesQuery
     })
-  }, [records, query, statusFilter])
+  }, [city.id, records, query, statusFilter])
 
   function openCreate() {
     setEditing(null)
@@ -77,7 +80,7 @@ export default function ServicesPage() {
         <div>
           <h1 className="text-lg font-semibold text-snow">Servicios</h1>
           <p className="text-xs text-mist">
-            {types.length} tipos · {records.length} viajes
+            {types.length} tipos · {visibleRecords.length} viajes en {city.name}
           </p>
         </div>
         {tab === 'catalog' ? (

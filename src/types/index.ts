@@ -1,3 +1,4 @@
+export type CityId = 'caracas' | 'san_cristobal' | 'cucuta' | 'bogota'
 export type DriverStatus = 'available' | 'busy' | 'offline'
 export type DispatchStep = 1 | 2 | 3 | 4
 export type InputTab = 'text' | 'screenshot'
@@ -22,6 +23,7 @@ export interface Driver {
   etaMin: number
   zone: string
   notes: string
+  cityId: CityId
 }
 
 export interface DriverDraft {
@@ -41,6 +43,8 @@ export interface OrderDraft {
   destination: string
   originCoords: [number, number] | null
   destCoords: [number, number] | null
+  originHint: string
+  destHint: string
   clientName: string
   clientPhone: string
   paymentMethod: string
@@ -51,6 +55,7 @@ export interface OrderDraft {
 
 export interface AppSettings {
   mapRefreshSeconds: MapRefreshSeconds
+  cityId: CityId
 }
 
 export interface ServiceType {
@@ -83,6 +88,7 @@ export interface ServiceRecord {
   distanceM: number
   createdAt: string
   status: ServiceStatus
+  cityId: CityId
 }
 
 export interface CostRule {

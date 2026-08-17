@@ -1,5 +1,6 @@
 import type { Driver, DriverDraft } from '../types'
-import { CITY_CENTER, getFleet, resolvePlace } from './mock-data'
+import { DEFAULT_CITY_ID, getCity, resolveCityPlace, type City } from './cities'
+import { getFleet } from './mock-data'
 
 const FLEET_KEY = 'geo_fleet_v2'
 
@@ -13,6 +14,7 @@ function withDefaults(driver: Driver): Driver {
     vehiclePhoto: driver.vehiclePhoto ?? '',
     distanceM: driver.distanceM ?? 0,
     etaMin: driver.etaMin ?? 0,
+    cityId: driver.cityId ?? DEFAULT_CITY_ID,
   }
 }
 
@@ -53,16 +55,18 @@ export function nudgeFleet(drivers: Driver[]): Driver[] {
   })
 }
 
-export function coordsForZone(zone: string): [number, number] {
+export function coordsForZone(zone: string, city: City): [number, number] {
   return (
-    resolvePlace(zone) ?? [
-      CITY_CENTER[0] + (Math.random() - 0.5) * 0.018,
-      CITY_CENTER[1] + (Math.random() - 0.5) * 0.018,
+    resolveCityPlace(city, zone) ?? [
+      city.center[0] + (Math.random() - 0.5) * 0.018,
+      city.center[1] + (Math.random() - 0.5) * 0.018,
     ]
   )
 }
 
-export function createDriver(draft: DriverDraft, existing?: Driver): Driver {
+export function createDriver(draft: DriverDraft, existing: Driver | undefined, city: City): Driver {
+  const cityId = existing?.cityId ?? city.id
+  const fallbackCity = existing ? getCity(cityId) : city
   return {
     id: existing?.id ?? `drv-${Date.now()}`,
     name: draft.name.trim(),
@@ -74,10 +78,11 @@ export function createDriver(draft: DriverDraft, existing?: Driver): Driver {
     status: draft.status,
     zone: draft.zone.trim(),
     notes: draft.notes.trim(),
-    coords: existing?.coords ?? coordsForZone(draft.zone),
+    coords: existing?.coords ?? coordsForZone(draft.zone, fallbackCity),
     battery: existing?.battery ?? 80,
     distanceM: 0,
     etaMin: 0,
+    cityId,
   }
 }
 
@@ -92,16 +97,3 @@ export const EMPTY_DRAFT: DriverDraft = {
   zone: '',
   notes: '',
 }
-
-export const ZONES = [
-  'Altamira',
-  'Chacao',
-  'La Castellana',
-  'Las Mercedes',
-  'Los Palos Grandes',
-  'El Rosal',
-  'Plaza Venezuela',
-  'El Hatillo',
-  'La California',
-  'San Bernardino',
-]

@@ -130,6 +130,8 @@ export function extractedToDraft(
     destination: extracted.dropoff_address?.trim() ?? '',
     originCoords: null,
     destCoords: null,
+    originHint: '',
+    destHint: '',
     clientName: extracted.customer_name?.trim() ?? '',
     clientPhone: extracted.customer_phone?.trim() ?? '',
     paymentMethod: formatPayment(extracted.payment_method),

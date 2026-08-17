@@ -6,12 +6,15 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppSettings, MapRefreshSeconds } from '../types'
+import type { AppSettings, CityId, MapRefreshSeconds } from '../types'
+import { getCity, type City } from '../lib/cities'
 import { loadSettings, persistSettings } from '../lib/settings'
 
 interface SettingsContextValue {
   settings: AppSettings
+  city: City
   setMapRefreshSeconds: (seconds: MapRefreshSeconds) => void
+  setCityId: (cityId: CityId) => void
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null)
@@ -19,17 +22,30 @@ const SettingsContext = createContext<SettingsContextValue | null>(null)
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings())
 
-  const setMapRefreshSeconds = useCallback((seconds: MapRefreshSeconds) => {
-    setSettings((prev) => {
-      const next = { ...prev, mapRefreshSeconds: seconds }
-      persistSettings(next)
-      return next
-    })
+  const commit = useCallback((next: AppSettings) => {
+    persistSettings(next)
+    setSettings(next)
   }, [])
 
+  const setMapRefreshSeconds = useCallback(
+    (seconds: MapRefreshSeconds) => {
+      commit({ ...settings, mapRefreshSeconds: seconds })
+    },
+    [commit, settings],
+  )
+
+  const setCityId = useCallback(
+    (cityId: CityId) => {
+      commit({ ...settings, cityId })
+    },
+    [commit, settings],
+  )
+
+  const city = useMemo(() => getCity(settings.cityId), [settings.cityId])
+
   const value = useMemo(
-    () => ({ settings, setMapRefreshSeconds }),
-    [settings, setMapRefreshSeconds],
+    () => ({ settings, city, setMapRefreshSeconds, setCityId }),
+    [settings, city, setMapRefreshSeconds, setCityId],
   )
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>

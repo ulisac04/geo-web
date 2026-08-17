@@ -3,11 +3,13 @@ import { Check, Loader2 } from 'lucide-react'
 import { useCosts } from '../context/CostsContext'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
+import { useSettings } from '../context/SettingsContext'
 import { estimateFare, formatFare } from '../lib/costs'
 import { formatDistance, haversineMeters } from '../lib/geo'
 import PlaceSearchField from './PlaceSearchField'
 
 export default function ValidationStep() {
+  const { city } = useSettings()
   const {
     order,
     updateOrder,
@@ -44,8 +46,8 @@ export default function ValidationStep() {
   return (
     <div className="space-y-3">
       <p className="text-xs text-mist">
-        Busca el punto exacto o arrastra los pines A y B en el mapa. El click coloca el punto
-        activo.
+        Busca como en Maps: escribe el barrio o el sitio y elige una coincidencia. El pin queda
+        aproximado; arrástralo para el punto exacto.
       </p>
 
       {typeOptions.length > 0 ? (
@@ -71,23 +73,33 @@ export default function ValidationStep() {
         label="Origen (Punto A)"
         value={order.origin}
         active={activePin === 'origin'}
-        placeholder="Buscar dirección de recogida…"
+        hasCoords={Boolean(order.originCoords)}
+        hint={order.originHint}
+        placeholder={`Empieza a escribir un barrio de ${city.name}…`}
         onActivate={() => setActivePin('origin')}
-        onQueryChange={(value) => updateOrder({ origin: value })}
+        onQueryChange={(value) => updateOrder({ origin: value, originHint: '' })}
         onSelect={(hit) => {
           setActivePin('dest')
-          updateOrder({ origin: hit.label, originCoords: hit.coords })
+          updateOrder({
+            originCoords: hit.coords,
+            originHint: hit.secondary ? `${hit.label}, ${hit.secondary}` : hit.label,
+          })
         }}
       />
       <PlaceSearchField
         label="Destino (Punto B)"
         value={order.destination}
         active={activePin === 'dest'}
-        placeholder="Buscar dirección de entrega…"
+        hasCoords={Boolean(order.destCoords)}
+        hint={order.destHint}
+        placeholder={`Empieza a escribir un barrio de ${city.name}…`}
         onActivate={() => setActivePin('dest')}
-        onQueryChange={(value) => updateOrder({ destination: value })}
+        onQueryChange={(value) => updateOrder({ destination: value, destHint: '' })}
         onSelect={(hit) => {
-          updateOrder({ destination: hit.label, destCoords: hit.coords })
+          updateOrder({
+            destCoords: hit.coords,
+            destHint: hit.secondary ? `${hit.label}, ${hit.secondary}` : hit.label,
+          })
         }}
       />
       <div className="grid grid-cols-2 gap-2">

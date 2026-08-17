@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import PhotoUploadField from './PhotoUploadField'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
-import { EMPTY_DRAFT, ZONES } from '../lib/fleet'
+import { EMPTY_DRAFT } from '../lib/fleet'
+import { useSettings } from '../context/SettingsContext'
 
 interface DriverFormProps {
   open: boolean
@@ -18,6 +19,7 @@ const STATUSES: { value: DriverStatus; label: string }[] = [
 ]
 
 export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFormProps) {
+  const { city } = useSettings()
   const [draft, setDraft] = useState<DriverDraft>(EMPTY_DRAFT)
   const [error, setError] = useState('')
 
@@ -120,7 +122,7 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
                 className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
               />
               <datalist id="zones">
-                {ZONES.map((zone) => (
+                {city.zones.map((zone) => (
                   <option key={zone} value={zone} />
                 ))}
               </datalist>

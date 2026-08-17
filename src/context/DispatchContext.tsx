@@ -8,13 +8,14 @@ import {
 } from 'react'
 import type { DispatchStep, Driver, InputTab, OrderDraft, PinFocus } from '../types'
 import { delay } from '../lib/extract'
-import { geocodeBest } from '../lib/geocode'
+import { geocodeFirst } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER, NEARBY_RADIUS_M, rankCandidates } from '../lib/mock-data'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
+import { useSettings } from './SettingsContext'
 
 interface DispatchContextValue {
   step: DispatchStep
@@ -57,8 +58,13 @@ interface DispatchContextValue {
 const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
-  const { drivers: fleet } = useFleet()
+  const { city } = useSettings()
+  const { drivers } = useFleet()
   const { types, addRecord, updateRecord } = useServices()
+  const fleet = useMemo(
+    () => drivers.filter((driver) => driver.cityId === city.id),
+    [city.id, drivers],
+  )
   const [step, setStep] = useState<DispatchStep>(1)
   const [order, setOrder] = useState<OrderDraft>(EMPTY_ORDER)
   const [candidates, setCandidates] = useState<Driver[]>([])
@@ -102,6 +108,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
           ...prev,
           originCoords: coords,
           origin: prev.origin.trim() ? prev.origin : 'Punto A en el mapa',
+          originHint: prev.originHint || 'Punto en el mapa',
         }))
         setActivePin('dest')
         return
@@ -111,6 +118,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
           ...prev,
           destCoords: coords,
           destination: prev.destination.trim() ? prev.destination : 'Punto B en el mapa',
+          destHint: prev.destHint || 'Punto en el mapa',
         }))
         return
       }
@@ -137,12 +145,18 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
           : { rawText },
       )
       const draft = extractedToDraft(extracted, order.serviceTypeId)
-      const [originCoords, destCoords] = await Promise.all([
-        geocodeBest(draft.origin),
-        geocodeBest(draft.destination),
+      const [originHit, destHit] = await Promise.all([
+        geocodeFirst(draft.origin, city),
+        geocodeFirst(draft.destination, city),
       ])
-      setOrder({ ...draft, originCoords, destCoords })
-      setActivePin(originCoords ? 'dest' : 'origin')
+      setOrder({
+        ...draft,
+        originCoords: originHit?.coords ?? null,
+        destCoords: destHit?.coords ?? null,
+        originHint: originHit ? `${originHit.label}${originHit.secondary ? `, ${originHit.secondary}` : ''}` : '',
+        destHint: destHit ? `${destHit.label}${destHit.secondary ? `, ${destHit.secondary}` : ''}` : '',
+      })
+      setActivePin(originHit ? 'dest' : 'origin')
       setAcceptedServiceId(null)
       setStep(2)
     } catch (error) {
@@ -156,7 +170,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     } finally {
       setExtracting(false)
     }
-  }, [inputTab, order.serviceTypeId, rawText, screenshotPreview])
+  }, [city, inputTab, order.serviceTypeId, rawText, screenshotPreview])
 
   const acceptService = useCallback(async () => {
     if (!order.originCoords || !order.destCoords) return
@@ -181,6 +195,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         amount: order.amount,
         distanceM,
         status: 'pending',
+        cityId: city.id,
       })
       setAcceptedServiceId(record.id)
       await delay(400)
@@ -189,7 +204,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     } finally {
       setSearching(false)
     }
-  }, [addRecord, fleet, order, types])
+  }, [addRecord, city.id, fleet, order, types])
 
   const assignDriver = useCallback(
     (driver: Driver) => {
