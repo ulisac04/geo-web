@@ -1,4 +1,4 @@
-import type { Driver, OrderDraft } from '../types'
+import type { CityId, Driver, OrderDraft } from '../types'
 import { etaFromMeters, haversineMeters } from './geo'
 import { getCity } from './cities'
 
@@ -28,7 +28,9 @@ Cliente: María González
 Tel: 0412-555-0189
 Pago: Efectivo $15`
 
-const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
+type SeedDriver = Omit<Driver, 'distanceM' | 'etaMin'>
+
+const BASE_DRIVERS: SeedDriver[] = [
   {
     id: 'drv-01',
     name: 'Juan Pérez',
@@ -42,6 +44,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 86,
     zone: 'Altamira',
     notes: 'Turno mañana · cubre Chacao',
+    cityId: 'caracas',
   },
   {
     id: 'drv-02',
@@ -56,6 +59,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 72,
     zone: 'Chacao',
     notes: '',
+    cityId: 'caracas',
   },
   {
     id: 'drv-03',
@@ -70,6 +74,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 94,
     zone: 'Chacao',
     notes: 'Prefiere pedidos de centro comercial',
+    cityId: 'caracas',
   },
   {
     id: 'drv-04',
@@ -84,6 +89,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 61,
     zone: 'La Castellana',
     notes: '',
+    cityId: 'caracas',
   },
   {
     id: 'drv-05',
@@ -98,6 +104,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 48,
     zone: 'Los Palos Grandes',
     notes: '',
+    cityId: 'caracas',
   },
   {
     id: 'drv-06',
@@ -112,6 +119,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 91,
     zone: 'El Rosal',
     notes: '',
+    cityId: 'caracas',
   },
   {
     id: 'drv-07',
@@ -126,6 +134,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 77,
     zone: 'Las Mercedes',
     notes: '',
+    cityId: 'caracas',
   },
   {
     id: 'drv-08',
@@ -140,6 +149,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 55,
     zone: 'La Castellana',
     notes: '',
+    cityId: 'caracas',
   },
   {
     id: 'drv-09',
@@ -154,6 +164,7 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 33,
     zone: 'Plaza Venezuela',
     notes: 'En servicio hasta las 18:00',
+    cityId: 'caracas',
   },
   {
     id: 'drv-10',
@@ -168,16 +179,275 @@ const BASE_DRIVERS: Omit<Driver, 'distanceM' | 'etaMin' | 'cityId'>[] = [
     battery: 41,
     zone: 'Altamira',
     notes: '',
+    cityId: 'caracas',
+  },
+  {
+    id: 'drv-sci-01',
+    name: 'Héctor Ramírez',
+    phone: '584145551101',
+    vehicle: 'Moto Empire Arsen 2',
+    licensePlate: 'TA101AB',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.2242, 7.7678],
+    battery: 88,
+    zone: 'Centro',
+    notes: 'Cubre 5 de Julio y la 7ma',
+    cityId: 'san_cristobal',
+  },
+  {
+    id: 'drv-sci-02',
+    name: 'Yelitza Mora',
+    phone: '584245551212',
+    vehicle: 'Moto Bera Social 150',
+    licensePlate: 'TA202CD',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.2094, 7.7806],
+    battery: 74,
+    zone: 'La Concordia',
+    notes: '',
+    cityId: 'san_cristobal',
+  },
+  {
+    id: 'drv-sci-03',
+    name: 'Andrés Contreras',
+    phone: '584165551323',
+    vehicle: 'Moto Yamaha FZ 2.0',
+    licensePlate: 'TA303EF',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.1992, 7.7704],
+    battery: 91,
+    zone: 'Pueblo Nuevo',
+    notes: 'Turno tarde',
+    cityId: 'san_cristobal',
+  },
+  {
+    id: 'drv-sci-04',
+    name: 'Karina Chacón',
+    phone: '584125551434',
+    vehicle: 'Moto Honda Wave 110',
+    licensePlate: 'TA404GH',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.2296, 7.7608],
+    battery: 63,
+    zone: 'Baratillo',
+    notes: '',
+    cityId: 'san_cristobal',
+  },
+  {
+    id: 'drv-sci-05',
+    name: 'José Zambrano',
+    phone: '584145551545',
+    vehicle: 'Moto Suzuki GN 125',
+    licensePlate: 'TA505JK',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'busy',
+    coords: [-72.2044, 7.7856],
+    battery: 42,
+    zone: 'La Erminia',
+    notes: 'En servicio hasta las 17:00',
+    cityId: 'san_cristobal',
+  },
+  {
+    id: 'drv-sci-06',
+    name: 'María Peña',
+    phone: '584245551656',
+    vehicle: 'Moto Keeway Superlight',
+    licensePlate: 'TA606LM',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.2268, 7.7662],
+    battery: 81,
+    zone: 'Centro',
+    notes: '',
+    cityId: 'san_cristobal',
+  },
+  {
+    id: 'drv-cuc-01',
+    name: 'Camilo García',
+    phone: '573155551101',
+    vehicle: 'Moto AKT NKD 125',
+    licensePlate: 'CUC11A',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.5062, 7.8946],
+    battery: 84,
+    zone: 'Centro',
+    notes: '',
+    cityId: 'cucuta',
+  },
+  {
+    id: 'drv-cuc-02',
+    name: 'Laura Vargas',
+    phone: '573105551212',
+    vehicle: 'Moto Yamaha NMAX',
+    licensePlate: 'CUC22B',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.4894, 7.9104],
+    battery: 71,
+    zone: 'Caobos',
+    notes: 'Prefiere zona comercial',
+    cityId: 'cucuta',
+  },
+  {
+    id: 'drv-cuc-03',
+    name: 'Diego Quintero',
+    phone: '573165551323',
+    vehicle: 'Moto Honda CB 125',
+    licensePlate: 'CUC33C',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.4796, 7.8852],
+    battery: 93,
+    zone: 'Prados',
+    notes: '',
+    cityId: 'cucuta',
+  },
+  {
+    id: 'drv-cuc-04',
+    name: 'Natalia Niño',
+    phone: '573145551434',
+    vehicle: 'Moto Bajaj Pulsar 150',
+    licensePlate: 'CUC44D',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'busy',
+    coords: [-72.5104, 7.9272],
+    battery: 38,
+    zone: 'Aeropuerto',
+    notes: 'Recogida en Camilo Daza',
+    cityId: 'cucuta',
+  },
+  {
+    id: 'drv-cuc-05',
+    name: 'Sergio Sandoval',
+    phone: '573125551545',
+    vehicle: 'Moto Suzuki GN 125',
+    licensePlate: 'CUC55E',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-72.5192, 7.8806],
+    battery: 67,
+    zone: 'San Luis',
+    notes: '',
+    cityId: 'cucuta',
+  },
+  {
+    id: 'drv-bog-01',
+    name: 'Felipe Rojas',
+    phone: '573105552101',
+    vehicle: 'Moto Yamaha NMAX',
+    licensePlate: 'BOG11A',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-74.0624, 4.6486],
+    battery: 90,
+    zone: 'Chapinero',
+    notes: '',
+    cityId: 'bogota',
+  },
+  {
+    id: 'drv-bog-02',
+    name: 'Camila Restrepo',
+    phone: '573155552212',
+    vehicle: 'Moto Honda PCX',
+    licensePlate: 'BOG22B',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-74.0306, 4.6954],
+    battery: 76,
+    zone: 'Usaquén',
+    notes: 'Turno mañana',
+    cityId: 'bogota',
+  },
+  {
+    id: 'drv-bog-03',
+    name: 'Andrés Cárdenas',
+    phone: '573165552323',
+    vehicle: 'Moto AKT NKD 125',
+    licensePlate: 'BOG33C',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-74.0744, 4.5982],
+    battery: 58,
+    zone: 'Centro',
+    notes: '',
+    cityId: 'bogota',
+  },
+  {
+    id: 'drv-bog-04',
+    name: 'Valentina Gómez',
+    phone: '573145552434',
+    vehicle: 'Moto Bajaj Pulsar NS',
+    licensePlate: 'BOG44D',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'available',
+    coords: [-74.0536, 4.6674],
+    battery: 82,
+    zone: 'Zona T',
+    notes: 'Cubre Parque 93',
+    cityId: 'bogota',
+  },
+  {
+    id: 'drv-bog-05',
+    name: 'Julián Mejía',
+    phone: '573125552545',
+    vehicle: 'Moto Suzuki Gixxer',
+    licensePlate: 'BOG55E',
+    driverPhoto: '',
+    vehiclePhoto: '',
+    status: 'busy',
+    coords: [-74.0484, 4.6762],
+    battery: 44,
+    zone: 'Parque 93',
+    notes: 'En servicio hasta las 19:00',
+    cityId: 'bogota',
   },
 ]
 
-export function getFleet(): Driver[] {
-  return BASE_DRIVERS.map((driver) => ({
+function withMetrics(driver: SeedDriver): Driver {
+  return {
     ...driver,
-    cityId: 'caracas',
     distanceM: 0,
     etaMin: 0,
-  }))
+  }
+}
+
+export function getFleet(): Driver[] {
+  return BASE_DRIVERS.map(withMetrics)
+}
+
+export function seedMissingCityDrivers(existing: Driver[]): Driver[] {
+  const present = new Set(existing.map((driver) => driver.cityId))
+  const missing: CityId[] = []
+  for (const driver of BASE_DRIVERS) {
+    if (!present.has(driver.cityId) && !missing.includes(driver.cityId)) {
+      missing.push(driver.cityId)
+    }
+  }
+  if (missing.length === 0) return existing
+  return [
+    ...existing,
+    ...BASE_DRIVERS.filter((driver) => missing.includes(driver.cityId)).map(withMetrics),
+  ]
 }
 
 export const NEARBY_RADIUS_M = 1500

@@ -1,6 +1,6 @@
 import type { Driver, DriverDraft } from '../types'
 import { DEFAULT_CITY_ID, getCity, resolveCityPlace, type City } from './cities'
-import { getFleet } from './mock-data'
+import { getFleet, seedMissingCityDrivers } from './mock-data'
 
 const FLEET_KEY = 'geo_fleet_v2'
 
@@ -24,7 +24,11 @@ export function loadFleet(): Driver[] {
     try {
       const parsed = JSON.parse(raw) as Driver[]
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(withDefaults)
+        const merged = seedMissingCityDrivers(parsed.map(withDefaults))
+        if (merged.length !== parsed.length) {
+          persistFleet(merged)
+        }
+        return merged
       }
     } catch {
       localStorage.removeItem(FLEET_KEY)
