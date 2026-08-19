@@ -23,11 +23,18 @@ function DashboardLayout() {
     focusedDriverId,
     selectedDriver,
     activePin,
+    mapMode,
+    liveTrips,
+    focusedTripId,
+    setMapMode,
+    focusTrip,
     setPinFromMap,
     moveOrigin,
     moveDest,
   } = useDispatchFlow()
   const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
+  const mapDrivers =
+    mapMode === 'live' ? liveTrips.map((trip) => trip.driver) : liveFleet
 
   return (
     <div className="flex h-full overflow-hidden bg-ink">
@@ -41,13 +48,18 @@ function DashboardLayout() {
           }
         >
           <MapViewer
-            drivers={liveFleet}
+            drivers={mapDrivers}
             order={order}
             hoveredDriverId={hoveredDriverId}
             focusedDriverId={focusedDriverId}
             selectedDriver={selectedDriver}
             activePin={activePin}
+            mode={mapMode}
+            liveTrips={liveTrips}
+            focusedTripId={focusedTripId}
             center={city.center}
+            onModeChange={setMapMode}
+            onFocusTrip={focusTrip}
             onSetPin={setPinFromMap}
             onMoveOrigin={moveOrigin}
             onMoveDest={moveDest}

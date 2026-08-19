@@ -17,6 +17,8 @@ const STATUS_FILTERS: { value: 'all' | ServiceStatus; label: string }[] = [
   { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'Pendientes' },
   { value: 'assigned', label: 'Asignados' },
+  { value: 'en_route', label: 'En ruta' },
+  { value: 'in_progress', label: 'En viaje' },
   { value: 'completed', label: 'Completados' },
   { value: 'cancelled', label: 'Cancelados' },
 ]
@@ -24,6 +26,8 @@ const STATUS_FILTERS: { value: 'all' | ServiceStatus; label: string }[] = [
 const STATUS_LABEL: Record<ServiceStatus, string> = {
   pending: 'Pendiente',
   assigned: 'Asignado',
+  en_route: 'En ruta',
+  in_progress: 'En viaje',
   completed: 'Completado',
   cancelled: 'Cancelado',
 }

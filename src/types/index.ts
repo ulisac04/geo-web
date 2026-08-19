@@ -2,7 +2,14 @@ export type CityId = 'caracas' | 'san_cristobal' | 'cucuta' | 'bogota'
 export type DriverStatus = 'available' | 'busy' | 'offline'
 export type DispatchStep = 1 | 2 | 3 | 4
 export type InputTab = 'text' | 'screenshot'
-export type ServiceStatus = 'pending' | 'assigned' | 'completed' | 'cancelled'
+export type ServiceStatus =
+  | 'pending'
+  | 'assigned'
+  | 'en_route'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+export type MapMode = 'fleet' | 'live'
 export type PinFocus = 'origin' | 'dest'
 export type CostRuleType = 'distance' | 'night'
 export type SurchargeType = 'fixed' | 'percent'
@@ -129,4 +136,9 @@ export interface Session {
   company: string
   operator: string
   operatorEmail: string
+}
+
+export interface LiveTrip {
+  record: ServiceRecord
+  driver: Driver
 }

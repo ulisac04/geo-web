@@ -3,6 +3,8 @@ import { getSession } from '../lib/auth'
 import type { DispatchStep } from '../types'
 import CandidatesStep from './CandidatesStep'
 import ConfirmationStep from './ConfirmationStep'
+import LiveTripsList from './LiveTripsList'
+import MapModeToggle from './MapModeToggle'
 import OrderInputStep from './OrderInputStep'
 import ValidationStep from './ValidationStep'
 
@@ -15,7 +17,7 @@ const STEPS: { id: DispatchStep; label: string }[] = [
 
 export default function SidebarDispatch() {
   const session = getSession()
-  const { step, availableCount, busyCount } = useDispatchFlow()
+  const { step, availableCount, busyCount, mapMode, setMapMode, liveTrips } = useDispatchFlow()
 
   const initials = (session?.operator ?? 'OP')
     .split(' ')
@@ -47,45 +49,72 @@ export default function SidebarDispatch() {
             {busyCount} Ocupados
           </span>
         </div>
+
+        <div className="mt-3">
+          <MapModeToggle
+            mode={mapMode}
+            onChange={setMapMode}
+            fullWidth
+            fleetLabel="Nuevo"
+            liveLabel="En curso"
+          />
+        </div>
       </header>
 
-      <div className="border-b border-line px-4 py-3">
-        <ol className="flex items-center justify-between">
-          {STEPS.map((item, index) => {
-            const done = step > item.id
-            const current = step === item.id
-            return (
-              <li key={item.id} className="flex flex-1 items-center">
-                <div className="flex flex-col items-center gap-1">
-                  <span
-                    className={`grid size-6 place-items-center rounded-full text-[11px] font-semibold ${
-                      current || done
-                        ? 'bg-signal text-on-signal'
-                        : 'bg-elevated text-mist'
-                    }`}
-                  >
-                    {item.id}
-                  </span>
-                  <span className={`text-[10px] ${current ? 'text-snow' : 'text-mist'}`}>
-                    {item.label}
-                  </span>
-                </div>
-                {index < STEPS.length - 1 ? (
-                  <div
-                    className={`mx-1 mb-4 h-px flex-1 ${done ? 'bg-signal/60' : 'bg-line'}`}
-                  />
-                ) : null}
-              </li>
-            )
-          })}
-        </ol>
-      </div>
+      {mapMode === 'fleet' ? (
+        <div className="border-b border-line px-4 py-3">
+          <ol className="flex items-center justify-between">
+            {STEPS.map((item, index) => {
+              const done = step > item.id
+              const current = step === item.id
+              return (
+                <li key={item.id} className="flex flex-1 items-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <span
+                      className={`grid size-6 place-items-center rounded-full text-[11px] font-semibold ${
+                        current || done
+                          ? 'bg-signal text-on-signal'
+                          : 'bg-elevated text-mist'
+                      }`}
+                    >
+                      {item.id}
+                    </span>
+                    <span className={`text-[10px] ${current ? 'text-snow' : 'text-mist'}`}>
+                      {item.label}
+                    </span>
+                  </div>
+                  {index < STEPS.length - 1 ? (
+                    <div
+                      className={`mx-1 mb-4 h-px flex-1 ${done ? 'bg-signal/60' : 'bg-line'}`}
+                    />
+                  ) : null}
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      ) : (
+        <div className="border-b border-line px-4 py-3">
+          <p className="text-xs font-medium text-snow">Servicios en curso</p>
+          <p className="text-[11px] text-mist">
+            {liveTrips.length === 1
+              ? '1 viaje activo en la ciudad'
+              : `${liveTrips.length} viajes activos en la ciudad`}
+          </p>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        {step === 1 ? <OrderInputStep /> : null}
-        {step === 2 ? <ValidationStep /> : null}
-        {step === 3 ? <CandidatesStep /> : null}
-        {step === 4 ? <ConfirmationStep /> : null}
+        {mapMode === 'live' ? (
+          <LiveTripsList />
+        ) : (
+          <>
+            {step === 1 ? <OrderInputStep /> : null}
+            {step === 2 ? <ValidationStep /> : null}
+            {step === 3 ? <CandidatesStep /> : null}
+            {step === 4 ? <ConfirmationStep /> : null}
+          </>
+        )}
       </div>
     </aside>
   )

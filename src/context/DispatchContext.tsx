@@ -6,12 +6,21 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { DispatchStep, Driver, InputTab, OrderDraft, PinFocus } from '../types'
+import type {
+  DispatchStep,
+  Driver,
+  InputTab,
+  LiveTrip,
+  MapMode,
+  OrderDraft,
+  PinFocus,
+} from '../types'
 import { delay } from '../lib/extract'
 import { geocodeFirst } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER, NEARBY_RADIUS_M, rankCandidates } from '../lib/mock-data'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
+import { isLiveServiceStatus } from '../lib/services'
 import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
@@ -36,6 +45,11 @@ interface DispatchContextValue {
   availableCount: number
   busyCount: number
   activePin: PinFocus
+  mapMode: MapMode
+  focusedTripId: string | null
+  liveTrips: LiveTrip[]
+  setMapMode: (mode: MapMode) => void
+  focusTrip: (id: string | null) => void
   setInputTab: (tab: InputTab) => void
   setRawText: (value: string) => void
   setScreenshot: (dataUrl: string | null) => void
@@ -59,8 +73,8 @@ const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
   const { city } = useSettings()
-  const { drivers } = useFleet()
-  const { types, addRecord, updateRecord } = useServices()
+  const { drivers, setStatus } = useFleet()
+  const { types, records, addRecord, updateRecord } = useServices()
   const fleet = useMemo(
     () => drivers.filter((driver) => driver.cityId === city.id),
     [city.id, drivers],
@@ -80,9 +94,21 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [copied, setCopied] = useState(false)
   const [activePin, setActivePin] = useState<PinFocus>('origin')
   const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
+  const [mapMode, setMapMode] = useState<MapMode>('fleet')
+  const [focusedTripId, setFocusedTripId] = useState<string | null>(null)
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
+
+  const liveTrips = useMemo<LiveTrip[]>(() => {
+    return records.flatMap((record) => {
+      if (record.cityId !== city.id || !isLiveServiceStatus(record.status) || !record.driverId) {
+        return []
+      }
+      const driver = fleet.find((item) => item.id === record.driverId)
+      return driver ? [{ record, driver }] : []
+    })
+  }, [city.id, fleet, records])
 
   const nearbyDrivers = useMemo(() => {
     if (!order.originCoords) return []
@@ -134,6 +160,19 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const focusDriver = useCallback((id: string | null) => {
     setFocusedDriverId(id)
   }, [])
+
+  const focusTrip = useCallback(
+    (id: string | null) => {
+      setFocusedTripId(id)
+      if (!id) {
+        setFocusedDriverId(null)
+        return
+      }
+      const trip = liveTrips.find((item) => item.record.id === id)
+      setFocusedDriverId(trip?.driver.id ?? null)
+    },
+    [liveTrips],
+  )
 
   const extractWithAI = useCallback(async () => {
     setExtractError(null)
@@ -217,10 +256,11 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       updateRecord(acceptedServiceId, {
         driverId: driver.id,
         driverName: driver.name,
-        status: 'assigned',
+        status: 'en_route',
       })
+      setStatus(driver.id, 'busy')
     },
-    [acceptedServiceId, updateRecord],
+    [acceptedServiceId, setStatus, updateRecord],
   )
 
   const resetOrder = useCallback(() => {
@@ -277,6 +317,11 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       availableCount,
       busyCount,
       activePin,
+      mapMode,
+      focusedTripId,
+      liveTrips,
+      setMapMode,
+      focusTrip,
       setInputTab,
       setRawText,
       setScreenshot: setScreenshotPreview,
@@ -314,6 +359,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       availableCount,
       busyCount,
       activePin,
+      mapMode,
+      focusedTripId,
+      liveTrips,
+      focusTrip,
       updateOrder,
       extractWithAI,
       acceptService,

@@ -184,6 +184,10 @@ html.light .driver-marker {
   filter: drop-shadow(0 0 0 3px rgba(52, 211, 153, 0.45)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 
+.order-pin.is-static {
+  cursor: pointer;
+}
+
 .maplibregl-popup-content {
   background: var(--card);
   color: var(--snow);

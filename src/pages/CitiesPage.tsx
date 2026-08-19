@@ -3,6 +3,7 @@ import { useFleet } from '../context/FleetContext'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
 import { CITIES, type City } from '../lib/cities'
+import { isLiveServiceStatus } from '../lib/services'
 import type { Driver, ServiceRecord } from '../types'
 
 function cityStats(city: City, drivers: Driver[], records: ServiceRecord[]) {
@@ -13,8 +14,9 @@ function cityStats(city: City, drivers: Driver[], records: ServiceRecord[]) {
     available: fleet.filter((driver) => driver.status === 'available').length,
     busy: fleet.filter((driver) => driver.status === 'busy').length,
     offline: fleet.filter((driver) => driver.status === 'offline').length,
-    open: trips.filter((record) => record.status === 'pending' || record.status === 'assigned')
-      .length,
+    open: trips.filter(
+      (record) => record.status === 'pending' || isLiveServiceStatus(record.status),
+    ).length,
     completed: trips.filter((record) => record.status === 'completed').length,
     cancelled: trips.filter((record) => record.status === 'cancelled').length,
     trips: trips.length,
