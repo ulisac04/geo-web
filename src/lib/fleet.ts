@@ -1,94 +1,8 @@
-import type { Driver, DriverDraft } from '../types'
-import { DEFAULT_CITY_ID, getCity, resolveCityPlace, type City } from './cities'
-import { getFleet, seedMissingCityDrivers } from './mock-data'
+import type { CityId, Driver, DriverDraft, DriverStatus } from '../types'
+import { api } from './api'
+import { etaFromMeters, haversineMeters } from './geo'
 
-const FLEET_KEY = 'geo_fleet_v2'
-
-function withDefaults(driver: Driver): Driver {
-  return {
-    ...driver,
-    zone: driver.zone ?? '',
-    notes: driver.notes ?? '',
-    licensePlate: driver.licensePlate ?? '',
-    driverPhoto: driver.driverPhoto ?? '',
-    vehiclePhoto: driver.vehiclePhoto ?? '',
-    distanceM: driver.distanceM ?? 0,
-    etaMin: driver.etaMin ?? 0,
-    cityId: driver.cityId ?? DEFAULT_CITY_ID,
-  }
-}
-
-export function loadFleet(): Driver[] {
-  const raw = localStorage.getItem(FLEET_KEY)
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as Driver[]
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const merged = seedMissingCityDrivers(parsed.map(withDefaults))
-        if (merged.length !== parsed.length) {
-          persistFleet(merged)
-        }
-        return merged
-      }
-    } catch {
-      localStorage.removeItem(FLEET_KEY)
-    }
-  }
-
-  const initial = getFleet()
-  localStorage.setItem(FLEET_KEY, JSON.stringify(initial))
-  return initial
-}
-
-export function persistFleet(drivers: Driver[]): void {
-  localStorage.setItem(FLEET_KEY, JSON.stringify(drivers))
-}
-
-const NUDGE_DEG = 0.0004
-
-export function nudgeFleet(drivers: Driver[]): Driver[] {
-  return drivers.map((driver) => {
-    if (driver.status === 'offline') return driver
-    return {
-      ...driver,
-      coords: [
-        driver.coords[0] + (Math.random() - 0.5) * NUDGE_DEG * 2,
-        driver.coords[1] + (Math.random() - 0.5) * NUDGE_DEG * 2,
-      ],
-    }
-  })
-}
-
-export function coordsForZone(zone: string, city: City): [number, number] {
-  return (
-    resolveCityPlace(city, zone) ?? [
-      city.center[0] + (Math.random() - 0.5) * 0.018,
-      city.center[1] + (Math.random() - 0.5) * 0.018,
-    ]
-  )
-}
-
-export function createDriver(draft: DriverDraft, existing: Driver | undefined, city: City): Driver {
-  const cityId = existing?.cityId ?? city.id
-  const fallbackCity = existing ? getCity(cityId) : city
-  return {
-    id: existing?.id ?? `drv-${Date.now()}`,
-    name: draft.name.trim(),
-    phone: draft.phone.replace(/\D/g, ''),
-    vehicle: draft.vehicle.trim(),
-    licensePlate: draft.licensePlate.trim().toUpperCase(),
-    driverPhoto: draft.driverPhoto,
-    vehiclePhoto: draft.vehiclePhoto,
-    status: draft.status,
-    zone: draft.zone.trim(),
-    notes: draft.notes.trim(),
-    coords: existing?.coords ?? coordsForZone(draft.zone, fallbackCity),
-    battery: existing?.battery ?? 80,
-    distanceM: 0,
-    etaMin: 0,
-    cityId,
-  }
-}
+export const NEARBY_RADIUS_M = 1500
 
 export const EMPTY_DRAFT: DriverDraft = {
   name: '',
@@ -100,4 +14,184 @@ export const EMPTY_DRAFT: DriverDraft = {
   status: 'available',
   zone: '',
   notes: '',
+}
+
+interface ApiDriver {
+  id: string
+  name: string
+  phone: string
+  vehicle: string
+  license_plate: string
+  driver_photo: string
+  vehicle_photo: string
+  status: DriverStatus
+  zone: string
+  notes: string
+  city_id: CityId
+  lng: number
+  lat: number
+  coords: [number, number]
+  battery: number | null
+  updated_at: string
+}
+
+interface FleetResponse {
+  items: ApiDriver[]
+}
+
+function fromApi(driver: ApiDriver, extra?: { distanceM?: number; etaMin?: number }): Driver {
+  const coords = Array.isArray(driver.coords) ? driver.coords : [driver.lng, driver.lat]
+  return {
+    id: driver.id,
+    name: driver.name,
+    phone: driver.phone,
+    vehicle: driver.vehicle,
+    licensePlate: driver.license_plate,
+    driverPhoto: driver.driver_photo ?? '',
+    vehiclePhoto: driver.vehicle_photo ?? '',
+    status: driver.status,
+    coords: [coords[0], coords[1]],
+    battery: driver.battery ?? 0,
+    distanceM: extra?.distanceM ?? 0,
+    etaMin: extra?.etaMin ?? 0,
+    zone: driver.zone ?? '',
+    notes: driver.notes ?? '',
+    cityId: driver.city_id,
+  }
+}
+
+function draftBody(draft: DriverDraft, cityId?: CityId) {
+  return {
+    name: draft.name.trim(),
+    phone: draft.phone.replace(/\D/g, ''),
+    vehicle: draft.vehicle.trim(),
+    license_plate: draft.licensePlate.trim().toUpperCase(),
+    driver_photo: draft.driverPhoto,
+    vehicle_photo: draft.vehiclePhoto,
+    status: draft.status,
+    zone: draft.zone.trim(),
+    notes: draft.notes.trim(),
+    city_id: cityId,
+  }
+}
+
+export async function fetchDrivers(query?: {
+  cityId?: CityId
+  status?: DriverStatus
+  q?: string
+}): Promise<Driver[]> {
+  const data = await api<FleetResponse>('/api/v1/drivers', {
+    query: { city_id: query?.cityId, status: query?.status, q: query?.q },
+  })
+  return data.items.map((item) => fromApi(item))
+}
+
+export async function createDriver(draft: DriverDraft, cityId: CityId): Promise<Driver> {
+  const created = await api<ApiDriver>('/api/v1/drivers', {
+    method: 'POST',
+    body: draftBody(draft, cityId),
+  })
+  return fromApi(created)
+}
+
+export async function updateDriver(id: string, draft: DriverDraft): Promise<Driver> {
+  const updated = await api<ApiDriver>(`/api/v1/drivers/${id}`, {
+    method: 'PATCH',
+    body: draftBody(draft),
+  })
+  return fromApi(updated)
+}
+
+export async function patchDriverStatus(id: string, status: DriverStatus): Promise<Driver> {
+  const updated = await api<ApiDriver>(`/api/v1/drivers/${id}`, {
+    method: 'PATCH',
+    body: { status },
+  })
+  return fromApi(updated)
+}
+
+export async function deleteDriver(id: string): Promise<void> {
+  await api<void>(`/api/v1/drivers/${id}`, { method: 'DELETE' })
+}
+
+export interface ApiCandidate {
+  driver_id: string
+  name: string
+  status: DriverStatus
+  coords: [number, number]
+  distance_meters: number
+  eta_seconds: number
+  phone: string
+  vehicle: string
+  license_plate: string
+  driver_photo: string
+}
+
+interface CandidatesResponse {
+  city_id: CityId
+  candidates: ApiCandidate[]
+}
+
+export function candidateToDriver(card: ApiCandidate, cityId: CityId): Driver {
+  const distanceM = Math.round(card.distance_meters)
+  return {
+    id: card.driver_id,
+    name: card.name,
+    phone: card.phone,
+    vehicle: card.vehicle,
+    licensePlate: card.license_plate,
+    driverPhoto: card.driver_photo ?? '',
+    vehiclePhoto: '',
+    status: card.status,
+    coords: card.coords,
+    battery: 0,
+    distanceM,
+    etaMin: Math.max(1, Math.round(card.eta_seconds / 60)),
+    zone: '',
+    notes: '',
+    cityId,
+  }
+}
+
+export async function fetchCandidates(input: {
+  pickup: [number, number]
+  dropoff?: [number, number]
+  cityId: CityId
+  limit?: number
+  radiusKm?: number
+}): Promise<Driver[]> {
+  const data = await api<CandidatesResponse>('/api/v1/dispatch/candidates', {
+    method: 'POST',
+    body: {
+      pickup: { lng: input.pickup[0], lat: input.pickup[1] },
+      dropoff: input.dropoff
+        ? { lng: input.dropoff[0], lat: input.dropoff[1] }
+        : undefined,
+      city_id: input.cityId,
+      limit: input.limit,
+      radius_km: input.radiusKm,
+    },
+  })
+  return data.candidates.map((card) => candidateToDriver(card, data.city_id))
+}
+
+export function rankCandidates(
+  drivers: Driver[],
+  origin: [number, number],
+  limit = 5,
+  maxDistanceM = Infinity,
+): Driver[] {
+  return drivers
+    .filter((driver) => driver.status === 'available')
+    .map((driver) => {
+      const distanceM = Math.round(haversineMeters(driver.coords, origin))
+      return {
+        ...driver,
+        distanceM,
+        etaMin: etaFromMeters(distanceM),
+      }
+    })
+    .filter((driver) => driver.distanceM <= maxDistanceM)
+    .sort((a, b) => a.distanceM - b.distanceM)
+    .slice(0, limit)
 }

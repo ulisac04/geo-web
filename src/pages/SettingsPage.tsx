@@ -25,7 +25,7 @@ export default function SettingsPage() {
             <select
               value={settings.mapRefreshSeconds}
               onChange={(e) =>
-                setMapRefreshSeconds(Number(e.target.value) as MapRefreshSeconds)
+                void setMapRefreshSeconds(Number(e.target.value) as MapRefreshSeconds)
               }
               className="w-full rounded-md border border-line bg-ink px-2.5 py-2 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
             >

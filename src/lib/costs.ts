@@ -1,6 +1,5 @@
 import type { CostRule, CostRuleDraft, FareEstimate } from '../types'
-
-const COSTS_KEY = 'geo_cost_rules_v1'
+import { api } from './api'
 
 export const EMPTY_COST_DRAFT: CostRuleDraft = {
   name: '',
@@ -13,64 +12,127 @@ export const EMPTY_COST_DRAFT: CostRuleDraft = {
   surchargeValue: 20,
 }
 
-export const SEED_COST_RULES: CostRule[] = [
-  {
-    id: 'rule-distance',
-    name: 'Tarifa por distancia',
-    enabled: true,
-    type: 'distance',
-    pricePerKm: 2.5,
-  },
-  {
-    id: 'rule-night',
-    name: 'Recargo nocturno',
-    enabled: true,
-    type: 'night',
-    startHour: 22,
-    endHour: 6,
-    surchargeType: 'percent',
-    surchargeValue: 20,
-  },
-]
+interface ApiCostRule {
+  id: string
+  name: string
+  enabled: boolean
+  type: CostRule['type']
+  price_per_km?: number | null
+  start_hour?: number | null
+  end_hour?: number | null
+  surcharge_type?: CostRule['surchargeType'] | null
+  surcharge_value?: number | null
+}
 
-export function loadCostRules(): CostRule[] {
-  const raw = localStorage.getItem(COSTS_KEY)
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as CostRule[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    } catch {
-      localStorage.removeItem(COSTS_KEY)
+interface RulesResponse {
+  items: ApiCostRule[]
+}
+
+interface ApiFareEstimate {
+  distance_m: number
+  distance_km: number
+  distance_subtotal: number
+  night_surcharge: number
+  total: number
+  applied_night_rules: string[]
+}
+
+function fromApi(rule: ApiCostRule): CostRule {
+  return {
+    id: rule.id,
+    name: rule.name,
+    enabled: rule.enabled,
+    type: rule.type,
+    pricePerKm: rule.price_per_km ?? undefined,
+    startHour: rule.start_hour ?? undefined,
+    endHour: rule.end_hour ?? undefined,
+    surchargeType: rule.surcharge_type ?? undefined,
+    surchargeValue: rule.surcharge_value ?? undefined,
+  }
+}
+
+function draftBody(draft: CostRuleDraft) {
+  if (draft.type === 'distance') {
+    return {
+      name: draft.name.trim(),
+      enabled: draft.enabled,
+      type: draft.type,
+      price_per_km: draft.pricePerKm,
     }
   }
-
-  localStorage.setItem(COSTS_KEY, JSON.stringify(SEED_COST_RULES))
-  return SEED_COST_RULES
-}
-
-export function persistCostRules(rules: CostRule[]): void {
-  localStorage.setItem(COSTS_KEY, JSON.stringify(rules))
-}
-
-export function createCostRule(draft: CostRuleDraft, existing?: CostRule): CostRule {
-  const base = {
-    id: existing?.id ?? `rule-${Date.now()}`,
+  return {
     name: draft.name.trim(),
     enabled: draft.enabled,
     type: draft.type,
+    start_hour: draft.startHour,
+    end_hour: draft.endHour,
+    surcharge_type: draft.surchargeType,
+    surcharge_value: draft.surchargeValue,
   }
+}
 
-  if (draft.type === 'distance') {
-    return { ...base, pricePerKm: draft.pricePerKm }
-  }
+export async function fetchCostRules(): Promise<CostRule[]> {
+  const data = await api<RulesResponse>('/api/v1/cost-rules')
+  return data.items.map(fromApi)
+}
 
+export async function createCostRule(draft: CostRuleDraft): Promise<CostRule> {
+  const created = await api<ApiCostRule>('/api/v1/cost-rules', {
+    method: 'POST',
+    body: draftBody(draft),
+  })
+  return fromApi(created)
+}
+
+export async function updateCostRule(id: string, draft: CostRuleDraft): Promise<CostRule> {
+  const updated = await api<ApiCostRule>(`/api/v1/cost-rules/${id}`, {
+    method: 'PATCH',
+    body: draftBody(draft),
+  })
+  return fromApi(updated)
+}
+
+export async function patchCostRuleEnabled(id: string, enabled: boolean): Promise<CostRule> {
+  const updated = await api<ApiCostRule>(`/api/v1/cost-rules/${id}`, {
+    method: 'PATCH',
+    body: { enabled },
+  })
+  return fromApi(updated)
+}
+
+export async function deleteCostRule(id: string): Promise<void> {
+  await api<void>(`/api/v1/cost-rules/${id}`, { method: 'DELETE' })
+}
+
+function fromFare(data: ApiFareEstimate): FareEstimate {
   return {
-    ...base,
-    startHour: draft.startHour,
-    endHour: draft.endHour,
-    surchargeType: draft.surchargeType,
-    surchargeValue: draft.surchargeValue,
+    distanceM: data.distance_m,
+    distanceKm: data.distance_km,
+    distanceSubtotal: data.distance_subtotal,
+    nightSurcharge: data.night_surcharge,
+    total: data.total,
+    appliedNightRules: data.applied_night_rules ?? [],
   }
+}
+
+export async function requestFareEstimate(input: {
+  distanceM: number
+  originCoords?: [number, number] | null
+  destCoords?: [number, number] | null
+  at?: Date
+}): Promise<FareEstimate> {
+  const data = await api<ApiFareEstimate>('/api/v1/cost-rules/estimate', {
+    method: 'POST',
+    body: {
+      distance_m: Math.round(input.distanceM),
+      origin_lng: input.originCoords?.[0],
+      origin_lat: input.originCoords?.[1],
+      dest_lng: input.destCoords?.[0],
+      dest_lat: input.destCoords?.[1],
+      at: input.at?.toISOString(),
+    },
+  })
+  return fromFare(data)
 }
 
 export function isInNightWindow(hour: number, start: number, end: number): boolean {

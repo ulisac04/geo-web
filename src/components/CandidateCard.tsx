@@ -8,7 +8,7 @@ interface CandidateCardProps {
   highlighted: boolean
   onHover: (id: string | null) => void
   onFocus: (id: string) => void
-  onAssign: (driver: Driver) => void
+  onAssign: (driver: Driver) => void | Promise<void>
 }
 
 export default function CandidateCard({
@@ -55,7 +55,7 @@ export default function CandidateCard({
           type="button"
           onClick={(event) => {
             event.stopPropagation()
-            onAssign(driver)
+            void onAssign(driver)
           }}
           className="inline-flex items-center gap-1.5 rounded-md bg-signal px-2.5 py-1.5 text-xs font-semibold text-on-signal hover:bg-emerald-300"
         >

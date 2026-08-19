@@ -73,9 +73,9 @@ export default function ServicesPage() {
     setFormOpen(true)
   }
 
-  function handleSubmit(draft: ServiceTypeDraft) {
-    if (editing) updateType(editing.id, draft)
-    else addType(draft)
+  async function handleSubmit(draft: ServiceTypeDraft) {
+    if (editing) await updateType(editing.id, draft)
+    else await addType(draft)
   }
 
   return (
@@ -164,7 +164,7 @@ export default function ServicesPage() {
             }}
             onAskDelete={setPendingDelete}
             onConfirmDelete={(id) => {
-              removeType(id)
+              void removeType(id)
               setPendingDelete(null)
             }}
           />

@@ -10,18 +10,31 @@ export default function CandidatesStep() {
     hoverDriver,
     focusDriver,
     assignDriver,
+    searchError,
   } = useDispatchFlow()
 
   if (candidates.length === 0) {
     return (
-      <p className="rounded-lg border border-line bg-ink px-3 py-4 text-sm text-mist">
-        No hay conductores disponibles cerca del origen.
-      </p>
+      <div className="space-y-2">
+        {searchError ? (
+          <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
+            {searchError}
+          </p>
+        ) : null}
+        <p className="rounded-lg border border-line bg-ink px-3 py-4 text-sm text-mist">
+          No hay conductores disponibles cerca del origen.
+        </p>
+      </div>
     )
   }
 
   return (
     <div className="space-y-2">
+      {searchError ? (
+        <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
+          {searchError}
+        </p>
+      ) : null}
       <p className="text-xs text-mist">
         Top {candidates.length} candidatos por distancia al punto de recogida.
       </p>

@@ -56,9 +56,9 @@ export default function DriversPage() {
     setFormOpen(true)
   }
 
-  function handleSubmit(draft: DriverDraft) {
-    if (editing) updateDriver(editing.id, draft)
-    else addDriver(draft)
+  async function handleSubmit(draft: DriverDraft) {
+    if (editing) await updateDriver(editing.id, draft)
+    else await addDriver(draft)
   }
 
   return (
@@ -155,7 +155,7 @@ export default function DriversPage() {
                 <td className="py-3 pr-3">
                   <select
                     value={driver.status}
-                    onChange={(e) => setStatus(driver.id, e.target.value as DriverStatus)}
+                    onChange={(e) => void setStatus(driver.id, e.target.value as DriverStatus)}
                     className="rounded-md border border-line bg-card px-2 py-1 text-xs text-snow"
                   >
                     <option value="available">Disponible</option>
@@ -186,7 +186,7 @@ export default function DriversPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          removeDriver(driver.id)
+                          void removeDriver(driver.id)
                           setPendingDelete(null)
                         }}
                         className="rounded-md px-2 py-1 text-xs font-medium text-rose-300 hover:bg-danger/15"

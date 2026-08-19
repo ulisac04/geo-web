@@ -7,7 +7,7 @@ interface ServiceTypeFormProps {
   open: boolean
   serviceType: ServiceType | null
   onClose: () => void
-  onSubmit: (draft: ServiceTypeDraft) => void
+  onSubmit: (draft: ServiceTypeDraft) => void | Promise<void>
 }
 
 export default function ServiceTypeForm({
@@ -18,6 +18,7 @@ export default function ServiceTypeForm({
 }: ServiceTypeFormProps) {
   const [draft, setDraft] = useState<ServiceTypeDraft>(EMPTY_TYPE_DRAFT)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -35,14 +36,22 @@ export default function ServiceTypeForm({
 
   if (!open) return null
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!draft.name.trim()) {
       setError('El nombre es obligatorio.')
       return
     }
-    onSubmit(draft)
-    onClose()
+    setSaving(true)
+    setError('')
+    try {
+      await onSubmit(draft)
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar el tipo')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -112,9 +121,10 @@ export default function ServiceTypeForm({
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300"
+              disabled={saving}
+              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-60"
             >
-              {serviceType ? 'Guardar cambios' : 'Crear tipo'}
+              {saving ? 'Guardando…' : serviceType ? 'Guardar cambios' : 'Crear tipo'}
             </button>
           </div>
         </form>

@@ -9,7 +9,7 @@ interface DriverFormProps {
   open: boolean
   driver: Driver | null
   onClose: () => void
-  onSubmit: (draft: DriverDraft) => void
+  onSubmit: (draft: DriverDraft) => void | Promise<void>
 }
 
 const STATUSES: { value: DriverStatus; label: string }[] = [
@@ -22,6 +22,7 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
   const { city } = useSettings()
   const [draft, setDraft] = useState<DriverDraft>(EMPTY_DRAFT)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -45,14 +46,22 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
 
   if (!open) return null
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!draft.name.trim() || !draft.phone.trim() || !draft.vehicle.trim() || !draft.licensePlate.trim()) {
       setError('Nombre, teléfono, vehículo y placa son obligatorios.')
       return
     }
-    onSubmit(draft)
-    onClose()
+    setSaving(true)
+    setError('')
+    try {
+      await onSubmit(draft)
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar el conductor')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -174,9 +183,10 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300"
+              disabled={saving}
+              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-60"
             >
-              {driver ? 'Guardar cambios' : 'Agregar a la agenda'}
+              {saving ? 'Guardando…' : driver ? 'Guardar cambios' : 'Agregar a la agenda'}
             </button>
           </div>
         </form>

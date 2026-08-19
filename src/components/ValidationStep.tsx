@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { useCosts } from '../context/CostsContext'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
-import { estimateFare, formatFare } from '../lib/costs'
+import { estimateFare, formatFare, requestFareEstimate } from '../lib/costs'
 import { formatDistance, haversineMeters } from '../lib/geo'
 import PlaceSearchField from './PlaceSearchField'
+import type { FareEstimate } from '../types'
 
 export default function ValidationStep() {
   const { city } = useSettings()
@@ -15,6 +16,7 @@ export default function ValidationStep() {
     updateOrder,
     acceptService,
     searching,
+    searchError,
     activePin,
     setActivePin,
   } = useDispatchFlow()
@@ -29,11 +31,41 @@ export default function ValidationStep() {
         )
       : activeTypes
 
-  const estimate = useMemo(() => {
+  const localEstimate = useMemo(() => {
     if (!order.originCoords || !order.destCoords) return null
     const distanceM = haversineMeters(order.originCoords, order.destCoords)
     return estimateFare(distanceM, new Date(), rules)
   }, [order.originCoords, order.destCoords, rules])
+
+  const [remoteEstimate, setRemoteEstimate] = useState<FareEstimate | null>(null)
+
+  useEffect(() => {
+    if (!order.originCoords || !order.destCoords) {
+      setRemoteEstimate(null)
+      return
+    }
+    let cancelled = false
+    const handle = window.setTimeout(() => {
+      const distanceM = haversineMeters(order.originCoords!, order.destCoords!)
+      void requestFareEstimate({
+        distanceM,
+        originCoords: order.originCoords,
+        destCoords: order.destCoords,
+      })
+        .then((next) => {
+          if (!cancelled) setRemoteEstimate(next)
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteEstimate(null)
+        })
+    }, 250)
+    return () => {
+      cancelled = true
+      window.clearTimeout(handle)
+    }
+  }, [order.originCoords, order.destCoords, rules])
+
+  const estimate = remoteEstimate ?? localEstimate
 
   const ready =
     Boolean(order.originCoords) &&
@@ -159,6 +191,12 @@ export default function ValidationStep() {
           Coloca A y B para ver la ruta y la tarifa.
         </p>
       )}
+
+      {searchError ? (
+        <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
+          {searchError}
+        </p>
+      ) : null}
 
       <button
         type="button"

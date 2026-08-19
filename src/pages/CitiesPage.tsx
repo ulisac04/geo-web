@@ -46,7 +46,7 @@ export default function CitiesPage() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setCityId(item.id)}
+                onClick={() => setCityId(item.id).catch(() => undefined)}
                 className={`rounded-xl border p-4 text-left transition ${
                   active
                     ? 'border-signal/60 bg-signal/10'

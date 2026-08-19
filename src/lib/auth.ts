@@ -1,77 +1,42 @@
 import type { Session } from '../types'
+import { api } from './api'
+import { clearSession, getSession, isAuthenticated, saveSession } from './session'
 
-const TOKEN_KEY = 'geo_jwt'
-const TENANT_KEY = 'geo_tenant_id'
-const SESSION_KEY = 'geo_session'
+export { getSession, isAuthenticated }
 
-const DEMO_TENANT = 'tenant_andina_001'
-const DEMO_COMPANY = 'Andina Logistics'
-const DEMO_OPERATOR = 'Carlos Méndez'
-
-function mockJwt(email: string): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-  const payload = btoa(
-    JSON.stringify({
-      sub: email,
-      tenant_id: DEMO_TENANT,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 12,
-    }),
-  )
-  return `${header}.${payload}.mock-signature`
+interface LoginResponse {
+  token: string
+  tenant_id: string
+  company: string
+  operator: string
+  operator_email: string
 }
 
-export function login(email: string, _password: string): Session {
+export async function login(email: string, password: string, remember = true): Promise<Session> {
+  const data = await api<LoginResponse>('/api/v1/auth/login', {
+    method: 'POST',
+    body: { email: email.trim(), password },
+    auth: false,
+  })
   const session: Session = {
-    token: mockJwt(email),
-    tenantId: DEMO_TENANT,
-    company: DEMO_COMPANY,
-    operator: DEMO_OPERATOR,
-    operatorEmail: email,
+    token: data.token,
+    tenantId: data.tenant_id,
+    company: data.company,
+    operator: data.operator,
+    operatorEmail: data.operator_email,
   }
-
-  localStorage.setItem(TOKEN_KEY, session.token)
-  localStorage.setItem(TENANT_KEY, session.tenantId)
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  saveSession(session, remember)
   return session
 }
 
 export function logout(): void {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(TENANT_KEY)
-  localStorage.removeItem(SESSION_KEY)
+  clearSession()
 }
 
-export function getSession(): Session | null {
-  const token = localStorage.getItem(TOKEN_KEY)
-  const tenantId = localStorage.getItem(TENANT_KEY)
-  const raw = localStorage.getItem(SESSION_KEY)
-
-  if (!token || !tenantId) return null
-
-  if (raw) {
-    try {
-      return JSON.parse(raw) as Session
-    } catch {
-      return null
-    }
-  }
-
-  return {
-    token,
-    tenantId,
-    company: DEMO_COMPANY,
-    operator: DEMO_OPERATOR,
-    operatorEmail: 'operador@andina.logistic',
-  }
-}
-
-export function isAuthenticated(): boolean {
-  return getSession() !== null
-}
-
-export function requestPasswordReset(_email: string): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, 700)
+export async function requestPasswordReset(email: string): Promise<void> {
+  await api<void>('/api/v1/auth/forgot-password', {
+    method: 'POST',
+    body: { email: email.trim() },
+    auth: false,
   })
 }

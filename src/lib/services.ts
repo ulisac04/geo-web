@@ -1,11 +1,12 @@
-import type { ServiceRecord, ServiceStatus, ServiceType, ServiceTypeDraft } from '../types'
-import { getCity } from './cities'
-import { haversineMeters } from './geo'
-
-const TYPES_KEY = 'geo_service_types_v1'
-const RECORDS_KEY = 'geo_service_records_v2'
-
-export const DEFAULT_SERVICE_TYPE_ID = 'svc-traslado'
+import type {
+  CityId,
+  ServiceRecord,
+  ServiceStatus,
+  ServiceType,
+  ServiceTypeDraft,
+} from '../types'
+import { api } from './api'
+import { formatFare } from './costs'
 
 export const EMPTY_TYPE_DRAFT: ServiceTypeDraft = {
   name: '',
@@ -23,257 +24,175 @@ export function isPickupLeg(status: ServiceStatus): boolean {
   return status === 'assigned' || status === 'en_route'
 }
 
-export const SEED_SERVICE_TYPES: ServiceType[] = [
-  {
-    id: 'svc-traslado',
-    name: 'Traslado',
-    description: 'Servicio de transporte de un punto a otro',
-    active: true,
-  },
-  {
-    id: 'svc-delivery',
-    name: 'Delivery',
-    description: 'Entrega de paquetes o documentos',
-    active: true,
-  },
-  {
-    id: 'svc-express',
-    name: 'Express',
-    description: 'Servicio urgente con prioridad',
-    active: true,
-  },
-]
-
-const CCS = getCity('caracas').places
-const SCI = getCity('san_cristobal').places
-const CUC = getCity('cucuta').places
-const BOG = getCity('bogota').places
-
-function seedRecord(
-  record: Omit<ServiceRecord, 'distanceM'> & { distanceM?: number },
-): ServiceRecord {
-  const originCoords = record.originCoords
-  const destCoords = record.destCoords
-  const distanceM =
-    record.distanceM ??
-    (originCoords && destCoords ? Math.round(haversineMeters(originCoords, destCoords)) : 0)
-  return { ...record, distanceM }
+interface ApiServiceType {
+  id: string
+  name: string
+  description: string
+  active: boolean
 }
 
-export const SEED_SERVICE_RECORDS: ServiceRecord[] = [
-  seedRecord({
-    id: 'rec-01',
-    typeId: 'svc-traslado',
-    typeName: 'Traslado',
-    origin: 'Av. Francisco de Miranda, Altamira',
-    destination: 'CC Sambil, Chacao',
-    originCoords: CCS.altamira,
-    destCoords: CCS.sambil,
-    clientName: 'María González',
-    clientPhone: '0412-555-0189',
-    driverId: 'drv-01',
-    driverName: 'Juan Pérez',
-    paymentMethod: 'Efectivo',
-    amount: '$15.00',
-    createdAt: '2026-08-15T14:22:00.000Z',
-    status: 'completed',
-    cityId: 'caracas',
-  }),
-  seedRecord({
-    id: 'rec-02',
-    typeId: 'svc-delivery',
-    typeName: 'Delivery',
-    origin: 'Las Mercedes, Calle París',
-    destination: 'Los Palos Grandes, Av. Andrés Bello',
-    originCoords: CCS['las mercedes'],
-    destCoords: CCS['los palos grandes'],
-    clientName: 'Ricardo Blanco',
-    clientPhone: '0414-622-7741',
-    driverId: 'drv-02',
-    driverName: 'Ana Rojas',
-    paymentMethod: 'Pago móvil',
-    amount: '$22.00',
-    createdAt: '2026-08-14T18:05:00.000Z',
-    status: 'completed',
-    cityId: 'caracas',
-  }),
-  seedRecord({
-    id: 'rec-03',
-    typeId: 'svc-express',
-    typeName: 'Express',
-    origin: 'Chacao',
-    destination: 'El Hatillo',
-    originCoords: CCS.chacao,
-    destCoords: CCS['el hatillo'],
-    clientName: 'Carmen Díaz',
-    clientPhone: '0416-300-1122',
-    driverId: 'drv-03',
-    driverName: 'Luis Herrera',
-    paymentMethod: 'Efectivo',
-    amount: '$28.50',
-    createdAt: '2026-08-13T22:40:00.000Z',
-    status: 'cancelled',
-    cityId: 'caracas',
-  }),
-  seedRecord({
-    id: 'rec-04',
-    typeId: 'svc-traslado',
-    typeName: 'Traslado',
-    origin: 'Plaza Venezuela',
-    destination: 'CCCT',
-    originCoords: CCS['plaza venezuela'],
-    destCoords: CCS.ccct,
-    clientName: 'Andrés Molina',
-    clientPhone: '0424-888-0091',
-    driverId: 'drv-04',
-    driverName: 'Carla Méndez',
-    paymentMethod: 'Pago móvil',
-    amount: '$18.00',
-    createdAt: '2026-08-12T09:15:00.000Z',
-    status: 'completed',
-    cityId: 'caracas',
-  }),
-  seedRecord({
-    id: 'rec-05',
-    typeId: 'svc-traslado',
-    typeName: 'Traslado',
-    origin: 'Plaza Venezuela',
-    destination: 'Altamira',
-    originCoords: CCS['plaza venezuela'],
-    destCoords: CCS.altamira,
-    clientName: 'Sofía Campos',
-    clientPhone: '0412-700-4411',
-    driverId: 'drv-09',
-    driverName: 'Diego Navarro',
-    paymentMethod: 'Efectivo',
-    amount: '$12.00',
-    createdAt: '2026-08-19T11:40:00.000Z',
-    status: 'en_route',
-    cityId: 'caracas',
-  }),
-  seedRecord({
-    id: 'rec-06',
-    typeId: 'svc-delivery',
-    typeName: 'Delivery',
-    origin: 'Altamira',
-    destination: 'Las Mercedes',
-    originCoords: CCS.altamira,
-    destCoords: CCS['las mercedes'],
-    clientName: 'Héctor Rivas',
-    clientPhone: '0414-221-9088',
-    driverId: 'drv-10',
-    driverName: 'Valeria Díaz',
-    paymentMethod: 'Pago móvil',
-    amount: '$16.50',
-    createdAt: '2026-08-19T11:10:00.000Z',
-    status: 'in_progress',
-    cityId: 'caracas',
-  }),
-  seedRecord({
-    id: 'rec-07',
-    typeId: 'svc-traslado',
-    typeName: 'Traslado',
-    origin: 'La Erminia',
-    destination: 'Centro',
-    originCoords: SCI['la erminia'],
-    destCoords: SCI.centro,
-    clientName: 'Paola Méndez',
-    clientPhone: '0414-555-2201',
-    driverId: 'drv-sci-05',
-    driverName: 'José Zambrano',
-    paymentMethod: 'Efectivo',
-    amount: '$8.00',
-    createdAt: '2026-08-19T12:05:00.000Z',
-    status: 'en_route',
-    cityId: 'san_cristobal',
-  }),
-  seedRecord({
-    id: 'rec-08',
-    typeId: 'svc-express',
-    typeName: 'Express',
-    origin: 'Aeropuerto Camilo Daza',
-    destination: 'Centro',
-    originCoords: CUC.aeropuerto,
-    destCoords: CUC.centro,
-    clientName: 'Iván Paredes',
-    clientPhone: '57315-440-1188',
-    driverId: 'drv-cuc-04',
-    driverName: 'Natalia Niño',
-    paymentMethod: 'Pago móvil',
-    amount: '$14.00',
-    createdAt: '2026-08-19T12:20:00.000Z',
-    status: 'in_progress',
-    cityId: 'cucuta',
-  }),
-  seedRecord({
-    id: 'rec-09',
-    typeId: 'svc-traslado',
-    typeName: 'Traslado',
-    origin: 'Parque 93',
-    destination: 'Chapinero',
-    originCoords: BOG['parque 93'],
-    destCoords: BOG.chapinero,
-    clientName: 'Laura Ortiz',
-    clientPhone: '57310-882-4410',
-    driverId: 'drv-bog-05',
-    driverName: 'Julián Mejía',
-    paymentMethod: 'Efectivo',
-    amount: '$18.00',
-    createdAt: '2026-08-19T12:30:00.000Z',
-    status: 'en_route',
-    cityId: 'bogota',
-  }),
-]
-
-function readList<T>(key: string, fallback: T[]): T[] {
-  const raw = localStorage.getItem(key)
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as T[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    } catch {
-      localStorage.removeItem(key)
-    }
-  }
-
-  localStorage.setItem(key, JSON.stringify(fallback))
-  return fallback
+interface TypesResponse {
+  items: ApiServiceType[]
 }
 
-export function loadServiceTypes(): ServiceType[] {
-  return readList(TYPES_KEY, SEED_SERVICE_TYPES)
+interface ApiServiceRecord {
+  id: string
+  service_type_id: string
+  type_name: string
+  origin: string
+  destination: string
+  origin_lng: number | null
+  origin_lat: number | null
+  dest_lng: number | null
+  dest_lat: number | null
+  client_name: string
+  client_phone: string
+  driver_id: string | null
+  driver_name: string
+  payment_method: string
+  amount: number
+  distance_m: number
+  notes: string
+  city_id: CityId
+  status: ServiceStatus
+  created_at: string
 }
 
-export function persistServiceTypes(types: ServiceType[]): void {
-  localStorage.setItem(TYPES_KEY, JSON.stringify(types))
+interface RecordsResponse {
+  items: ApiServiceRecord[]
+  total: number
 }
 
-export function loadServiceRecords(): ServiceRecord[] {
-  return readList(RECORDS_KEY, SEED_SERVICE_RECORDS).map((record) => ({
-    ...record,
-    cityId: record.cityId ?? 'caracas',
-  }))
+function coordsFrom(lng: number | null, lat: number | null): [number, number] | null {
+  if (lng == null || lat == null) return null
+  return [lng, lat]
 }
 
-export function persistServiceRecords(records: ServiceRecord[]): void {
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(records))
-}
-
-export function createServiceType(draft: ServiceTypeDraft, existing?: ServiceType): ServiceType {
+function fromType(item: ApiServiceType): ServiceType {
   return {
-    id: existing?.id ?? `svc-${Date.now()}`,
-    name: draft.name.trim(),
-    description: draft.description.trim(),
-    active: draft.active,
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    active: item.active,
   }
 }
 
-export function createServiceRecord(
-  draft: Omit<ServiceRecord, 'id' | 'createdAt'>,
-): ServiceRecord {
+function fromRecord(item: ApiServiceRecord): ServiceRecord {
   return {
-    ...draft,
-    id: `rec-${Date.now()}`,
-    createdAt: new Date().toISOString(),
+    id: item.id,
+    typeId: item.service_type_id,
+    typeName: item.type_name,
+    origin: item.origin,
+    destination: item.destination,
+    originCoords: coordsFrom(item.origin_lng, item.origin_lat),
+    destCoords: coordsFrom(item.dest_lng, item.dest_lat),
+    clientName: item.client_name,
+    clientPhone: item.client_phone,
+    driverId: item.driver_id ?? '',
+    driverName: item.driver_name ?? '',
+    paymentMethod: item.payment_method,
+    amount: formatFare(item.amount),
+    distanceM: item.distance_m,
+    createdAt: item.created_at,
+    status: item.status,
+    cityId: item.city_id,
   }
+}
+
+export async function fetchServiceTypes(active?: boolean): Promise<ServiceType[]> {
+  const data = await api<TypesResponse>('/api/v1/service-types', {
+    query: { active },
+  })
+  return data.items.map(fromType)
+}
+
+export async function createServiceType(draft: ServiceTypeDraft): Promise<ServiceType> {
+  const created = await api<ApiServiceType>('/api/v1/service-types', {
+    method: 'POST',
+    body: {
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      active: draft.active,
+    },
+  })
+  return fromType(created)
+}
+
+export async function updateServiceType(id: string, draft: ServiceTypeDraft): Promise<ServiceType> {
+  const updated = await api<ApiServiceType>(`/api/v1/service-types/${id}`, {
+    method: 'PATCH',
+    body: {
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      active: draft.active,
+    },
+  })
+  return fromType(updated)
+}
+
+export async function deleteServiceType(id: string): Promise<void> {
+  await api<void>(`/api/v1/service-types/${id}`, { method: 'DELETE' })
+}
+
+export async function fetchServiceRecords(query?: {
+  status?: ServiceStatus
+  q?: string
+  cityId?: CityId
+}): Promise<ServiceRecord[]> {
+  const data = await api<RecordsResponse>('/api/v1/services', {
+    query: { status: query?.status, q: query?.q, city_id: query?.cityId },
+  })
+  return data.items.map(fromRecord)
+}
+
+export interface CreateServiceInput {
+  serviceTypeId: string
+  origin: string
+  destination: string
+  originCoords: [number, number] | null
+  destCoords: [number, number] | null
+  clientName: string
+  clientPhone: string
+  paymentMethod: string
+  amount: string
+  distanceM: number
+  notes: string
+  cityId: CityId
+}
+
+export async function createService(input: CreateServiceInput): Promise<ServiceRecord> {
+  const created = await api<ApiServiceRecord>('/api/v1/services', {
+    method: 'POST',
+    body: {
+      service_type_id: input.serviceTypeId,
+      origin: input.origin,
+      destination: input.destination,
+      origin_lng: input.originCoords?.[0],
+      origin_lat: input.originCoords?.[1],
+      dest_lng: input.destCoords?.[0],
+      dest_lat: input.destCoords?.[1],
+      client_name: input.clientName,
+      client_phone: input.clientPhone,
+      payment_method: input.paymentMethod,
+      amount: input.amount.trim() || '0',
+      distance_m: input.distanceM,
+      notes: input.notes,
+      city_id: input.cityId,
+    },
+  })
+  return fromRecord(created)
+}
+
+export async function patchService(
+  id: string,
+  patch: { driverId?: string; status?: ServiceStatus },
+): Promise<ServiceRecord> {
+  const updated = await api<ApiServiceRecord>(`/api/v1/services/${id}`, {
+    method: 'PATCH',
+    body: {
+      driver_id: patch.driverId,
+      status: patch.status,
+    },
+  })
+  return fromRecord(updated)
 }

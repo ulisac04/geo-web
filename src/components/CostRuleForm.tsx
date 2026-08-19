@@ -7,7 +7,7 @@ interface CostRuleFormProps {
   open: boolean
   rule: CostRule | null
   onClose: () => void
-  onSubmit: (draft: CostRuleDraft) => void
+  onSubmit: (draft: CostRuleDraft) => void | Promise<void>
 }
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
@@ -15,6 +15,7 @@ const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 export default function CostRuleForm({ open, rule, onClose, onSubmit }: CostRuleFormProps) {
   const [draft, setDraft] = useState<CostRuleDraft>(EMPTY_COST_DRAFT)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -37,7 +38,7 @@ export default function CostRuleForm({ open, rule, onClose, onSubmit }: CostRule
 
   if (!open) return null
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!draft.name.trim()) {
       setError('El nombre es obligatorio.')
@@ -51,8 +52,16 @@ export default function CostRuleForm({ open, rule, onClose, onSubmit }: CostRule
       setError('El recargo no puede ser negativo.')
       return
     }
-    onSubmit(draft)
-    onClose()
+    setSaving(true)
+    setError('')
+    try {
+      await onSubmit(draft)
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la regla')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -197,9 +206,10 @@ export default function CostRuleForm({ open, rule, onClose, onSubmit }: CostRule
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300"
+              disabled={saving}
+              className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-60"
             >
-              {rule ? 'Guardar cambios' : 'Crear regla'}
+              {saving ? 'Guardando…' : rule ? 'Guardar cambios' : 'Crear regla'}
             </button>
           </div>
         </form>

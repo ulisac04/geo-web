@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -15,10 +16,11 @@ import type {
   OrderDraft,
   PinFocus,
 } from '../types'
-import { delay } from '../lib/extract'
+import { ApiError } from '../lib/api'
+import { fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
 import { geocodeFirst } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
-import { EMPTY_ORDER, NEARBY_RADIUS_M, rankCandidates } from '../lib/mock-data'
+import { EMPTY_ORDER } from '../lib/mock-data'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { isLiveServiceStatus } from '../lib/services'
 import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
@@ -41,6 +43,7 @@ interface DispatchContextValue {
   extracting: boolean
   extractError: string | null
   searching: boolean
+  searchError: string | null
   copied: boolean
   availableCount: number
   busyCount: number
@@ -62,7 +65,7 @@ interface DispatchContextValue {
   setPinFromMap: (coords: [number, number]) => void
   moveOrigin: (coords: [number, number]) => void
   moveDest: (coords: [number, number]) => void
-  assignDriver: (driver: Driver) => void
+  assignDriver: (driver: Driver) => Promise<void>
   resetOrder: () => void
   copyMessage: () => Promise<void>
   getWhatsAppUrl: () => string | null
@@ -73,7 +76,7 @@ const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
   const { city } = useSettings()
-  const { drivers, setStatus } = useFleet()
+  const { drivers, refreshDrivers } = useFleet()
   const { types, records, addRecord, updateRecord } = useServices()
   const fleet = useMemo(
     () => drivers.filter((driver) => driver.cityId === city.id),
@@ -91,6 +94,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [activePin, setActivePin] = useState<PinFocus>('origin')
   const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
@@ -99,6 +103,17 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
+
+  useEffect(() => {
+    const first = types.find((item) => item.active) ?? types[0]
+    if (!first) return
+    setOrder((prev) => {
+      if (prev.serviceTypeId && types.some((item) => item.id === prev.serviceTypeId)) {
+        return prev
+      }
+      return { ...prev, serviceTypeId: first.id }
+    })
+  }, [types])
 
   const liveTrips = useMemo<LiveTrip[]>(() => {
     return records.flatMap((record) => {
@@ -200,7 +215,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setStep(2)
     } catch (error) {
       const message =
-        error instanceof ParserError
+        error instanceof ParserError || error instanceof ApiError
           ? error.message
           : error instanceof Error
             ? error.message
@@ -214,58 +229,85 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const acceptService = useCallback(async () => {
     if (!order.originCoords || !order.destCoords) return
     if (!order.clientName.trim() || !order.clientPhone.trim()) return
+    if (!order.serviceTypeId) return
 
     setSearching(true)
+    setSearchError(null)
     try {
-      const type = types.find((item) => item.id === order.serviceTypeId)
       const distanceM = Math.round(haversineMeters(order.originCoords, order.destCoords))
-      const record = addRecord({
-        typeId: order.serviceTypeId,
-        typeName: type?.name ?? 'Sin tipo',
+      const record = await addRecord({
+        serviceTypeId: order.serviceTypeId,
         origin: order.origin,
         destination: order.destination,
         originCoords: order.originCoords,
         destCoords: order.destCoords,
         clientName: order.clientName,
         clientPhone: order.clientPhone,
-        driverId: '',
-        driverName: '',
         paymentMethod: order.paymentMethod,
         amount: order.amount,
         distanceM,
-        status: 'pending',
+        notes: order.notes,
         cityId: city.id,
       })
       setAcceptedServiceId(record.id)
-      await delay(400)
-      setCandidates(rankCandidates(fleet, order.originCoords, 5))
+      try {
+        const ranked = await fetchCandidates({
+          pickup: order.originCoords,
+          dropoff: order.destCoords,
+          cityId: city.id,
+          limit: 5,
+        })
+        setCandidates(ranked)
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          setCandidates([])
+        } else {
+          throw error
+        }
+      }
       setStep(3)
+    } catch (error) {
+      setSearchError(
+        error instanceof ApiError || error instanceof Error
+          ? error.message
+          : 'No se pudo crear el servicio',
+      )
     } finally {
       setSearching(false)
     }
-  }, [addRecord, city.id, fleet, order, types])
+  }, [addRecord, city.id, order])
 
   const assignDriver = useCallback(
-    (driver: Driver) => {
+    async (driver: Driver) => {
       setSelectedDriver(driver)
       setFocusedDriverId(driver.id)
       setHoveredDriverId(driver.id)
-      setStep(4)
-
-      if (!acceptedServiceId) return
-      updateRecord(acceptedServiceId, {
-        driverId: driver.id,
-        driverName: driver.name,
-        status: 'en_route',
-      })
-      setStatus(driver.id, 'busy')
+      if (!acceptedServiceId) {
+        setStep(4)
+        return
+      }
+      try {
+        await updateRecord(acceptedServiceId, {
+          driverId: driver.id,
+          status: 'en_route',
+        })
+        await refreshDrivers()
+        setStep(4)
+      } catch (error) {
+        setSearchError(
+          error instanceof ApiError || error instanceof Error
+            ? error.message
+            : 'No se pudo asignar el conductor',
+        )
+      }
     },
-    [acceptedServiceId, setStatus, updateRecord],
+    [acceptedServiceId, refreshDrivers, updateRecord],
   )
 
   const resetOrder = useCallback(() => {
+    const first = types.find((item) => item.active) ?? types[0]
     setStep(1)
-    setOrder(EMPTY_ORDER)
+    setOrder({ ...EMPTY_ORDER, serviceTypeId: first?.id ?? '' })
     setCandidates([])
     setHoveredDriverId(null)
     setFocusedDriverId(null)
@@ -275,9 +317,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setInputTab('text')
     setCopied(false)
     setExtractError(null)
+    setSearchError(null)
     setActivePin('origin')
     setAcceptedServiceId(null)
-  }, [])
+  }, [types])
 
   const getFormattedMessage = useCallback(() => {
     if (!selectedDriver) return ''
@@ -313,6 +356,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       extracting,
       extractError,
       searching,
+      searchError,
       copied,
       availableCount,
       busyCount,
@@ -355,6 +399,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       extracting,
       extractError,
       searching,
+      searchError,
       copied,
       availableCount,
       busyCount,

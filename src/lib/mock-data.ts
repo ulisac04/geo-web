@@ -18,7 +18,7 @@ export const EMPTY_ORDER: OrderDraft = {
   paymentMethod: '',
   amount: '',
   notes: '',
-  serviceTypeId: 'svc-traslado',
+  serviceTypeId: '',
 }
 
 export const SAMPLE_WHATSAPP = `Hola, necesito un motorizado urgente

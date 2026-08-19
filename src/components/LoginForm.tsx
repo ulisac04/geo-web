@@ -12,7 +12,7 @@ export default function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError('')
 
@@ -22,14 +22,14 @@ export default function LoginForm() {
     }
 
     setLoading(true)
-    window.setTimeout(() => {
-      login(email, password)
-      if (!remember) {
-        sessionStorage.setItem('geo_remember', '0')
-      }
-      setLoading(false)
+    try {
+      await login(email, password, remember)
       navigate('/dashboard', { replace: true })
-    }, 450)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

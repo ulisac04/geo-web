@@ -19,9 +19,14 @@ export default function ForgotPasswordForm() {
     }
 
     setLoading(true)
-    await requestPasswordReset(email)
-    setLoading(false)
-    setSent(true)
+    try {
+      await requestPasswordReset(email)
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo enviar la solicitud')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (sent) {

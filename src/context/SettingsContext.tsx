@@ -2,44 +2,50 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
 import type { AppSettings, CityId, MapRefreshSeconds } from '../types'
 import { getCity, type City } from '../lib/cities'
-import { loadSettings, persistSettings } from '../lib/settings'
+import { DEFAULT_SETTINGS, fetchSettings, patchSettings } from '../lib/settings'
 
 interface SettingsContextValue {
   settings: AppSettings
   city: City
-  setMapRefreshSeconds: (seconds: MapRefreshSeconds) => void
-  setCityId: (cityId: CityId) => void
+  setMapRefreshSeconds: (seconds: MapRefreshSeconds) => Promise<void>
+  setCityId: (cityId: CityId) => Promise<void>
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null)
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings>(() => loadSettings())
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
 
-  const commit = useCallback((next: AppSettings) => {
-    persistSettings(next)
+  useEffect(() => {
+    let cancelled = false
+    void fetchSettings()
+      .then((next) => {
+        if (!cancelled) setSettings(next)
+      })
+      .catch(() => {
+        // api() already handles 401; keep defaults on other errors
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const setMapRefreshSeconds = useCallback(async (seconds: MapRefreshSeconds) => {
+    const next = await patchSettings({ mapRefreshSeconds: seconds })
     setSettings(next)
   }, [])
 
-  const setMapRefreshSeconds = useCallback(
-    (seconds: MapRefreshSeconds) => {
-      commit({ ...settings, mapRefreshSeconds: seconds })
-    },
-    [commit, settings],
-  )
-
-  const setCityId = useCallback(
-    (cityId: CityId) => {
-      commit({ ...settings, cityId })
-    },
-    [commit, settings],
-  )
+  const setCityId = useCallback(async (cityId: CityId) => {
+    const next = await patchSettings({ cityId })
+    setSettings(next)
+  }, [])
 
   const city = useMemo(() => getCity(settings.cityId), [settings.cityId])
 

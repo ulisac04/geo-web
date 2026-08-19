@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import CostRuleForm from '../components/CostRuleForm'
 import { useCosts } from '../context/CostsContext'
-import { estimateFare, formatFare, formatRuleSummary } from '../lib/costs'
-import type { CostRule, CostRuleDraft } from '../types'
+import { estimateFare, formatFare, formatRuleSummary, requestFareEstimate } from '../lib/costs'
+import type { CostRule, CostRuleDraft, FareEstimate } from '../types'
 
 function currentTimeValue(): string {
   const now = new Date()
@@ -24,15 +24,38 @@ export default function CostsPage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [previewKm, setPreviewKm] = useState(5)
   const [previewTime, setPreviewTime] = useState(currentTimeValue)
+  const [estimate, setEstimate] = useState<FareEstimate | null>(null)
 
-  const estimate = useMemo(
+  const fallback = useMemo(
     () => estimateFare(previewKm * 1000, dateFromTimeInput(previewTime), rules),
     [previewKm, previewTime, rules],
   )
 
-  function handleSubmit(draft: CostRuleDraft) {
-    if (editing) updateRule(editing.id, draft)
-    else addRule(draft)
+  useEffect(() => {
+    let cancelled = false
+    const handle = window.setTimeout(() => {
+      void requestFareEstimate({
+        distanceM: previewKm * 1000,
+        at: dateFromTimeInput(previewTime),
+      })
+        .then((next) => {
+          if (!cancelled) setEstimate(next)
+        })
+        .catch(() => {
+          if (!cancelled) setEstimate(null)
+        })
+    }, 250)
+    return () => {
+      cancelled = true
+      window.clearTimeout(handle)
+    }
+  }, [previewKm, previewTime, rules])
+
+  const preview = estimate ?? fallback
+
+  async function handleSubmit(draft: CostRuleDraft) {
+    if (editing) await updateRule(editing.id, draft)
+    else await addRule(draft)
   }
 
   return (
@@ -92,20 +115,20 @@ export default function CostsPage() {
           <dl className="mt-4 space-y-1 text-sm">
             <div className="flex justify-between text-mist">
               <dt>Distancia</dt>
-              <dd>{formatFare(estimate.distanceSubtotal)}</dd>
+              <dd>{formatFare(preview.distanceSubtotal)}</dd>
             </div>
             <div className="flex justify-between text-mist">
               <dt>
                 Noche
-                {estimate.appliedNightRules.length
-                  ? ` (${estimate.appliedNightRules.join(', ')})`
+                {preview.appliedNightRules.length
+                  ? ` (${preview.appliedNightRules.join(', ')})`
                   : ''}
               </dt>
-              <dd>{formatFare(estimate.nightSurcharge)}</dd>
+              <dd>{formatFare(preview.nightSurcharge)}</dd>
             </div>
             <div className="flex justify-between border-t border-line pt-2 font-semibold text-snow">
               <dt>Total</dt>
-              <dd>{formatFare(estimate.total)}</dd>
+              <dd>{formatFare(preview.total)}</dd>
             </div>
           </dl>
         </section>
@@ -131,7 +154,7 @@ export default function CostsPage() {
                 <td className="py-3 pr-3">
                   <select
                     value={rule.enabled ? 'on' : 'off'}
-                    onChange={(e) => setEnabled(rule.id, e.target.value === 'on')}
+                    onChange={(e) => void setEnabled(rule.id, e.target.value === 'on')}
                     className="rounded-md border border-line bg-card px-2 py-1 text-xs text-snow"
                   >
                     <option value="on">Activa</option>
@@ -155,7 +178,7 @@ export default function CostsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          removeRule(rule.id)
+                          void removeRule(rule.id)
                           setPendingDelete(null)
                         }}
                         className="rounded-md px-2 py-1 text-xs font-medium text-rose-300 hover:bg-danger/15"
