@@ -11,6 +11,7 @@ export default function CandidatesStep() {
     focusDriver,
     assignDriver,
     searchError,
+    takeOffline,
   } = useDispatchFlow()
 
   if (candidates.length === 0) {
@@ -50,6 +51,7 @@ export default function CandidatesStep() {
           onHover={hoverDriver}
           onFocus={focusDriver}
           onAssign={assignDriver}
+          onTakeOffline={takeOffline}
         />
       ))}
     </div>

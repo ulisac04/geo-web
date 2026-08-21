@@ -1,11 +1,13 @@
 import { Clock, Navigation } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
+import TakeOfflineButton from './TakeOfflineButton'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { formatDistance } from '../lib/geo'
 import { formatVehicleLine } from '../lib/vehicles'
 
 export default function NearbyDriverList() {
-  const { nearbyDrivers, focusedDriverId, hoverDriver, focusDriver } = useDispatchFlow()
+  const { nearbyDrivers, focusedDriverId, hoverDriver, focusDriver, takeOffline } =
+    useDispatchFlow()
 
   return (
     <div className="space-y-2">
@@ -45,13 +47,20 @@ export default function NearbyDriverList() {
                       </span>
                     </span>
                   </span>
-                  <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-mist">
-                    {active ? (
-                      <Navigation className="size-3 text-signal" />
-                    ) : (
-                      <Clock className="size-3" />
-                    )}
-                    {driver.etaMin} min · {formatDistance(driver.distanceM)}
+                  <span className="inline-flex shrink-0 flex-col items-end gap-1 text-[11px] text-mist">
+                    <span className="inline-flex items-center gap-1">
+                      {active ? (
+                        <Navigation className="size-3 text-signal" />
+                      ) : (
+                        <Clock className="size-3" />
+                      )}
+                      {driver.etaMin} min · {formatDistance(driver.distanceM)}
+                    </span>
+                    <TakeOfflineButton
+                      compact
+                      driverName={driver.name}
+                      onClick={() => takeOffline(driver.id)}
+                    />
                   </span>
                 </button>
               </li>

@@ -73,6 +73,7 @@ interface MapViewerProps {
   onSetPin: (coords: [number, number]) => void
   onMoveOrigin: (coords: [number, number]) => void
   onMoveDest: (coords: [number, number]) => void
+  onTakeOffline: (driverId: string) => void
 }
 
 export default function MapViewer({
@@ -91,6 +92,7 @@ export default function MapViewer({
   onSetPin,
   onMoveOrigin,
   onMoveDest,
+  onTakeOffline,
 }: MapViewerProps) {
   const { theme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -110,6 +112,7 @@ export default function MapViewer({
   const onSetPinRef = useRef(onSetPin)
   const onMoveOriginRef = useRef(onMoveOrigin)
   const onMoveDestRef = useRef(onMoveDest)
+  const onTakeOfflineRef = useRef(onTakeOffline)
   const onFocusTripRef = useRef(onFocusTrip)
   const modeRef = useRef(mode)
   const liveTripsRef = useRef(liveTrips)
@@ -118,6 +121,7 @@ export default function MapViewer({
   onSetPinRef.current = onSetPin
   onMoveOriginRef.current = onMoveOrigin
   onMoveDestRef.current = onMoveDest
+  onTakeOfflineRef.current = onTakeOffline
   onFocusTripRef.current = onFocusTrip
   modeRef.current = mode
   liveTripsRef.current = liveTrips
@@ -293,6 +297,11 @@ export default function MapViewer({
 
       const marker = new Marker({ element: el, anchor: 'center' })
         .setLngLat(driver.coords)
+        .setPopup(
+          new Popup({ offset: 22, closeButton: true, closeOnClick: true }).setDOMContent(
+            createDriverPopup(driver, () => onTakeOfflineRef.current(driver.id)),
+          ),
+        )
         .addTo(map)
 
       driverMarkersRef.current.push(marker)
@@ -761,6 +770,46 @@ function createPin(
     .setLngLat(coords)
     .setPopup(new Popup({ offset: 18, closeButton: false }).setText(label))
     .addTo(map)
+}
+
+function createDriverPopup(driver: Driver, onTakeOffline: () => void): HTMLDivElement {
+  const wrap = document.createElement('div')
+  wrap.className = 'driver-popup'
+
+  const name = document.createElement('strong')
+  name.textContent = driver.name
+  wrap.append(name)
+
+  if (driver.licensePlate) {
+    const plate = document.createElement('span')
+    plate.className = 'popup-muted'
+    plate.textContent = driver.licensePlate
+    wrap.append(plate)
+  }
+
+  const status = document.createElement('span')
+  status.className = 'popup-muted'
+  status.textContent =
+    driver.status === 'busy'
+      ? 'Ocupado'
+      : driver.status === 'offline'
+        ? 'Fuera de servicio'
+        : 'Disponible'
+  wrap.append(status)
+
+  if (driver.status !== 'offline') {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'driver-popup-offline'
+    button.textContent = 'Fuera de servicio'
+    button.addEventListener('click', (event) => {
+      event.stopPropagation()
+      onTakeOffline()
+    })
+    wrap.append(button)
+  }
+
+  return wrap
 }
 
 function createDriverPin(driver: Driver, highlighted: boolean): HTMLDivElement {

@@ -48,6 +48,7 @@ interface DispatchContextValue {
   copied: boolean
   availableCount: number
   busyCount: number
+  offlineCount: number
   activePin: PinFocus
   mapMode: MapMode
   focusedTripId: string | null
@@ -68,6 +69,7 @@ interface DispatchContextValue {
   moveOrigin: (coords: [number, number]) => void
   moveDest: (coords: [number, number]) => void
   assignDriver: (driver: Driver) => Promise<void>
+  takeOffline: (driverId: string) => Promise<void>
   resetOrder: () => void
   copyMessage: () => Promise<void>
   getWhatsAppUrl: () => string | null
@@ -78,7 +80,7 @@ const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
   const { city } = useSettings()
-  const { drivers, refreshDrivers } = useFleet()
+  const { drivers, refreshDrivers, setStatus } = useFleet()
   const { types, records, addRecord, updateRecord } = useServices()
   const fleet = useMemo(
     () => drivers.filter((driver) => driver.cityId === city.id),
@@ -106,6 +108,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
+  const offlineCount = fleet.filter((d) => d.status === 'offline').length
 
   useEffect(() => {
     const first = types.find((item) => item.active) ?? types[0]
@@ -310,6 +313,17 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     [acceptedServiceId, refreshDrivers, updateRecord],
   )
 
+  const takeOffline = useCallback(
+    async (driverId: string) => {
+      await setStatus(driverId, 'offline')
+      setFocusedDriverId((current) => (current === driverId ? null : current))
+      setHoveredDriverId((current) => (current === driverId ? null : current))
+      setSelectedDriver((current) => (current?.id === driverId ? null : current))
+      setCandidates((current) => current.filter((driver) => driver.id !== driverId))
+    },
+    [setStatus],
+  )
+
   const resetOrder = useCallback(() => {
     const first = types.find((item) => item.active) ?? types[0]
     setStep(1)
@@ -368,6 +382,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       copied,
       availableCount,
       busyCount,
+      offlineCount,
       activePin,
       mapMode,
       focusedTripId,
@@ -388,6 +403,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       moveOrigin,
       moveDest,
       assignDriver,
+      takeOffline,
       resetOrder,
       copyMessage,
       getWhatsAppUrl,
@@ -413,6 +429,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       copied,
       availableCount,
       busyCount,
+      offlineCount,
       activePin,
       mapMode,
       focusedTripId,
@@ -426,6 +443,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       moveOrigin,
       moveDest,
       assignDriver,
+      takeOffline,
       resetOrder,
       copyMessage,
       getWhatsAppUrl,

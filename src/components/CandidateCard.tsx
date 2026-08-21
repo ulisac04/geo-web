@@ -1,5 +1,6 @@
 import { Clock, MapPin, UserCheck } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
+import TakeOfflineButton from './TakeOfflineButton'
 import type { Driver } from '../types'
 import { formatDistance } from '../lib/geo'
 import { formatVehicleLine } from '../lib/vehicles'
@@ -10,6 +11,7 @@ interface CandidateCardProps {
   onHover: (id: string | null) => void
   onFocus: (id: string) => void
   onAssign: (driver: Driver) => void | Promise<void>
+  onTakeOffline: (id: string) => void | Promise<void>
 }
 
 export default function CandidateCard({
@@ -18,6 +20,7 @@ export default function CandidateCard({
   onHover,
   onFocus,
   onAssign,
+  onTakeOffline,
 }: CandidateCardProps) {
   return (
     <article
@@ -65,6 +68,13 @@ export default function CandidateCard({
           <UserCheck className="size-3.5" />
           Asignar Conductor
         </button>
+      </div>
+      <div className="mt-2 flex justify-end">
+        <TakeOfflineButton
+          compact
+          driverName={driver.name}
+          onClick={() => onTakeOffline(driver.id)}
+        />
       </div>
     </article>
   )

@@ -17,7 +17,8 @@ const STEPS: { id: DispatchStep; label: string }[] = [
 
 export default function SidebarDispatch() {
   const session = getSession()
-  const { step, availableCount, busyCount, mapMode, setMapMode, liveTrips } = useDispatchFlow()
+  const { step, availableCount, busyCount, offlineCount, mapMode, setMapMode, liveTrips } =
+    useDispatchFlow()
 
   const initials = (session?.operator ?? 'OP')
     .split(' ')
@@ -38,7 +39,7 @@ export default function SidebarDispatch() {
           </div>
         </div>
 
-        <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-line bg-ink px-3 py-1 text-xs">
+        <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-full border border-line bg-ink px-3 py-1 text-xs">
           <span className="inline-flex items-center gap-1.5 text-emerald-300">
             <span className="size-1.5 rounded-full bg-signal" />
             {availableCount} Disponibles
@@ -47,6 +48,11 @@ export default function SidebarDispatch() {
           <span className="inline-flex items-center gap-1.5 text-amber-300">
             <span className="size-1.5 rounded-full bg-warn" />
             {busyCount} Ocupados
+          </span>
+          <span className="text-line">|</span>
+          <span className="inline-flex items-center gap-1.5 text-rose-300">
+            <span className="size-1.5 rounded-full bg-danger" />
+            {offlineCount} Fuera
           </span>
         </div>
 

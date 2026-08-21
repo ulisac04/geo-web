@@ -1,11 +1,12 @@
 import { Clock, MapPin, Navigation } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
+import TakeOfflineButton from './TakeOfflineButton'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { etaFromMeters, formatDistance, haversineMeters } from '../lib/geo'
 import { isPickupLeg } from '../lib/services'
 
 export default function LiveTripsList() {
-  const { liveTrips, focusedTripId, focusTrip } = useDispatchFlow()
+  const { liveTrips, focusedTripId, focusTrip, takeOffline } = useDispatchFlow()
 
   if (liveTrips.length === 0) {
     return (
@@ -67,6 +68,17 @@ export default function LiveTripsList() {
                 </span>
               ) : null}
             </div>
+            {driver.status === 'offline' ? (
+              <p className="mt-2 text-[11px] text-rose-300">Fuera de servicio · oculto en el mapa</p>
+            ) : (
+              <div className="mt-2">
+                <TakeOfflineButton
+                  compact
+                  driverName={driver.name}
+                  onClick={() => takeOffline(driver.id)}
+                />
+              </div>
+            )}
           </article>
         )
       })}

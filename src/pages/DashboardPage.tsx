@@ -28,13 +28,18 @@ function DashboardLayout() {
     focusedTripId,
     setMapMode,
     focusTrip,
+    takeOffline,
     setPinFromMap,
     moveOrigin,
     moveDest,
   } = useDispatchFlow()
   const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
   const mapDrivers =
-    mapMode === 'live' ? liveTrips.map((trip) => trip.driver) : liveFleet
+    mapMode === 'live'
+      ? liveTrips
+          .filter((trip) => trip.driver.status !== 'offline')
+          .map((trip) => trip.driver)
+      : liveFleet
 
   return (
     <div className="flex h-full overflow-hidden bg-ink">
@@ -63,6 +68,7 @@ function DashboardLayout() {
             onSetPin={setPinFromMap}
             onMoveOrigin={moveOrigin}
             onMoveDest={moveDest}
+            onTakeOffline={(id) => void takeOffline(id)}
           />
         </Suspense>
         <CostRulesFab />

@@ -202,6 +202,35 @@ html.light .driver-marker {
   color: var(--mist);
 }
 
+.driver-popup {
+  display: flex;
+  min-width: 148px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.driver-popup strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--snow);
+}
+
+.driver-popup-offline {
+  margin-top: 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fda4af;
+  cursor: pointer;
+}
+
+.driver-popup-offline:hover {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
 .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
   border-top-color: var(--card);
 }
