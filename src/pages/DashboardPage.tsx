@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import ConfirmDialog from '../components/ConfirmDialog'
 import CostRulesFab from '../components/CostRulesFab'
 import SidebarDispatch from '../components/SidebarDispatch'
 import { DispatchProvider, useDispatchFlow } from '../context/DispatchContext'
@@ -29,6 +30,10 @@ function DashboardLayout() {
     setMapMode,
     focusTrip,
     takeOffline,
+    pendingOffline,
+    takingOffline,
+    confirmTakeOffline,
+    cancelTakeOffline,
     setPinFromMap,
     moveOrigin,
     moveDest,
@@ -68,11 +73,28 @@ function DashboardLayout() {
             onSetPin={setPinFromMap}
             onMoveOrigin={moveOrigin}
             onMoveDest={moveDest}
-            onTakeOffline={(id) => void takeOffline(id)}
+            onTakeOffline={takeOffline}
           />
         </Suspense>
         <CostRulesFab />
       </div>
+      <ConfirmDialog
+        open={pendingOffline !== null}
+        title="¿Sacar de servicio?"
+        description={
+          pendingOffline ? (
+            <>
+              ¿Estás seguro de que quieres sacar a{' '}
+              <span className="font-semibold text-snow">{pendingOffline.name}</span> de servicio?
+              Desaparecerá del mapa y no se le asignarán viajes hasta que lo reactives.
+            </>
+          ) : null
+        }
+        confirmLabel="Sí, sacar de servicio"
+        busy={takingOffline}
+        onCancel={cancelTakeOffline}
+        onConfirm={confirmTakeOffline}
+      />
     </div>
   )
 }

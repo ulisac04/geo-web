@@ -69,7 +69,11 @@ interface DispatchContextValue {
   moveOrigin: (coords: [number, number]) => void
   moveDest: (coords: [number, number]) => void
   assignDriver: (driver: Driver) => Promise<void>
-  takeOffline: (driverId: string) => Promise<void>
+  takeOffline: (driverId: string) => void
+  pendingOffline: { id: string; name: string } | null
+  takingOffline: boolean
+  confirmTakeOffline: () => Promise<void>
+  cancelTakeOffline: () => void
   resetOrder: () => void
   copyMessage: () => Promise<void>
   getWhatsAppUrl: () => string | null
@@ -105,6 +109,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
   const [mapMode, setMapMode] = useState<MapMode>('fleet')
   const [focusedTripId, setFocusedTripId] = useState<string | null>(null)
+  const [pendingOffline, setPendingOffline] = useState<{ id: string; name: string } | null>(
+    null,
+  )
+  const [takingOffline, setTakingOffline] = useState(false)
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
@@ -314,15 +322,37 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   )
 
   const takeOffline = useCallback(
-    async (driverId: string) => {
+    (driverId: string) => {
+      const driver =
+        fleet.find((item) => item.id === driverId) ??
+        candidates.find((item) => item.id === driverId) ??
+        liveTrips.find((item) => item.driver.id === driverId)?.driver
+      if (!driver || driver.status === 'offline') return
+      setPendingOffline({ id: driver.id, name: driver.name })
+    },
+    [candidates, fleet, liveTrips],
+  )
+
+  const cancelTakeOffline = useCallback(() => {
+    if (takingOffline) return
+    setPendingOffline(null)
+  }, [takingOffline])
+
+  const confirmTakeOffline = useCallback(async () => {
+    if (!pendingOffline) return
+    const driverId = pendingOffline.id
+    setTakingOffline(true)
+    try {
       await setStatus(driverId, 'offline')
       setFocusedDriverId((current) => (current === driverId ? null : current))
       setHoveredDriverId((current) => (current === driverId ? null : current))
       setSelectedDriver((current) => (current?.id === driverId ? null : current))
       setCandidates((current) => current.filter((driver) => driver.id !== driverId))
-    },
-    [setStatus],
-  )
+      setPendingOffline(null)
+    } finally {
+      setTakingOffline(false)
+    }
+  }, [pendingOffline, setStatus])
 
   const resetOrder = useCallback(() => {
     const first = types.find((item) => item.active) ?? types[0]
@@ -404,6 +434,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       moveDest,
       assignDriver,
       takeOffline,
+      pendingOffline,
+      takingOffline,
+      confirmTakeOffline,
+      cancelTakeOffline,
       resetOrder,
       copyMessage,
       getWhatsAppUrl,
@@ -444,6 +478,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       moveDest,
       assignDriver,
       takeOffline,
+      pendingOffline,
+      takingOffline,
+      confirmTakeOffline,
+      cancelTakeOffline,
       resetOrder,
       copyMessage,
       getWhatsAppUrl,

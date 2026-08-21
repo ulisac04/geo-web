@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { MessageCircle, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import ConfirmDialog from '../components/ConfirmDialog'
 import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
 import { useFleet } from '../context/FleetContext'
@@ -22,6 +23,8 @@ export default function DriversPage() {
   const [editing, setEditing] = useState<Driver | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [pendingOffline, setPendingOffline] = useState<Driver | null>(null)
+  const [takingOffline, setTakingOffline] = useState(false)
 
   const cityDrivers = useMemo(
     () => drivers.filter((driver) => driver.cityId === city.id),
@@ -62,6 +65,25 @@ export default function DriversPage() {
   async function handleSubmit(draft: DriverDraft) {
     if (editing) await updateDriver(editing.id, draft)
     else await addDriver(draft)
+  }
+
+  function requestStatus(driver: Driver, status: DriverStatus) {
+    if (status === 'offline' && driver.status !== 'offline') {
+      setPendingOffline(driver)
+      return
+    }
+    void setStatus(driver.id, status)
+  }
+
+  async function confirmTakeOffline() {
+    if (!pendingOffline) return
+    setTakingOffline(true)
+    try {
+      await setStatus(pendingOffline.id, 'offline')
+      setPendingOffline(null)
+    } finally {
+      setTakingOffline(false)
+    }
   }
 
   return (
@@ -158,7 +180,7 @@ export default function DriversPage() {
                 <td className="py-3 pr-3">
                   <select
                     value={driver.status}
-                    onChange={(e) => void setStatus(driver.id, e.target.value as DriverStatus)}
+                    onChange={(e) => requestStatus(driver, e.target.value as DriverStatus)}
                     className="rounded-md border border-line bg-card px-2 py-1 text-xs text-snow"
                   >
                     <option value="available">Disponible</option>
@@ -225,6 +247,25 @@ export default function DriversPage() {
         driver={editing}
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
+      />
+      <ConfirmDialog
+        open={pendingOffline !== null}
+        title="¿Sacar de servicio?"
+        description={
+          pendingOffline ? (
+            <>
+              ¿Estás seguro de que quieres sacar a{' '}
+              <span className="font-semibold text-snow">{pendingOffline.name}</span> de servicio?
+              Desaparecerá del mapa y no se le asignarán viajes hasta que lo reactives.
+            </>
+          ) : null
+        }
+        confirmLabel="Sí, sacar de servicio"
+        busy={takingOffline}
+        onCancel={() => {
+          if (!takingOffline) setPendingOffline(null)
+        }}
+        onConfirm={confirmTakeOffline}
       />
     </div>
   )
