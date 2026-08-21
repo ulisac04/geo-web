@@ -203,3 +203,42 @@ export async function patchService(
   })
   return fromRecord(updated)
 }
+
+export type TrackSource = 'gps' | 'none'
+
+export interface ServiceTrackPoint {
+  lng: number
+  lat: number
+  recordedAt: string
+}
+
+export interface ServiceTrack {
+  serviceId: string
+  source: TrackSource
+  points: ServiceTrackPoint[]
+}
+
+interface ApiTrackPoint {
+  lng: number
+  lat: number
+  recorded_at: string
+}
+
+interface ApiServiceTrack {
+  service_id: string
+  source: TrackSource
+  points: ApiTrackPoint[]
+}
+
+export async function fetchServiceTrack(id: string): Promise<ServiceTrack> {
+  const data = await api<ApiServiceTrack>(`/api/v1/services/${id}/track`)
+  return {
+    serviceId: data.service_id,
+    source: data.source,
+    points: data.points.map((point) => ({
+      lng: point.lng,
+      lat: point.lat,
+      recordedAt: point.recorded_at,
+    })),
+  }
+}
