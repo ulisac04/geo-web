@@ -1,4 +1,4 @@
-import type { CityId, Driver, DriverDraft, DriverStatus } from '../types'
+import type { CityId, Driver, DriverDraft, DriverStatus, VehicleType } from '../types'
 import { api } from './api'
 import { etaFromMeters, haversineMeters } from './geo'
 
@@ -7,6 +7,7 @@ export const NEARBY_RADIUS_M = 1500
 export const EMPTY_DRAFT: DriverDraft = {
   name: '',
   phone: '',
+  vehicleType: 'motorcycle',
   vehicle: '',
   licensePlate: '',
   driverPhoto: '',
@@ -20,6 +21,7 @@ interface ApiDriver {
   id: string
   name: string
   phone: string
+  vehicle_type: VehicleType
   vehicle: string
   license_plate: string
   driver_photo: string
@@ -45,6 +47,7 @@ function fromApi(driver: ApiDriver, extra?: { distanceM?: number; etaMin?: numbe
     id: driver.id,
     name: driver.name,
     phone: driver.phone,
+    vehicleType: driver.vehicle_type,
     vehicle: driver.vehicle,
     licensePlate: driver.license_plate,
     driverPhoto: driver.driver_photo ?? '',
@@ -64,6 +67,7 @@ function draftBody(draft: DriverDraft, cityId?: CityId) {
   return {
     name: draft.name.trim(),
     phone: draft.phone.replace(/\D/g, ''),
+    vehicle_type: draft.vehicleType,
     vehicle: draft.vehicle.trim(),
     license_plate: draft.licensePlate.trim().toUpperCase(),
     driver_photo: draft.driverPhoto,
@@ -122,6 +126,7 @@ export interface ApiCandidate {
   distance_meters: number
   eta_seconds: number
   phone: string
+  vehicle_type: VehicleType
   vehicle: string
   license_plate: string
   driver_photo: string
@@ -138,6 +143,7 @@ export function candidateToDriver(card: ApiCandidate, cityId: CityId): Driver {
     id: card.driver_id,
     name: card.name,
     phone: card.phone,
+    vehicleType: card.vehicle_type,
     vehicle: card.vehicle,
     licensePlate: card.license_plate,
     driverPhoto: card.driver_photo ?? '',
@@ -159,6 +165,7 @@ export async function fetchCandidates(input: {
   cityId: CityId
   limit?: number
   radiusKm?: number
+  serviceTypeId?: string
 }): Promise<Driver[]> {
   const data = await api<CandidatesResponse>('/api/v1/dispatch/candidates', {
     method: 'POST',
@@ -170,6 +177,7 @@ export async function fetchCandidates(input: {
       city_id: input.cityId,
       limit: input.limit,
       radius_km: input.radiusKm,
+      service_type_id: input.serviceTypeId,
     },
   })
   return data.candidates.map((card) => candidateToDriver(card, data.city_id))

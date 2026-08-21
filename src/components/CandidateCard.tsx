@@ -2,6 +2,7 @@ import { Clock, MapPin, UserCheck } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
 import type { Driver } from '../types'
 import { formatDistance } from '../lib/geo'
+import { formatVehicleLine } from '../lib/vehicles'
 
 interface CandidateCardProps {
   driver: Driver
@@ -34,7 +35,9 @@ export default function CandidateCard({
           <DriverAvatar src={driver.driverPhoto} name={driver.name} size="sm" />
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-snow">{driver.name}</h3>
-            <p className="truncate text-xs text-mist">{driver.vehicle}</p>
+            <p className="truncate text-xs text-mist">
+              {formatVehicleLine(driver.vehicleType, driver.vehicle)}
+            </p>
             {driver.licensePlate ? (
               <p className="font-mono text-[11px] tracking-wide text-snow">{driver.licensePlate}</p>
             ) : null}

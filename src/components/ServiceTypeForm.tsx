@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
-import type { ServiceType, ServiceTypeDraft } from '../types'
+import type { ServiceType, ServiceTypeDraft, VehicleType } from '../types'
 import { EMPTY_TYPE_DRAFT } from '../lib/services'
+import { VEHICLE_TYPE_OPTIONS } from '../lib/vehicles'
 
 interface ServiceTypeFormProps {
   open: boolean
@@ -29,6 +30,7 @@ export default function ServiceTypeForm({
             name: serviceType.name,
             description: serviceType.description,
             active: serviceType.active,
+            allowedVehicleTypes: serviceType.allowedVehicleTypes,
           }
         : EMPTY_TYPE_DRAFT,
     )
@@ -36,10 +38,24 @@ export default function ServiceTypeForm({
 
   if (!open) return null
 
+  function toggleVehicle(type: VehicleType) {
+    setDraft((prev) => {
+      const has = prev.allowedVehicleTypes.includes(type)
+      const allowedVehicleTypes = has
+        ? prev.allowedVehicleTypes.filter((item) => item !== type)
+        : [...prev.allowedVehicleTypes, type]
+      return { ...prev, allowedVehicleTypes }
+    })
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!draft.name.trim()) {
       setError('El nombre es obligatorio.')
+      return
+    }
+    if (draft.allowedVehicleTypes.length === 0) {
+      setError('Selecciona al menos un tipo de vehículo.')
       return
     }
     setSaving(true)
@@ -95,6 +111,25 @@ export default function ServiceTypeForm({
               className="w-full resize-none rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
             />
           </label>
+          <fieldset className="space-y-2">
+            <legend className="text-[11px] font-medium tracking-wide text-mist uppercase">
+              Vehículos permitidos
+            </legend>
+            {VEHICLE_TYPE_OPTIONS.map((item) => {
+              const checked = draft.allowedVehicleTypes.includes(item.value)
+              return (
+                <label key={item.value} className="flex items-center gap-2 text-sm text-snow">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleVehicle(item.value)}
+                    className="size-4 rounded border-line"
+                  />
+                  {item.label}
+                </label>
+              )
+            })}
+          </fieldset>
           <label className="flex items-center gap-2 text-sm text-snow">
             <input
               type="checkbox"

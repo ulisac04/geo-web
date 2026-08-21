@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import PhotoUploadField from './PhotoUploadField'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
 import { EMPTY_DRAFT } from '../lib/fleet'
+import { VEHICLE_TYPE_OPTIONS } from '../lib/vehicles'
 import { useSettings } from '../context/SettingsContext'
 
 interface DriverFormProps {
@@ -32,6 +33,7 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
         ? {
             name: driver.name,
             phone: driver.phone,
+            vehicleType: driver.vehicleType,
             vehicle: driver.vehicle,
             licensePlate: driver.licensePlate,
             driverPhoto: driver.driverPhoto,
@@ -93,12 +95,33 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             onChange={(value) => setDraft((prev) => ({ ...prev, phone: value }))}
             placeholder="58414..."
           />
+          <label className="block space-y-1">
+            <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+              Tipo de vehículo
+            </span>
+            <select
+              value={draft.vehicleType}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  vehicleType: e.target.value as DriverDraft['vehicleType'],
+                }))
+              }
+              className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+            >
+              {VEHICLE_TYPE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="grid grid-cols-2 gap-2">
             <Field
               label="Vehículo"
               value={draft.vehicle}
               onChange={(value) => setDraft((prev) => ({ ...prev, vehicle: value }))}
-              placeholder="Moto Empire 150"
+              placeholder="Empire 150"
             />
             <Field
               label="Placa"
@@ -114,7 +137,7 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
               onChange={(value) => setDraft((prev) => ({ ...prev, driverPhoto: value }))}
             />
             <PhotoUploadField
-              label="Foto del carro"
+              label="Foto del vehículo"
               value={draft.vehiclePhoto}
               onChange={(value) => setDraft((prev) => ({ ...prev, vehiclePhoto: value }))}
             />

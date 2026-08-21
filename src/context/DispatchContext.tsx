@@ -256,6 +256,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
           dropoff: order.destCoords,
           cityId: city.id,
           limit: 5,
+          serviceTypeId: order.serviceTypeId,
         })
         setCandidates(ranked)
       } catch (error) {

@@ -2,6 +2,7 @@ import { Clock, Navigation } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { formatDistance } from '../lib/geo'
+import { formatVehicleLine } from '../lib/vehicles'
 
 export default function NearbyDriverList() {
   const { nearbyDrivers, focusedDriverId, hoverDriver, focusDriver } = useDispatchFlow()
@@ -39,7 +40,7 @@ export default function NearbyDriverList() {
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-snow">{driver.name}</span>
                       <span className="block truncate text-[11px] text-mist">
-                        {driver.vehicle}
+                        {formatVehicleLine(driver.vehicleType, driver.vehicle)}
                         {driver.licensePlate ? ` · ${driver.licensePlate}` : ''}
                       </span>
                     </span>

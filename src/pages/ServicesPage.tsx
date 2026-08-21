@@ -4,6 +4,7 @@ import ServiceTypeForm from '../components/ServiceTypeForm'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
 import { formatDistance } from '../lib/geo'
+import { vehicleTypeLabel } from '../lib/vehicles'
 import type { ServiceRecord, ServiceStatus, ServiceType, ServiceTypeDraft } from '../types'
 
 type Tab = 'catalog' | 'history'
@@ -203,6 +204,7 @@ function CatalogTable({
           <tr className="border-b border-line">
             <th className="py-2 pr-3 font-medium">Tipo</th>
             <th className="py-2 pr-3 font-medium">Descripción</th>
+            <th className="py-2 pr-3 font-medium">Vehículos</th>
             <th className="py-2 pr-3 font-medium">Estado</th>
             <th className="py-2 font-medium">Acciones</th>
           </tr>
@@ -212,6 +214,9 @@ function CatalogTable({
             <tr key={item.id} className="border-b border-line/70 hover:bg-panel/70">
               <td className="py-3 pr-3 font-medium text-snow">{item.name}</td>
               <td className="py-3 pr-3 text-mist">{item.description || '—'}</td>
+              <td className="py-3 pr-3 text-mist">
+                {item.allowedVehicleTypes.map(vehicleTypeLabel).join(', ') || '—'}
+              </td>
               <td className="py-3 pr-3">
                 <span className={item.active ? 'text-signal' : 'text-mist'}>
                   {item.active ? 'Activo' : 'Inactivo'}

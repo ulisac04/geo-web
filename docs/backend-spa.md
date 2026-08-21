@@ -235,6 +235,7 @@ Hoy `GET /api/v1/drivers` solo devuelve `{ id, name, lng, lat, coords, status, u
   "id": "22222222-2222-2222-2222-222222222222",
   "name": "Juan Pérez",
   "phone": "584145550123",
+  "vehicle_type": "motorcycle",
   "vehicle": "Moto Empire 150",
   "license_plate": "AB123CD",
   "driver_photo": "",
@@ -254,7 +255,7 @@ Hoy `GET /api/v1/drivers` solo devuelve `{ id, name, lng, lat, coords, status, u
 
 | Campo                                       | Notas                                                                   |
 | ------------------------------------------- | ----------------------------------------------------------------------- |
-| `name`, `phone`, `vehicle`, `license_plate` | Obligatorios en alta                                                    |
+| `name`, `phone`, `vehicle`, `vehicle_type`, `license_plate` | Obligatorios en alta. `vehicle_type`: `car` \| `motorcycle`. `vehicle` es marca/modelo |
 | `driver_photo`, `vehicle_photo`             | String URL o data URL. Default `""`. Sin media service en v1            |
 | `status`                                    | `available` | `busy` | `offline`                                        |
 | `zone`, `notes`                             | Default `""`                                                            |
@@ -269,7 +270,7 @@ GPS en caliente sigue siendo `POST /v1/drivers/location` (app móvil, API key). 
 
 ### `GET /api/v1/drivers`
 
-Query: `city_id`, `status`, `q` (name, phone, vehicle, license_plate, zone).
+Query: `city_id`, `status`, `q` (name, phone, vehicle, vehicle_type, license_plate, zone).
 
 ```json
 { "items": [ { "...Driver" } ] }
@@ -295,7 +296,9 @@ Saca de agenda e índice. `204`.
 
 ## 7. Tipos de servicio
 
-Sin cambios de contrato. Semilla: Traslado / Delivery / Express.
+Semilla: Traslado / Delivery (ambos aceptan carro y moto). Express existente queda `active=false`.
+
+Cada tipo tiene `allowed_vehicle_types` (`car`, `motorcycle`). El operador lo configura en el catálogo.
 
 Wizard: `GET /api/v1/service-types?active=true`.  
 Catálogo: listado completo (activos e inactivos).
@@ -490,11 +493,12 @@ Pedido (espejo de `/v1/dispatch/candidates`, auth JWT):
   "pickup": { "lng": -66.8531, "lat": 10.4984 },
   "dropoff": { "lng": -66.8546, "lat": 10.4888 },
   "city_id": "caracas",
-  "limit": 5
+  "limit": 5,
+  "service_type_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 }
 ```
 
-`200`: lista con `driver_id`, `name`, `status`, `coords`, `distance_meters`, `eta_seconds` (y si se puede: `phone`, `vehicle`, `license_plate`, `driver_photo` para las cards). **No** marcar `busy`.
+`200`: lista con `driver_id`, `name`, `status`, `coords`, `distance_meters`, `eta_seconds`, `phone`, `vehicle_type`, `vehicle`, `license_plate`, `driver_photo`. Filtra por `allowed_vehicle_types` si se manda `service_type_id`. **No** marcar `busy`.
 
 `404` si no hay available cerca. El operador elige y entonces `PATCH /api/v1/services/{id}` con `driver_id`.
 

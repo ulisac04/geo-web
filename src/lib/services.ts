@@ -1,9 +1,11 @@
+import { ALL_VEHICLE_TYPES } from './vehicles'
 import type {
   CityId,
   ServiceRecord,
   ServiceStatus,
   ServiceType,
   ServiceTypeDraft,
+  VehicleType,
 } from '../types'
 import { api } from './api'
 import { formatFare } from './costs'
@@ -12,6 +14,7 @@ export const EMPTY_TYPE_DRAFT: ServiceTypeDraft = {
   name: '',
   description: '',
   active: true,
+  allowedVehicleTypes: [...ALL_VEHICLE_TYPES],
 }
 
 export const LIVE_SERVICE_STATUSES: ServiceStatus[] = ['assigned', 'en_route', 'in_progress']
@@ -29,6 +32,7 @@ interface ApiServiceType {
   name: string
   description: string
   active: boolean
+  allowed_vehicle_types: VehicleType[]
 }
 
 interface TypesResponse {
@@ -74,6 +78,7 @@ function fromType(item: ApiServiceType): ServiceType {
     name: item.name,
     description: item.description,
     active: item.active,
+    allowedVehicleTypes: item.allowed_vehicle_types ?? [...ALL_VEHICLE_TYPES],
   }
 }
 
@@ -113,6 +118,7 @@ export async function createServiceType(draft: ServiceTypeDraft): Promise<Servic
       name: draft.name.trim(),
       description: draft.description.trim(),
       active: draft.active,
+      allowed_vehicle_types: draft.allowedVehicleTypes,
     },
   })
   return fromType(created)
@@ -125,6 +131,7 @@ export async function updateServiceType(id: string, draft: ServiceTypeDraft): Pr
       name: draft.name.trim(),
       description: draft.description.trim(),
       active: draft.active,
+      allowed_vehicle_types: draft.allowedVehicleTypes,
     },
   })
   return fromType(updated)

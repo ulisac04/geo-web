@@ -1,6 +1,7 @@
 import { CheckCircle2, Copy, MessageCircle, Plus, Send } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
 import { useDispatchFlow } from '../context/DispatchContext'
+import { formatVehicleLine } from '../lib/vehicles'
 
 export default function ConfirmationStep() {
   const {
@@ -26,7 +27,7 @@ export default function ConfirmationStep() {
             Servicio asignado a {selectedDriver.name}
           </p>
           <p className="text-xs text-mist">
-            {selectedDriver.vehicle}
+            {formatVehicleLine(selectedDriver.vehicleType, selectedDriver.vehicle)}
             {selectedDriver.licensePlate ? ` · ${selectedDriver.licensePlate}` : ''}
           </p>
         </div>

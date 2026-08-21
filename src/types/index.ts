@@ -14,11 +14,13 @@ export type PinFocus = 'origin' | 'dest'
 export type CostRuleType = 'distance' | 'night'
 export type SurchargeType = 'fixed' | 'percent'
 export type MapRefreshSeconds = 5 | 10 | 15 | 30 | 60
+export type VehicleType = 'car' | 'motorcycle'
 
 export interface Driver {
   id: string
   name: string
   phone: string
+  vehicleType: VehicleType
   vehicle: string
   licensePlate: string
   driverPhoto: string
@@ -36,6 +38,7 @@ export interface Driver {
 export interface DriverDraft {
   name: string
   phone: string
+  vehicleType: VehicleType
   vehicle: string
   licensePlate: string
   driverPhoto: string
@@ -70,12 +73,14 @@ export interface ServiceType {
   name: string
   description: string
   active: boolean
+  allowedVehicleTypes: VehicleType[]
 }
 
 export interface ServiceTypeDraft {
   name: string
   description: string
   active: boolean
+  allowedVehicleTypes: VehicleType[]
 }
 
 export interface ServiceRecord {

@@ -4,6 +4,7 @@ import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
 import { useFleet } from '../context/FleetContext'
 import { useSettings } from '../context/SettingsContext'
+import { formatVehicleLine, vehicleTypeLabel } from '../lib/vehicles'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
 
 const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
@@ -40,6 +41,8 @@ export default function DriversPage() {
         driver.name.toLowerCase().includes(q) ||
         driver.phone.includes(q) ||
         driver.vehicle.toLowerCase().includes(q) ||
+        driver.vehicleType.includes(q) ||
+        vehicleTypeLabel(driver.vehicleType).toLowerCase().includes(q) ||
         driver.licensePlate.toLowerCase().includes(q) ||
         driver.zone.toLowerCase().includes(q)
       return matchesFilter && matchesQuery
@@ -144,7 +147,7 @@ export default function DriversPage() {
                       />
                     ) : null}
                     <div>
-                      <p className="text-mist">{driver.vehicle}</p>
+                      <p className="text-mist">{formatVehicleLine(driver.vehicleType, driver.vehicle)}</p>
                       <p className="font-mono text-[11px] tracking-wide text-snow">
                         {driver.licensePlate || '—'}
                       </p>
