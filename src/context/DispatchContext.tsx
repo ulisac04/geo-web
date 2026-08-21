@@ -40,6 +40,7 @@ interface DispatchContextValue {
   inputTab: InputTab
   rawText: string
   screenshotPreview: string | null
+  audioPreview: string | null
   extracting: boolean
   extractError: string | null
   searching: boolean
@@ -56,6 +57,7 @@ interface DispatchContextValue {
   setInputTab: (tab: InputTab) => void
   setRawText: (value: string) => void
   setScreenshot: (dataUrl: string | null) => void
+  setAudio: (dataUrl: string | null) => void
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
   extractWithAI: () => Promise<void>
@@ -91,6 +93,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [inputTab, setInputTab] = useState<InputTab>('text')
   const [rawText, setRawText] = useState('')
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
+  const [audioPreview, setAudioPreview] = useState<string | null>(null)
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
@@ -196,7 +199,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       const extracted = await extractOrder(
         inputTab === 'screenshot'
           ? { imageDataUrl: screenshotPreview }
-          : { rawText },
+          : inputTab === 'audio'
+            ? { audioDataUrl: audioPreview }
+            : { rawText },
       )
       const draft = extractedToDraft(extracted, order.serviceTypeId)
       const [originHit, destHit] = await Promise.all([
@@ -224,7 +229,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     } finally {
       setExtracting(false)
     }
-  }, [city, inputTab, order.serviceTypeId, rawText, screenshotPreview])
+  }, [city, inputTab, order.serviceTypeId, rawText, screenshotPreview, audioPreview])
 
   const acceptService = useCallback(async () => {
     if (!order.originCoords || !order.destCoords) return
@@ -315,6 +320,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setSelectedDriver(null)
     setRawText('')
     setScreenshotPreview(null)
+    setAudioPreview(null)
     setInputTab('text')
     setCopied(false)
     setExtractError(null)
@@ -354,6 +360,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       inputTab,
       rawText,
       screenshotPreview,
+      audioPreview,
       extracting,
       extractError,
       searching,
@@ -370,6 +377,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setInputTab,
       setRawText,
       setScreenshot: setScreenshotPreview,
+      setAudio: setAudioPreview,
       setActivePin,
       updateOrder,
       extractWithAI,
@@ -397,6 +405,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       inputTab,
       rawText,
       screenshotPreview,
+      audioPreview,
       extracting,
       extractError,
       searching,

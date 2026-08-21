@@ -22,6 +22,7 @@ export interface ExtractedOrder {
 export async function extractOrder(input: {
   rawText?: string
   imageDataUrl?: string | null
+  audioDataUrl?: string | null
 }): Promise<ExtractedOrder> {
   const body = buildRequestBody(input)
   try {
@@ -37,25 +38,37 @@ export async function extractOrder(input: {
   }
 }
 
-function buildRequestBody(input: { rawText?: string; imageDataUrl?: string | null }) {
+function buildRequestBody(input: {
+  rawText?: string
+  imageDataUrl?: string | null
+  audioDataUrl?: string | null
+}) {
   const rawText = input.rawText?.trim()
   if (rawText) return { raw_text: rawText }
 
-  const parsed = splitDataUrl(input.imageDataUrl)
-  if (parsed) {
-    return { image_base64: parsed.base64, mime_type: parsed.mimeType }
+  const image = splitDataUrl(input.imageDataUrl)
+  if (image) {
+    return { image_base64: image.base64, mime_type: image.mimeType }
   }
 
-  throw new ParserError('Pega un texto o una captura para extraer el pedido', 400)
+  const audio = splitDataUrl(input.audioDataUrl)
+  if (audio) {
+    return { audio_base64: audio.base64, mime_type: audio.mimeType }
+  }
+
+  throw new ParserError('Pega un texto, una captura o un audio para extraer el pedido', 400)
 }
 
 function splitDataUrl(dataUrl: string | null | undefined): { base64: string; mimeType: string } | null {
   if (!dataUrl?.trim()) return null
-  const match = dataUrl.trim().match(/^data:([^;]+);base64,(.+)$/)
-  if (match) {
-    return { mimeType: match[1], base64: match[2] }
+  const trimmed = dataUrl.trim()
+  const marker = ';base64,'
+  const markerAt = trimmed.indexOf(marker)
+  if (trimmed.startsWith('data:') && markerAt > 5) {
+    const mimeType = trimmed.slice(5, trimmed.indexOf(';', 5)).trim() || 'application/octet-stream'
+    return { mimeType, base64: trimmed.slice(markerAt + marker.length) }
   }
-  return { mimeType: 'image/png', base64: dataUrl.trim() }
+  return { mimeType: 'image/png', base64: trimmed }
 }
 
 const PAYMENT_LABELS: Record<string, string> = {

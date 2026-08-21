@@ -30,7 +30,7 @@ Ciudades que usa la UI: `caracas` | `san_cristobal` | `cucuta` | `bogota`.
 | Servicios → catálogo           | CRUD tipos en localStorage            | `/api/v1/service-types` **existe**                                                                              |
 | Servicios → historial          | Listado localStorage                  | `/api/v1/services` **existe, con huecos**                                                                       |
 | Dashboard wizard               | Crear pending → asignar chofer        | services + candidatos **huecos**                                                                                |
-| Extraer pedido (texto/captura) | `POST /v1/parser/extract`             | **existe** (API key). Alias Bearer **falta**                                                                    |
+| Extraer pedido (texto/captura/audio) | `POST /v1/parser/extract`             | **existe** (API key). Alias Bearer **falta**                                                                    |
 | Candidatos cercanos            | Haversine local                       | `POST /api/v1/dispatch/candidates` **falta** (sí existe `/v1` con API key)                                      |
 | Costos + preview tarifa        | Reglas + `estimateFare` local         | `/api/v1/cost-rules` + `.../estimate` **existe**                                                                |
 | Autocomplete A/B               | Photon público                        | **no hace falta** (front)                                                                                       |
@@ -127,7 +127,7 @@ Leyenda: **listo** / **ampliar** / **falta**.
 
 | Método | Path                     | Uso                                 |
 | ------ | ------------------------ | ----------------------------------- |
-| `POST` | `/api/v1/parser/extract` | Paso 1 del wizard (texto o captura) |
+| `POST` | `/api/v1/parser/extract` | Paso 1 del wizard (texto, captura o audio) |
 
 
 Mientras tanto la SPA puede seguir en `POST /v1/parser/extract` + `X-API-Key`.
@@ -455,6 +455,7 @@ POST /v1/parser/extract
 X-API-Key: andina-demo-key
 { "raw_text": "..." }
 { "image_base64": "...", "mime_type": "image/png" }
+{ "audio_base64": "...", "mime_type": "audio/ogg" }
 ```
 
 Pedido: el mismo body en `POST /api/v1/parser/extract` con Bearer.
