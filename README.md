@@ -4,6 +4,8 @@ SPA de despacho logístico (React + Vite + TypeScript). Habla con Geo en `/api/v
 
 Requisito: Node.js 20+ y la API **geo** en `http://127.0.0.1:8080` (`cargo run -p api`).
 
+Repos hermanos: **geo** (API) · **geo-mobile** (app conductor).
+
 ## Levantar
 
 ```bash
@@ -35,12 +37,30 @@ Ya no hay flota/servicios/costos en `localStorage`. El poll del mapa **no** muev
 | Costos + tarifa | `/api/v1/cost-rules` + `.../estimate` |
 | Extraer pedido | `POST /api/v1/parser/extract` (Gemini; `503` sin `GEMINI_API_KEY` en Geo) |
 | Candidatos al aceptar | `POST /api/v1/dispatch/candidates` |
+| Asignar chofer | `PATCH /api/v1/services/{id}` `{ driver_id, status: en_route }` |
 
 Sigue en el browser: autocomplete Photon, ruta OSRM, WhatsApp (`wa.me`), tema.
 
-Wizard: crear `pending` → asignar chofer `en_route`. El backend también acepta `in_progress` / `completed` / `cancelled`.
+## Asignación híbrida
 
-La API **no siembra conductores**. Crea fichas en Agenda. Para GPS en vivo, la app **geo-mobile** debe pinguear con el **mismo UUID** de esa ficha y tenant `andina`.
+Wizard: crear `pending` → elegir candidato → `en_route`.
+
+Al pulsar **Asignar Conductor**:
+
+1. `PATCH` del servicio (Geo marca al chofer `busy` y manda **push FCM** a **geo-mobile** si hay token).
+2. Se copia el mensaje de despacho al portapapeles.
+3. Se abre WhatsApp del **conductor** (`wa.me`) con ese texto.
+
+Paso 4 (confirmación):
+
+- **WhatsApp conductor** — vuelve a copiar y abrir el chat del chofer.
+- **WhatsApp cliente** — copia un mensaje con conductor / teléfono / vehículo / placa y abre el chat del cliente. Deshabilitado si no hay teléfono.
+
+El API **no** envía WhatsApp (no hay Cloud API). Sin Firebase en Geo, el `PATCH` igual asigna; solo falta el push.
+
+El backend también acepta `in_progress` / `completed` / `cancelled`.
+
+La API **no siembra conductores**. Crea fichas en Agenda. Para GPS en vivo y para el push, **geo-mobile** debe usar el **mismo UUID** de esa ficha y tenant `andina`.
 
 ## Otros comandos
 

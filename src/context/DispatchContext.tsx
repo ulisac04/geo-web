@@ -23,7 +23,7 @@ import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { isLiveServiceStatus } from '../lib/services'
-import { buildDispatchMessage, buildWhatsAppUrl } from '../lib/whatsapp'
+import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp, openWhatsAppPopup } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
 import { useSettings } from './SettingsContext'
@@ -45,7 +45,7 @@ interface DispatchContextValue {
   extractError: string | null
   searching: boolean
   searchError: string | null
-  copied: boolean
+  copied: 'driver' | 'client' | null
   availableCount: number
   busyCount: number
   offlineCount: number
@@ -75,9 +75,10 @@ interface DispatchContextValue {
   confirmTakeOffline: () => Promise<void>
   cancelTakeOffline: () => void
   resetOrder: () => void
-  copyMessage: () => Promise<void>
-  getWhatsAppUrl: () => string | null
-  getFormattedMessage: () => string
+  copyMessage: (target?: 'driver' | 'client') => Promise<void>
+  sendWhatsApp: (target: 'driver' | 'client') => Promise<void>
+  getWhatsAppUrl: (target?: 'driver' | 'client') => string | null
+  getFormattedMessage: (target?: 'driver' | 'client') => string
 }
 
 const DispatchContext = createContext<DispatchContextValue | null>(null)
@@ -104,7 +105,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'driver' | 'client' | null>(null)
   const [activePin, setActivePin] = useState<PinFocus>('origin')
   const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
   const [mapMode, setMapMode] = useState<MapMode>('fleet')
@@ -296,21 +297,25 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const assignDriver = useCallback(
     async (driver: Driver) => {
+      const popup = openWhatsAppPopup()
       setSelectedDriver(driver)
       setFocusedDriverId(driver.id)
       setHoveredDriverId(driver.id)
-      if (!acceptedServiceId) {
-        setStep(4)
-        return
-      }
       try {
-        await updateRecord(acceptedServiceId, {
-          driverId: driver.id,
-          status: 'en_route',
-        })
-        await refreshDrivers()
+        if (acceptedServiceId) {
+          await updateRecord(acceptedServiceId, {
+            driverId: driver.id,
+            status: 'en_route',
+          })
+          await refreshDrivers()
+        }
+        const message = buildDispatchMessage(order, driver)
+        await copyAndOpenWhatsApp(buildWhatsAppUrl(order, driver), message, popup)
+        setCopied('driver')
+        window.setTimeout(() => setCopied((current) => (current === 'driver' ? null : current)), 1800)
         setStep(4)
       } catch (error) {
+        popup?.close()
         setSearchError(
           error instanceof ApiError || error instanceof Error
             ? error.message
@@ -318,7 +323,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         )
       }
     },
-    [acceptedServiceId, refreshDrivers, updateRecord],
+    [acceptedServiceId, order, refreshDrivers, updateRecord],
   )
 
   const takeOffline = useCallback(
@@ -366,30 +371,55 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setScreenshotPreview(null)
     setAudioPreview(null)
     setInputTab('text')
-    setCopied(false)
+    setCopied(null)
     setExtractError(null)
     setSearchError(null)
     setActivePin('origin')
     setAcceptedServiceId(null)
   }, [types])
 
-  const getFormattedMessage = useCallback(() => {
-    if (!selectedDriver) return ''
-    return buildDispatchMessage(order, selectedDriver)
-  }, [order, selectedDriver])
+  const getFormattedMessage = useCallback(
+    (target: 'driver' | 'client' = 'driver') => {
+      if (!selectedDriver) return ''
+      return target === 'client'
+        ? buildClientMessage(order, selectedDriver)
+        : buildDispatchMessage(order, selectedDriver)
+    },
+    [order, selectedDriver],
+  )
 
-  const getWhatsAppUrl = useCallback(() => {
-    if (!selectedDriver) return null
-    return buildWhatsAppUrl(order, selectedDriver)
-  }, [order, selectedDriver])
+  const getWhatsAppUrl = useCallback(
+    (target: 'driver' | 'client' = 'driver') => {
+      if (!selectedDriver) return null
+      return target === 'client'
+        ? buildClientWhatsAppUrl(order, selectedDriver)
+        : buildWhatsAppUrl(order, selectedDriver)
+    },
+    [order, selectedDriver],
+  )
 
-  const copyMessage = useCallback(async () => {
-    const message = getFormattedMessage()
-    if (!message) return
-    await navigator.clipboard.writeText(message)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1800)
-  }, [getFormattedMessage])
+  const copyMessage = useCallback(
+    async (target: 'driver' | 'client' = 'driver') => {
+      const message = getFormattedMessage(target)
+      if (!message) return
+      await navigator.clipboard.writeText(message)
+      setCopied(target)
+      window.setTimeout(() => setCopied((current) => (current === target ? null : current)), 1800)
+    },
+    [getFormattedMessage],
+  )
+
+  const sendWhatsApp = useCallback(
+    async (target: 'driver' | 'client') => {
+      const url = getWhatsAppUrl(target)
+      const message = getFormattedMessage(target)
+      if (!url || !message) return
+      await copyAndOpenWhatsApp(url, message)
+      setCopied(target)
+      window.setTimeout(() => setCopied((current) => (current === target ? null : current)), 1800)
+    },
+    [getFormattedMessage, getWhatsAppUrl],
+  )
 
   const value = useMemo<DispatchContextValue>(
     () => ({
@@ -440,6 +470,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       cancelTakeOffline,
       resetOrder,
       copyMessage,
+      sendWhatsApp,
       getWhatsAppUrl,
       getFormattedMessage,
     }),
@@ -484,6 +515,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       cancelTakeOffline,
       resetOrder,
       copyMessage,
+      sendWhatsApp,
       getWhatsAppUrl,
       getFormattedMessage,
     ],

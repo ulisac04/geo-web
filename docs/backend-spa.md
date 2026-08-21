@@ -35,7 +35,7 @@ Ciudades que usa la UI: `caracas` | `san_cristobal` | `cucuta` | `bogota`.
 | Costos + preview tarifa        | Reglas + `estimateFare` local         | `/api/v1/cost-rules` + `.../estimate` **existe**                                                                |
 | Autocomplete A/B               | Photon público                        | **no hace falta** (front)                                                                                       |
 | Ruta en mapa                   | OSRM público                          | **no hace falta** (front)                                                                                       |
-| WhatsApp al chofer             | `wa.me` en el cliente                 | **no hace falta** (front)                                                                                       |
+| WhatsApp al chofer / cliente   | `wa.me` en el cliente                 | **no hace falta** (front)                                                                                       |
 
 
 ---
