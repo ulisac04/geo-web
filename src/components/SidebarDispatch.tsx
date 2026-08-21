@@ -1,8 +1,11 @@
+import { useState } from 'react'
+import { RotateCcw } from 'lucide-react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { getSession } from '../lib/auth'
 import type { DispatchStep } from '../types'
 import CandidatesStep from './CandidatesStep'
 import ConfirmationStep from './ConfirmationStep'
+import ConfirmDialog from './ConfirmDialog'
 import LiveTripsList from './LiveTripsList'
 import MapModeToggle from './MapModeToggle'
 import OrderInputStep from './OrderInputStep'
@@ -17,8 +20,36 @@ const STEPS: { id: DispatchStep; label: string }[] = [
 
 export default function SidebarDispatch() {
   const session = getSession()
-  const { step, availableCount, busyCount, offlineCount, mapMode, setMapMode, liveTrips } =
-    useDispatchFlow()
+  const [confirmReset, setConfirmReset] = useState(false)
+  const {
+    step,
+    order,
+    rawText,
+    screenshotPreview,
+    audioPreview,
+    availableCount,
+    busyCount,
+    offlineCount,
+    mapMode,
+    setMapMode,
+    liveTrips,
+    resetOrder,
+  } = useDispatchFlow()
+
+  const canReset =
+    step > 1 ||
+    Boolean(rawText.trim()) ||
+    Boolean(screenshotPreview) ||
+    Boolean(audioPreview) ||
+    Boolean(order.origin.trim()) ||
+    Boolean(order.destination.trim()) ||
+    Boolean(order.clientName.trim()) ||
+    Boolean(order.clientPhone.trim()) ||
+    Boolean(order.notes.trim()) ||
+    Boolean(order.paymentMethod.trim()) ||
+    Boolean(order.amount.trim()) ||
+    Boolean(order.originCoords) ||
+    Boolean(order.destCoords)
 
   const initials = (session?.operator ?? 'OP')
     .split(' ')
@@ -98,6 +129,15 @@ export default function SidebarDispatch() {
               )
             })}
           </ol>
+          <button
+            type="button"
+            disabled={!canReset}
+            onClick={() => setConfirmReset(true)}
+            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-ink px-3 py-1.5 text-xs font-medium text-mist transition hover:border-rose-400/40 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <RotateCcw className="size-3.5" />
+            Empezar de cero
+          </button>
         </div>
       ) : (
         <div className="border-b border-line px-4 py-3">
@@ -122,6 +162,19 @@ export default function SidebarDispatch() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmReset}
+        title="¿Empezar de cero?"
+        description="Se borra la orden actual y vuelves al primer paso. No se envía nada."
+        confirmLabel="Borrar orden"
+        cancelLabel="Seguir editando"
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => {
+          resetOrder()
+          setConfirmReset(false)
+        }}
+      />
     </aside>
   )
 }
