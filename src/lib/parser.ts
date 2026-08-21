@@ -22,7 +22,6 @@ export interface ExtractedOrder {
 export async function extractOrder(input: {
   rawText?: string
   imageDataUrl?: string | null
-  audioDataUrl?: string | null
 }): Promise<ExtractedOrder> {
   const body = buildRequestBody(input)
   try {
@@ -38,10 +37,33 @@ export async function extractOrder(input: {
   }
 }
 
+export async function transcribeAudio(audioDataUrl: string): Promise<string> {
+  const audio = splitDataUrl(audioDataUrl)
+  if (!audio) {
+    throw new ParserError('No hay audio para transcribir', 400)
+  }
+  try {
+    const result = await api<{ text: string }>('/api/v1/parser/transcribe', {
+      method: 'POST',
+      body: { audio_base64: audio.base64, mime_type: audio.mimeType },
+    })
+    const text = result.text?.trim() ?? ''
+    if (!text) {
+      throw new ParserError('No se entendió el audio. Dicta de nuevo.', 422)
+    }
+    return text
+  } catch (error) {
+    if (error instanceof ParserError) throw error
+    if (error instanceof ApiError) {
+      throw new ParserError(error.message, error.status, error.code)
+    }
+    throw error
+  }
+}
+
 function buildRequestBody(input: {
   rawText?: string
   imageDataUrl?: string | null
-  audioDataUrl?: string | null
 }) {
   const rawText = input.rawText?.trim()
   if (rawText) return { raw_text: rawText }
@@ -51,25 +73,7 @@ function buildRequestBody(input: {
     return { image_base64: image.base64, mime_type: image.mimeType }
   }
 
-  const audio = splitDataUrl(input.audioDataUrl)
-  if (audio) {
-    return { audio_base64: audio.base64, mime_type: audio.mimeType }
-  }
-
-  throw new ParserError('Pega un texto, una captura o un audio para extraer el pedido', 400)
-}
-
-export function isBlankExtracted(extracted: ExtractedOrder): boolean {
-  const fields = [
-    extracted.pickup_address,
-    extracted.dropoff_address,
-    extracted.customer_name,
-    extracted.customer_phone,
-    extracted.payment_method,
-    extracted.notes,
-  ]
-  const hasText = fields.some((value) => Boolean(value?.trim()))
-  return !hasText && extracted.amount == null
+  throw new ParserError('Pega un texto o una captura para extraer el pedido', 400)
 }
 
 function splitDataUrl(dataUrl: string | null | undefined): { base64: string; mimeType: string } | null {

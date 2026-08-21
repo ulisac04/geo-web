@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader2, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { getSession } from '../lib/auth'
 import type { DispatchStep } from '../types'
@@ -26,8 +26,6 @@ export default function SidebarDispatch() {
     order,
     rawText,
     screenshotPreview,
-    audioPreview,
-    audioProcessing,
     availableCount,
     busyCount,
     offlineCount,
@@ -41,7 +39,6 @@ export default function SidebarDispatch() {
     step > 1 ||
     Boolean(rawText.trim()) ||
     Boolean(screenshotPreview) ||
-    Boolean(audioPreview) ||
     Boolean(order.origin.trim()) ||
     Boolean(order.destination.trim()) ||
     Boolean(order.clientName.trim()) ||
@@ -176,14 +173,6 @@ export default function SidebarDispatch() {
           setConfirmReset(false)
         }}
       />
-
-      {audioProcessing ? (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-panel/80 px-6 text-center backdrop-blur-[2px]">
-          <Loader2 className="size-8 animate-spin text-signal" />
-          <p className="text-sm font-medium text-snow">Procesando audio…</p>
-          <p className="text-xs text-mist">Preparando la grabación para reproducirla y extraer el pedido.</p>
-        </div>
-      ) : null}
     </aside>
   )
 }

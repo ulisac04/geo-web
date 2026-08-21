@@ -21,7 +21,7 @@ import { fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
 import { geocodeFirst } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
-import { extractOrder, extractedToDraft, isBlankExtracted, ParserError } from '../lib/parser'
+import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { isLiveServiceStatus } from '../lib/services'
 import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp, openWhatsAppPopup } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
@@ -40,8 +40,6 @@ interface DispatchContextValue {
   inputTab: InputTab
   rawText: string
   screenshotPreview: string | null
-  audioPreview: string | null
-  audioProcessing: boolean
   extracting: boolean
   extractError: string | null
   searching: boolean
@@ -59,8 +57,6 @@ interface DispatchContextValue {
   setInputTab: (tab: InputTab) => void
   setRawText: (value: string) => void
   setScreenshot: (dataUrl: string | null) => void
-  setAudio: (dataUrl: string | null) => void
-  setAudioProcessing: (value: boolean) => void
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
   extractWithAI: () => Promise<void>
@@ -102,8 +98,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [inputTab, setInputTab] = useState<InputTab>('text')
   const [rawText, setRawText] = useState('')
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
-  const [audioPreview, setAudioPreview] = useState<string | null>(null)
-  const [audioProcessing, setAudioProcessing] = useState(false)
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
@@ -212,18 +206,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setExtracting(true)
     try {
       const extracted = await extractOrder(
-        inputTab === 'screenshot'
-          ? { imageDataUrl: screenshotPreview }
-          : inputTab === 'audio'
-            ? { audioDataUrl: audioPreview }
-            : { rawText },
+        inputTab === 'screenshot' ? { imageDataUrl: screenshotPreview } : { rawText },
       )
-      if (inputTab === 'audio' && isBlankExtracted(extracted)) {
-        throw new ParserError(
-          'No se entendió el audio. Dicta de nuevo origen, destino y datos del cliente.',
-          422,
-        )
-      }
       const draft = extractedToDraft(extracted, order.serviceTypeId)
       const [originHit, destHit] = await Promise.all([
         geocodeFirst(draft.origin, city),
@@ -250,7 +234,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     } finally {
       setExtracting(false)
     }
-  }, [city, inputTab, order.serviceTypeId, rawText, screenshotPreview, audioPreview])
+  }, [city, inputTab, order.serviceTypeId, rawText, screenshotPreview])
 
   const acceptService = useCallback(async () => {
     if (!order.originCoords || !order.destCoords) return
@@ -378,8 +362,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setSelectedDriver(null)
     setRawText('')
     setScreenshotPreview(null)
-    setAudioPreview(null)
-    setAudioProcessing(false)
     setInputTab('text')
     setCopied(null)
     setExtractError(null)
@@ -444,8 +426,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       inputTab,
       rawText,
       screenshotPreview,
-      audioPreview,
-      audioProcessing,
       extracting,
       extractError,
       searching,
@@ -463,8 +443,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setInputTab,
       setRawText,
       setScreenshot: setScreenshotPreview,
-      setAudio: setAudioPreview,
-      setAudioProcessing,
       setActivePin,
       updateOrder,
       extractWithAI,
@@ -498,8 +476,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       inputTab,
       rawText,
       screenshotPreview,
-      audioPreview,
-      audioProcessing,
       extracting,
       extractError,
       searching,
