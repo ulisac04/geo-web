@@ -59,6 +59,19 @@ function buildRequestBody(input: {
   throw new ParserError('Pega un texto, una captura o un audio para extraer el pedido', 400)
 }
 
+export function isBlankExtracted(extracted: ExtractedOrder): boolean {
+  const fields = [
+    extracted.pickup_address,
+    extracted.dropoff_address,
+    extracted.customer_name,
+    extracted.customer_phone,
+    extracted.payment_method,
+    extracted.notes,
+  ]
+  const hasText = fields.some((value) => Boolean(value?.trim()))
+  return !hasText && extracted.amount == null
+}
+
 function splitDataUrl(dataUrl: string | null | undefined): { base64: string; mimeType: string } | null {
   if (!dataUrl?.trim()) return null
   const trimmed = dataUrl.trim()

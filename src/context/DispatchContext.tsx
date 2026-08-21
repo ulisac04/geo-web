@@ -21,7 +21,7 @@ import { fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
 import { geocodeFirst } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
-import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
+import { extractOrder, extractedToDraft, isBlankExtracted, ParserError } from '../lib/parser'
 import { isLiveServiceStatus } from '../lib/services'
 import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp, openWhatsAppPopup } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
@@ -218,6 +218,12 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
             ? { audioDataUrl: audioPreview }
             : { rawText },
       )
+      if (inputTab === 'audio' && isBlankExtracted(extracted)) {
+        throw new ParserError(
+          'No se entendió el audio. Dicta de nuevo origen, destino y datos del cliente.',
+          422,
+        )
+      }
       const draft = extractedToDraft(extracted, order.serviceTypeId)
       const [originHit, destHit] = await Promise.all([
         geocodeFirst(draft.origin, city),

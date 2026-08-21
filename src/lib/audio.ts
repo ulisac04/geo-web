@@ -1,5 +1,7 @@
 export const MAX_AUDIO_SECONDS = 90
 export const MAX_AUDIO_BYTES = 1_200_000
+/** WAV PCM 16 kHz 90s ≈ 2.88 MB; Gemini acepta varios MB en inline data. */
+export const MAX_WAV_BYTES = 3_500_000
 
 const DECODE_TIMEOUT_MS = 8_000
 const MIN_PEAK = 0.01
@@ -78,16 +80,15 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-/** Convierte grabaciones webm/ogg a WAV 16 kHz mono si hay señal y cabe en el límite JSON. */
+/** Convierte grabaciones webm a WAV 16 kHz mono (Gemini no transcribe audio/webm). */
 export async function prepareRecordingDataUrl(blob: Blob): Promise<string> {
   const mime = stripAudioMime(blob.type)
-  if (mime === 'audio/webm' || mime === 'audio/ogg' || mime === 'audio/opus') {
-    try {
-      const wav = await blobToWavDataUrl(blob)
-      if (estimatedDecodedBytes(wav) <= MAX_AUDIO_BYTES) return wav
-    } catch {
-      // Gemini acepta audio/webm y audio/ogg; se envía el original con MIME limpio.
-    }
+  if (mime === 'audio/webm' || mime === 'audio/opus') {
+    const wav = await blobToWavDataUrl(blob, 16_000)
+    if (estimatedDecodedBytes(wav) <= MAX_WAV_BYTES) return wav
+    const compact = await blobToWavDataUrl(blob, 8_000)
+    if (estimatedDecodedBytes(compact) <= MAX_WAV_BYTES) return compact
+    throw new Error('La grabación es demasiado larga para extraer')
   }
   return blobToDataUrl(blob)
 }
@@ -106,7 +107,7 @@ function estimatedDecodedBytes(dataUrl: string): number {
   return Math.floor((b64.length * 3) / 4)
 }
 
-async function blobToWavDataUrl(blob: Blob): Promise<string> {
+async function blobToWavDataUrl(blob: Blob, sampleRate = 16_000): Promise<string> {
   const ctx = new AudioContext()
   try {
     await ctx.resume()
@@ -114,7 +115,7 @@ async function blobToWavDataUrl(blob: Blob): Promise<string> {
     if (!hasAudibleEnergy(buffer)) {
       throw new Error('silent')
     }
-    const wav = encodeWavPcm16Mono(resampleMonoSync(buffer, 16_000))
+    const wav = encodeWavPcm16Mono(resampleMonoSync(buffer, sampleRate), sampleRate)
     const base64 = arrayBufferToBase64(wav)
     return `data:audio/wav;base64,${base64}`
   } finally {
