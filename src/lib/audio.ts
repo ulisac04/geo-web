@@ -1,6 +1,9 @@
 export const MAX_AUDIO_SECONDS = 90
 export const MAX_AUDIO_BYTES = 1_200_000
 
+const DECODE_TIMEOUT_MS = 8_000
+const MIN_PEAK = 0.01
+
 export const AUDIO_ACCEPT =
   'audio/ogg,audio/opus,audio/mpeg,audio/mp3,audio/mp4,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/webm,.ogg,.opus,.mp3,.m4a,.webm,.wav'
 
@@ -17,8 +20,12 @@ const ALLOWED_AUDIO_MIME = new Set([
   'audio/webm',
 ])
 
+export function stripAudioMime(mime: string): string {
+  return mime.split(';')[0].trim().toLowerCase()
+}
+
 export function mimeFromAudioFile(file: File): string {
-  const fromType = file.type.split(';')[0].trim().toLowerCase()
+  const fromType = stripAudioMime(file.type)
   if (fromType && ALLOWED_AUDIO_MIME.has(fromType)) return fromType
 
   const name = file.name.toLowerCase()
@@ -46,30 +53,51 @@ export function pickRecorderMime(): string {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? ''
 }
 
+export function recorderContainerMime(recorderMime: string): string {
+  const base = stripAudioMime(recorderMime)
+  if (ALLOWED_AUDIO_MIME.has(base)) return base
+  return 'audio/webm'
+}
+
 export function blobToDataUrl(blob: Blob): Promise<string> {
+  const mime = stripAudioMime(blob.type) || 'application/octet-stream'
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result)
-      else reject(new Error('No se pudo leer el audio'))
+      if (typeof reader.result !== 'string') {
+        reject(new Error('No se pudo leer el audio'))
+        return
+      }
+      const marker = ';base64,'
+      const at = reader.result.indexOf(marker)
+      const base64 = at >= 0 ? reader.result.slice(at + marker.length) : reader.result
+      resolve(`data:${mime};base64,${base64}`)
     }
     reader.onerror = () => reject(new Error('No se pudo leer el audio'))
     reader.readAsDataURL(blob)
   })
 }
 
-/** Convierte grabaciones webm a WAV 16 kHz mono si el resultado cabe en el límite JSON. */
+/** Convierte grabaciones webm/ogg a WAV 16 kHz mono si hay señal y cabe en el límite JSON. */
 export async function prepareRecordingDataUrl(blob: Blob): Promise<string> {
-  const mime = blob.type.split(';')[0].trim().toLowerCase()
-  if (mime === 'audio/webm') {
+  const mime = stripAudioMime(blob.type)
+  if (mime === 'audio/webm' || mime === 'audio/ogg' || mime === 'audio/opus') {
     try {
       const wav = await blobToWavDataUrl(blob)
       if (estimatedDecodedBytes(wav) <= MAX_AUDIO_BYTES) return wav
     } catch {
-      // Gemini acepta audio/webm en la lista del parser; se envía el original.
+      // Gemini acepta audio/webm y audio/ogg; se envía el original con MIME limpio.
     }
   }
   return blobToDataUrl(blob)
+}
+
+export function waitForPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve())
+    })
+  })
 }
 
 function estimatedDecodedBytes(dataUrl: string): number {
@@ -81,13 +109,50 @@ function estimatedDecodedBytes(dataUrl: string): number {
 async function blobToWavDataUrl(blob: Blob): Promise<string> {
   const ctx = new AudioContext()
   try {
-    const buffer = await ctx.decodeAudioData(await blob.arrayBuffer())
+    await ctx.resume()
+    const buffer = await withTimeout(ctx.decodeAudioData(await blob.arrayBuffer()), DECODE_TIMEOUT_MS)
+    if (!hasAudibleEnergy(buffer)) {
+      throw new Error('silent')
+    }
     const wav = encodeWavPcm16Mono(resampleMonoSync(buffer, 16_000))
     const base64 = arrayBufferToBase64(wav)
     return `data:audio/wav;base64,${base64}`
   } finally {
     await ctx.close()
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error('timeout')), ms)
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        window.clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
+function hasAudibleEnergy(buffer: AudioBuffer): boolean {
+  const channels = buffer.numberOfChannels
+  const length = buffer.length
+  if (length === 0 || channels === 0) return false
+  const step = Math.max(1, Math.floor(length / 8_000))
+  let peak = 0
+  for (let ch = 0; ch < channels; ch += 1) {
+    const data = buffer.getChannelData(ch)
+    for (let i = 0; i < length; i += step) {
+      const abs = Math.abs(data[i] ?? 0)
+      if (abs > peak) peak = abs
+      if (peak >= MIN_PEAK) return true
+    }
+  }
+  return peak >= MIN_PEAK
 }
 
 function resampleMonoSync(buffer: AudioBuffer, targetRate: number): Float32Array {

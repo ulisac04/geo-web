@@ -41,6 +41,7 @@ interface DispatchContextValue {
   rawText: string
   screenshotPreview: string | null
   audioPreview: string | null
+  audioProcessing: boolean
   extracting: boolean
   extractError: string | null
   searching: boolean
@@ -59,6 +60,7 @@ interface DispatchContextValue {
   setRawText: (value: string) => void
   setScreenshot: (dataUrl: string | null) => void
   setAudio: (dataUrl: string | null) => void
+  setAudioProcessing: (value: boolean) => void
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
   extractWithAI: () => Promise<void>
@@ -101,6 +103,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [rawText, setRawText] = useState('')
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
   const [audioPreview, setAudioPreview] = useState<string | null>(null)
+  const [audioProcessing, setAudioProcessing] = useState(false)
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
@@ -370,6 +373,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setRawText('')
     setScreenshotPreview(null)
     setAudioPreview(null)
+    setAudioProcessing(false)
     setInputTab('text')
     setCopied(null)
     setExtractError(null)
@@ -435,6 +439,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       rawText,
       screenshotPreview,
       audioPreview,
+      audioProcessing,
       extracting,
       extractError,
       searching,
@@ -453,6 +458,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setRawText,
       setScreenshot: setScreenshotPreview,
       setAudio: setAudioPreview,
+      setAudioProcessing,
       setActivePin,
       updateOrder,
       extractWithAI,
@@ -487,6 +493,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       rawText,
       screenshotPreview,
       audioPreview,
+      audioProcessing,
       extracting,
       extractError,
       searching,

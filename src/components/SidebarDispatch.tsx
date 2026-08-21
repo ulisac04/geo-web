@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RotateCcw } from 'lucide-react'
+import { Loader2, RotateCcw } from 'lucide-react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { getSession } from '../lib/auth'
 import type { DispatchStep } from '../types'
@@ -27,6 +27,7 @@ export default function SidebarDispatch() {
     rawText,
     screenshotPreview,
     audioPreview,
+    audioProcessing,
     availableCount,
     busyCount,
     offlineCount,
@@ -58,7 +59,7 @@ export default function SidebarDispatch() {
     .join('')
 
   return (
-    <aside className="flex h-full w-[30%] min-w-[340px] max-w-[480px] flex-col border-r border-line bg-panel">
+    <aside className="relative flex h-full w-[30%] min-w-[340px] max-w-[480px] flex-col border-r border-line bg-panel">
       <header className="border-b border-line px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-full bg-signal/15 text-sm font-semibold text-signal">
@@ -175,6 +176,14 @@ export default function SidebarDispatch() {
           setConfirmReset(false)
         }}
       />
+
+      {audioProcessing ? (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-panel/80 px-6 text-center backdrop-blur-[2px]">
+          <Loader2 className="size-8 animate-spin text-signal" />
+          <p className="text-sm font-medium text-snow">Procesando audio…</p>
+          <p className="text-xs text-mist">Preparando la grabación para reproducirla y extraer el pedido.</p>
+        </div>
+      ) : null}
     </aside>
   )
 }

@@ -10,6 +10,8 @@ import {
   mimeFromAudioFile,
   pickRecorderMime,
   prepareRecordingDataUrl,
+  recorderContainerMime,
+  waitForPaint,
 } from '../lib/audio'
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
 import NearbyDriverList from './NearbyDriverList'
@@ -24,6 +26,8 @@ export default function OrderInputStep() {
     setScreenshot,
     audioPreview,
     setAudio,
+    setAudioProcessing,
+    audioProcessing,
     extractWithAI,
     extracting,
     extractError,
@@ -32,12 +36,29 @@ export default function OrderInputStep() {
   const [recording, setRecording] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [audioError, setAudioError] = useState<string | null>(null)
+  const [playbackUrl, setPlaybackUrl] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioFileRef = useRef<HTMLInputElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<number | null>(null)
+  const playbackUrlRef = useRef<string | null>(null)
+
+  function revokePlayback() {
+    if (playbackUrlRef.current) {
+      URL.revokeObjectURL(playbackUrlRef.current)
+      playbackUrlRef.current = null
+    }
+    setPlaybackUrl(null)
+  }
+
+  function setPlaybackFromBlob(blob: Blob) {
+    if (playbackUrlRef.current) URL.revokeObjectURL(playbackUrlRef.current)
+    const url = URL.createObjectURL(blob)
+    playbackUrlRef.current = url
+    setPlaybackUrl(url)
+  }
 
   function readFile(file: File) {
     if (!file.type.startsWith('image/')) return
@@ -83,6 +104,7 @@ export default function OrderInputStep() {
       setAudioError('El audio es demasiado grande (máx. ~1.2 MB)')
       return
     }
+    setPlaybackFromBlob(file)
     const dataUrl = await blobToDataUrl(file)
     const mime = mimeFromAudioFile(file)
     const comma = dataUrl.indexOf(';base64,')
@@ -93,6 +115,7 @@ export default function OrderInputStep() {
   function handleAudioDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()
     setDragging(false)
+    if (recording || audioProcessing) return
     const file = event.dataTransfer.files[0]
     if (file) void ingestAudioFile(file)
   }
@@ -117,7 +140,24 @@ export default function OrderInputStep() {
 
   function stopRecording() {
     const recorder = recorderRef.current
-    if (recorder && recorder.state !== 'inactive') recorder.stop()
+    if (!recorder || recorder.state === 'inactive') return
+    if (recorder.state === 'recording') recorder.requestData()
+    recorder.stop()
+  }
+
+  async function processRecording(blob: Blob) {
+    setAudioProcessing(true)
+    await waitForPaint()
+    try {
+      setPlaybackFromBlob(blob)
+      const dataUrl = await prepareRecordingDataUrl(blob)
+      setAudio(dataUrl)
+    } catch {
+      revokePlayback()
+      setAudioError('No se pudo procesar la grabación')
+    } finally {
+      setAudioProcessing(false)
+    }
   }
 
   async function startRecording() {
@@ -140,9 +180,11 @@ export default function OrderInputStep() {
         clearTimer()
         setRecording(false)
         setElapsed(0)
-        stopTracks()
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        const blob = new Blob(chunksRef.current, {
+          type: recorderContainerMime(recorder.mimeType || 'audio/webm'),
+        })
         chunksRef.current = []
+        stopTracks()
         if (blob.size === 0) {
           setAudioError('No se capturó audio')
           return
@@ -151,12 +193,11 @@ export default function OrderInputStep() {
           setAudioError('La grabación es demasiado grande')
           return
         }
-        void prepareRecordingDataUrl(blob)
-          .then(setAudio)
-          .catch(() => setAudioError('No se pudo procesar la grabación'))
+        void processRecording(blob)
       }
-      recorder.start()
+      revokePlayback()
       setAudio(null)
+      recorder.start(250)
       setRecording(true)
       setElapsed(0)
       let seconds = 0
@@ -191,12 +232,17 @@ export default function OrderInputStep() {
   }, [inputTab, setScreenshot])
 
   useEffect(() => {
+    if (!audioPreview) revokePlayback()
+  }, [audioPreview])
+
+  useEffect(() => {
     return () => {
       clearTimer()
       if (recorderRef.current && recorderRef.current.state !== 'inactive') {
         recorderRef.current.stop()
       }
       stopTracks()
+      if (playbackUrlRef.current) URL.revokeObjectURL(playbackUrlRef.current)
     }
   }, [])
 
@@ -296,15 +342,15 @@ export default function OrderInputStep() {
             onDragLeave={() => setDragging(false)}
             onDrop={handleAudioDrop}
             onClick={() => {
-              if (!recording) audioFileRef.current?.click()
+              if (!recording && !audioProcessing) audioFileRef.current?.click()
             }}
             className={`flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-5 text-center transition ${
               dragging ? 'border-signal bg-signal/10' : 'border-line bg-ink hover:border-mist/50'
             }`}
           >
-            {audioPreview ? (
+            {playbackUrl || audioPreview ? (
               <audio
-                src={audioPreview}
+                src={playbackUrl ?? audioPreview ?? undefined}
                 controls
                 className="w-full"
                 onClick={(event) => event.stopPropagation()}
@@ -337,21 +383,24 @@ export default function OrderInputStep() {
             ) : (
               <button
                 type="button"
+                disabled={audioProcessing}
                 onClick={() => void startRecording()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-ink py-2 text-sm font-medium text-snow hover:border-mist/50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-ink py-2 text-sm font-medium text-snow hover:border-mist/50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Mic className="size-4" />
                 Grabar audio
               </button>
             )}
-            {audioPreview ? (
+            {audioPreview || playbackUrl ? (
               <button
                 type="button"
+                disabled={audioProcessing}
                 onClick={() => {
+                  revokePlayback()
                   setAudio(null)
                   setAudioError(null)
                 }}
-                className="rounded-lg border border-line px-3 py-2 text-xs text-mist hover:text-snow"
+                className="rounded-lg border border-line px-3 py-2 text-xs text-mist hover:text-snow disabled:opacity-40"
               >
                 Quitar
               </button>
@@ -368,7 +417,7 @@ export default function OrderInputStep() {
 
       <button
         type="button"
-        disabled={!canExtract || extracting}
+        disabled={!canExtract || extracting || audioProcessing}
         onClick={() => void extractWithAI()}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
