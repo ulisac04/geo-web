@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent } from 'react'
-import { FileText, Image, Loader2, Mic, Sparkles, Square, Upload } from 'lucide-react'
+import { FileText, Image, Loader2, Mic, PenLine, Sparkles, Square, Upload } from 'lucide-react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import {
   MAX_AUDIO_BYTES,
@@ -23,6 +23,7 @@ export default function OrderInputStep() {
     screenshotPreview,
     setScreenshot,
     extractWithAI,
+    continueManually,
     extracting,
     extractError,
   } = useDispatchFlow()
@@ -312,15 +313,27 @@ export default function OrderInputStep() {
         </div>
       )}
 
-      <button
-        type="button"
-        disabled={!canExtract || busy}
-        onClick={() => void extractWithAI()}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {extracting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-        {extracting ? 'Extrayendo datos…' : 'Extraer Datos con IA'}
-      </button>
+      <div className="space-y-2">
+        <button
+          type="button"
+          disabled={!canExtract || busy}
+          onClick={() => void extractWithAI()}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {extracting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+          {extracting ? 'Extrayendo datos…' : 'Extraer Datos con IA'}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={continueManually}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-ink py-2.5 text-sm font-medium text-snow transition hover:border-signal/50 hover:text-signal disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <PenLine className="size-4" />
+          Ingresar datos a mano
+        </button>
+        <p className="text-center text-[11px] text-mist">La IA es opcional. Puedes ir directo a Puntos.</p>
+      </div>
 
       {extractError ? (
         <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-rose-300">

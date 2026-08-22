@@ -60,6 +60,7 @@ interface DispatchContextValue {
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
   extractWithAI: () => Promise<void>
+  continueManually: () => void
   acceptService: () => Promise<void>
   hoverDriver: (id: string | null) => void
   focusDriver: (id: string | null) => void
@@ -235,6 +236,12 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setExtracting(false)
     }
   }, [city, inputTab, order.serviceTypeId, rawText, screenshotPreview])
+
+  const continueManually = useCallback(() => {
+    setExtractError(null)
+    setAcceptedServiceId(null)
+    setStep(2)
+  }, [])
 
   const acceptService = useCallback(async () => {
     if (!order.originCoords || !order.destCoords) return
@@ -446,6 +453,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setActivePin,
       updateOrder,
       extractWithAI,
+      continueManually,
       acceptService,
       hoverDriver: setHoveredDriverId,
       focusDriver,
@@ -491,6 +499,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       focusTrip,
       updateOrder,
       extractWithAI,
+      continueManually,
       acceptService,
       focusDriver,
       setPinFromMap,

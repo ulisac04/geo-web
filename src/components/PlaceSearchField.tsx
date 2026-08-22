@@ -1,6 +1,11 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Loader2, MapPin } from 'lucide-react'
-import { hydratePlaceHit, searchPlaces, type PlaceHit } from '../lib/geocode'
+import {
+  hydratePlaceHit,
+  PlacesUnavailableError,
+  searchPlaces,
+  type PlaceHit,
+} from '../lib/geocode'
 import { useSettings } from '../context/SettingsContext'
 
 interface PlaceSearchFieldProps {
@@ -35,6 +40,7 @@ export default function PlaceSearchField({
   const [searching, setSearching] = useState(false)
   const [highlight, setHighlight] = useState(0)
   const [empty, setEmpty] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const q = value.trim()
@@ -42,12 +48,14 @@ export default function PlaceSearchField({
       setHits([])
       setSearching(false)
       setEmpty(false)
+      setErrorMessage(null)
       return
     }
     if (q.length < 2) {
       setHits([])
       setSearching(false)
       setEmpty(false)
+      setErrorMessage(null)
       setOpen(false)
       return
     }
@@ -61,6 +69,7 @@ export default function PlaceSearchField({
           setHits(next)
           setHighlight(0)
           setEmpty(next.length === 0)
+          setErrorMessage(null)
           setOpen(true)
         })
         .catch((error: unknown) => {
@@ -68,6 +77,11 @@ export default function PlaceSearchField({
           if (error instanceof DOMException && error.name === 'AbortError') return
           setHits([])
           setEmpty(true)
+          setErrorMessage(
+            error instanceof PlacesUnavailableError
+              ? error.message
+              : 'No se pudo buscar lugares. Revisa la API key de Google Maps.',
+          )
           setOpen(true)
         })
         .finally(() => {
@@ -177,7 +191,8 @@ export default function PlaceSearchField({
         >
           {hits.length === 0 ? (
             <li className="px-3 py-2 text-xs text-mist">
-              Sin coincidencias. Prueba un barrio de {city.name} o coloca el pin en el mapa.
+              {errorMessage ??
+                `Sin coincidencias. Prueba un barrio de ${city.name} o coloca el pin en el mapa.`}
             </li>
           ) : (
             hits.map((hit, index) => (
