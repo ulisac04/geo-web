@@ -30,7 +30,6 @@ export function togglePinActive(
 export function createOrderPinElement(color: string, draggable: boolean): HTMLDivElement {
   const el = document.createElement('div')
   el.className = `order-pin${draggable ? '' : ' is-static'}`
-  el.style.transform = 'translate(-50%, -100%)'
   el.innerHTML = `<svg viewBox="0 0 24 32" width="28" height="36"><path d="M12 0C6.5 0 2 4.4 2 9.8c0 7.2 10 22.2 10 22.2s10-15 10-22.2C22 4.4 17.5 0 12 0z" fill="${color}"/><circle cx="12" cy="10" r="3.4" fill="var(--pin-hole)"/></svg>`
   el.addEventListener('click', (event) => event.stopPropagation())
   return el
@@ -39,7 +38,6 @@ export function createOrderPinElement(color: string, draggable: boolean): HTMLDi
 export function createDriverPinElement(driver: Driver, highlighted: boolean): HTMLDivElement {
   const pin = document.createElement('div')
   pin.className = `driver-pin ${driver.status}${highlighted ? ' highlighted' : ''}`
-  pin.style.transform = 'translate(-50%, -50%)'
 
   const label = document.createElement('div')
   label.className = 'driver-marker-label'
