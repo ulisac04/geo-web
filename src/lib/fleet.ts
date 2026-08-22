@@ -189,8 +189,31 @@ export function rankCandidates(
   limit = 5,
   maxDistanceM = Infinity,
 ): Driver[] {
+  return rankByDistanceToOrigin(drivers, origin, limit, maxDistanceM, (driver) =>
+    driver.status === 'available',
+  )
+}
+
+/** Los N más cercanos al pickup, estén disponibles o en curso (no fuera de servicio). */
+export function rankNearestToOrigin(
+  drivers: Driver[],
+  origin: [number, number],
+  limit = 5,
+): Driver[] {
+  return rankByDistanceToOrigin(drivers, origin, limit, Infinity, (driver) =>
+    driver.status !== 'offline',
+  )
+}
+
+function rankByDistanceToOrigin(
+  drivers: Driver[],
+  origin: [number, number],
+  limit: number,
+  maxDistanceM: number,
+  include: (driver: Driver) => boolean,
+): Driver[] {
   return drivers
-    .filter((driver) => driver.status === 'available')
+    .filter(include)
     .map((driver) => {
       const distanceM = Math.round(haversineMeters(driver.coords, origin))
       return {

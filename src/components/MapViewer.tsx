@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import GoogleMapFrame from './GoogleMapFrame'
 import MapModeToggle from './MapModeToggle'
 import type { Driver, LiveTrip, MapMode, OrderDraft, PinFocus } from '../types'
+import { rankNearestToOrigin } from '../lib/fleet'
 import { isPickupLeg } from '../lib/services'
 import { fetchDrivingRoute } from '../lib/routing'
 import { hasGoogleMapsKey } from '../lib/mapsConfig'
@@ -45,12 +46,33 @@ interface MapViewerProps {
   onTakeOffline: (driverId: string) => void
 }
 
+const NEAREST_LIMIT = 5
+
 export default function MapViewer(props: MapViewerProps) {
+  const routeMapped = Boolean(props.order.originCoords && props.order.destCoords)
+  const [nearestOnly, setNearestOnly] = useState(false)
+  const canFilterNearest = props.mode === 'fleet' && routeMapped
+
+  useEffect(() => {
+    if (!canFilterNearest) setNearestOnly(false)
+  }, [canFilterNearest])
+
+  const mapDrivers = useMemo(() => {
+    if (!nearestOnly || !props.order.originCoords || props.mode !== 'fleet') {
+      return props.drivers
+    }
+    return rankNearestToOrigin(props.drivers, props.order.originCoords, NEAREST_LIMIT)
+  }, [nearestOnly, props.drivers, props.mode, props.order.originCoords])
+
   return (
     <section className="relative h-full w-full min-w-0">
       {hasGoogleMapsKey() ? (
         <GoogleMapFrame id="dispatch-map" center={props.center} className="h-full w-full">
-          <MapViewerController {...props} />
+          <MapViewerController
+            {...props}
+            drivers={mapDrivers}
+            nearestOnly={nearestOnly}
+          />
         </GoogleMapFrame>
       ) : (
         <GoogleMapFrame id="dispatch-map" center={props.center} className="h-full w-full" />
@@ -70,7 +92,9 @@ export default function MapViewer(props: MapViewerProps) {
               <p>
                 {props.mode === 'none'
                   ? 'Solo puntos de la orden. Flota y viajes ocultos.'
-                  : 'Verde: recogida · Rojo: entrega · Ámbar: chofer'}
+                  : nearestOnly
+                    ? `Solo los ${NEAREST_LIMIT} choferes más cercanos al punto A (disponibles u ocupados).`
+                    : 'Verde: recogida · Rojo: entrega · Ámbar: chofer'}
               </p>
               <p className="mt-1">
                 Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Arrastra para
@@ -79,6 +103,21 @@ export default function MapViewer(props: MapViewerProps) {
             </>
           )}
         </div>
+        {canFilterNearest ? (
+          <button
+            type="button"
+            onClick={() => setNearestOnly((current) => !current)}
+            className={`w-fit rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+              nearestOnly
+                ? 'border-signal/50 bg-signal/15 text-signal'
+                : 'border-line bg-panel/90 text-snow backdrop-blur hover:border-mist/40 hover:text-snow'
+            }`}
+          >
+            {nearestOnly
+              ? 'Ver toda la flota'
+              : `5 más cercanos al punto A`}
+          </button>
+        ) : null}
       </div>
     </section>
   )
@@ -95,13 +134,14 @@ function MapViewerController({
   liveTrips,
   focusedTripId,
   center,
+  nearestOnly,
   onFocusTrip,
   onSetPin,
   onMoveOrigin,
   onMoveDest,
   onClearPin,
   onTakeOffline,
-}: MapViewerProps) {
+}: MapViewerProps & { nearestOnly: boolean }) {
   const map = useMap('dispatch-map')
   const markerLib = useMapsLibrary('marker')
   const driverMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
@@ -130,6 +170,7 @@ function MapViewerController({
   const modeRef = useRef(mode)
   const liveTripsRef = useRef(liveTrips)
   const focusedTripIdRef = useRef(focusedTripId)
+  const nearestOnlyRef = useRef(nearestOnly)
 
   onSetPinRef.current = onSetPin
   onMoveOriginRef.current = onMoveOrigin
@@ -140,6 +181,7 @@ function MapViewerController({
   modeRef.current = mode
   liveTripsRef.current = liveTrips
   focusedTripIdRef.current = focusedTripId
+  nearestOnlyRef.current = nearestOnly
 
   useEffect(() => {
     if (!map) return
@@ -311,6 +353,7 @@ function MapViewerController({
   const driverLat = routeDriver?.coords[1]
   const originCoords = order.originCoords
   const destCoords = order.destCoords
+  const nearestIds = nearestOnly ? drivers.map((driver) => driver.id).join('|') : ''
 
   useEffect(() => {
     const line = tripLineRef.current
@@ -324,7 +367,7 @@ function MapViewerController({
     }
 
     setPolylineCoords(line, [originCoords, destCoords])
-    fitTo(map, [originCoords, destCoords])
+    if (!nearestOnlyRef.current) fitTo(map, [originCoords, destCoords])
 
     const controller = new AbortController()
     abortTripRef.current = controller
@@ -332,7 +375,7 @@ function MapViewerController({
       .then((route) => {
         if (controller.signal.aborted) return
         setPolylineCoords(line, route.coordinates)
-        fitTo(map, route.coordinates)
+        if (!nearestOnlyRef.current) fitTo(map, route.coordinates)
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
@@ -342,6 +385,16 @@ function MapViewerController({
 
     return () => abortTripRef.current?.abort()
   }, [destCoords, originCoords, mode, map])
+
+  useEffect(() => {
+    if (!map || !nearestOnly || mode !== 'fleet' || !originCoords) return
+    const points: [number, number][] = [
+      originCoords,
+      ...(destCoords ? [destCoords] : []),
+      ...drivers.map((driver) => driver.coords),
+    ]
+    fitTo(map, points)
+  }, [destCoords, map, mode, nearestIds, nearestOnly, originCoords])
 
   useEffect(() => {
     const line = driverLineRef.current
