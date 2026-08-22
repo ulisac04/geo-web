@@ -1,10 +1,5 @@
 export const MAX_AUDIO_SECONDS = 90
 export const MAX_AUDIO_BYTES = 1_200_000
-/** WAV PCM 16 kHz 90s ≈ 2.88 MB; Gemini acepta varios MB en inline data. */
-export const MAX_WAV_BYTES = 3_500_000
-
-const DECODE_TIMEOUT_MS = 8_000
-const MIN_PEAK = 0.01
 
 export const AUDIO_ACCEPT =
   'audio/ogg,audio/opus,audio/mpeg,audio/mp3,audio/mp4,audio/m4a,audio/x-m4a,audio/aac,audio/wav,audio/webm,.ogg,.opus,.mp3,.m4a,.webm,.wav'
@@ -80,16 +75,8 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-/** Convierte grabaciones webm a WAV 16 kHz mono (Gemini no transcribe audio/webm). */
+/** Envía el contenedor nativo (webm/ogg/mp4). Convertir a WAV infla el payload y retrasa Gemini. */
 export async function prepareRecordingDataUrl(blob: Blob): Promise<string> {
-  const mime = stripAudioMime(blob.type)
-  if (mime === 'audio/webm' || mime === 'audio/opus') {
-    const wav = await blobToWavDataUrl(blob, 16_000)
-    if (estimatedDecodedBytes(wav) <= MAX_WAV_BYTES) return wav
-    const compact = await blobToWavDataUrl(blob, 8_000)
-    if (estimatedDecodedBytes(compact) <= MAX_WAV_BYTES) return compact
-    throw new Error('La grabación es demasiado larga para extraer')
-  }
   return blobToDataUrl(blob)
 }
 
@@ -99,118 +86,4 @@ export function waitForPaint(): Promise<void> {
       requestAnimationFrame(() => resolve())
     })
   })
-}
-
-function estimatedDecodedBytes(dataUrl: string): number {
-  const comma = dataUrl.indexOf('base64,')
-  const b64 = comma >= 0 ? dataUrl.slice(comma + 7) : dataUrl
-  return Math.floor((b64.length * 3) / 4)
-}
-
-async function blobToWavDataUrl(blob: Blob, sampleRate = 16_000): Promise<string> {
-  const ctx = new AudioContext()
-  try {
-    await ctx.resume()
-    const buffer = await withTimeout(ctx.decodeAudioData(await blob.arrayBuffer()), DECODE_TIMEOUT_MS)
-    if (!hasAudibleEnergy(buffer)) {
-      throw new Error('silent')
-    }
-    const wav = encodeWavPcm16Mono(resampleMonoSync(buffer, sampleRate), sampleRate)
-    const base64 = arrayBufferToBase64(wav)
-    return `data:audio/wav;base64,${base64}`
-  } finally {
-    await ctx.close()
-  }
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error('timeout')), ms)
-    promise.then(
-      (value) => {
-        window.clearTimeout(timer)
-        resolve(value)
-      },
-      (error) => {
-        window.clearTimeout(timer)
-        reject(error)
-      },
-    )
-  })
-}
-
-function hasAudibleEnergy(buffer: AudioBuffer): boolean {
-  const channels = buffer.numberOfChannels
-  const length = buffer.length
-  if (length === 0 || channels === 0) return false
-  const step = Math.max(1, Math.floor(length / 8_000))
-  let peak = 0
-  for (let ch = 0; ch < channels; ch += 1) {
-    const data = buffer.getChannelData(ch)
-    for (let i = 0; i < length; i += step) {
-      const abs = Math.abs(data[i] ?? 0)
-      if (abs > peak) peak = abs
-      if (peak >= MIN_PEAK) return true
-    }
-  }
-  return peak >= MIN_PEAK
-}
-
-function resampleMonoSync(buffer: AudioBuffer, targetRate: number): Float32Array {
-  const ratio = buffer.sampleRate / targetRate
-  const outLength = Math.max(1, Math.round(buffer.length / ratio))
-  const out = new Float32Array(outLength)
-  const channels = buffer.numberOfChannels
-  for (let i = 0; i < outLength; i += 1) {
-    const srcIndex = i * ratio
-    const i0 = Math.min(buffer.length - 1, Math.floor(srcIndex))
-    let sample = 0
-    for (let ch = 0; ch < channels; ch += 1) {
-      sample += buffer.getChannelData(ch)[i0] ?? 0
-    }
-    out[i] = sample / channels
-  }
-  return out
-}
-
-function encodeWavPcm16Mono(samples: Float32Array, sampleRate = 16_000): ArrayBuffer {
-  const dataSize = samples.length * 2
-  const buffer = new ArrayBuffer(44 + dataSize)
-  const view = new DataView(buffer)
-  writeAscii(view, 0, 'RIFF')
-  view.setUint32(4, 36 + dataSize, true)
-  writeAscii(view, 8, 'WAVE')
-  writeAscii(view, 12, 'fmt ')
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, sampleRate, true)
-  view.setUint32(28, sampleRate * 2, true)
-  view.setUint16(32, 2, true)
-  view.setUint16(34, 16, true)
-  writeAscii(view, 36, 'data')
-  view.setUint32(40, dataSize, true)
-  let offset = 44
-  for (let i = 0; i < samples.length; i += 1) {
-    const s = Math.max(-1, Math.min(1, samples[i] ?? 0))
-    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true)
-    offset += 2
-  }
-  return buffer
-}
-
-function writeAscii(view: DataView, offset: number, text: string) {
-  for (let i = 0; i < text.length; i += 1) {
-    view.setUint8(offset + i, text.charCodeAt(i))
-  }
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
-  let binary = ''
-  const chunk = 0x8000
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
-  }
-  return btoa(binary)
 }
