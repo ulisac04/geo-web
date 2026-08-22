@@ -69,7 +69,7 @@ export default function MapViewer(props: MapViewerProps) {
               <p>
                 {props.mode === 'none'
                   ? 'Solo puntos de la orden. Flota y viajes ocultos.'
-                  : 'Azul: recogida · Rojo: entrega · Ámbar: chofer'}
+                  : 'Verde: recogida · Rojo: entrega · Ámbar: chofer'}
               </p>
               <p className="mt-1">
                 Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Arrastra para

@@ -18,7 +18,7 @@ export default function NearbyDriverList() {
 
       {nearbyDrivers.length === 0 ? (
         <p className="rounded-lg border border-line bg-ink px-3 py-3 text-xs text-mist">
-          Nadie tan cerca. Mueve el pin azul en el mapa.
+          Nadie tan cerca. Mueve el pin verde en el mapa.
         </p>
       ) : (
         <ul className="space-y-1.5">

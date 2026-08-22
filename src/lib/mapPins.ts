@@ -1,7 +1,7 @@
 import type { Driver } from '../types'
 import { fromLatLng, toLatLng } from './mapsConfig'
 
-export const ORDER_PIN_ORIGIN = '#2563eb'
+export const ORDER_PIN_ORIGIN = '#198754'
 export const ORDER_PIN_DEST = '#ef4444'
 
 export function removeMarker(marker: google.maps.marker.AdvancedMarkerElement | null) {
@@ -33,7 +33,7 @@ export function togglePinActive(
 export function createOrderPinElement(color: string, draggable: boolean): HTMLDivElement {
   const el = document.createElement('div')
   el.className = `order-pin${draggable ? '' : ' is-static'}`
-  el.innerHTML = `<svg viewBox="0 0 24 32" width="28" height="36"><path d="M12 0C6.5 0 2 4.4 2 9.8c0 7.2 10 22.2 10 22.2s10-15 10-22.2C22 4.4 17.5 0 12 0z" fill="${color}"/><circle cx="12" cy="10" r="3.4" fill="var(--pin-hole)"/></svg>`
+  el.innerHTML = `<svg viewBox="0 0 24 32" width="28" height="36"><path d="M12 0C6.5 0 2 4.4 2 9.8c0 7.2 10 22.2 10 22.2s10-15 10-22.2C22 4.4 17.5 0 12 0z" fill="${color}" stroke="#fff" stroke-width="1.4"/><circle cx="12" cy="10" r="3.4" fill="var(--pin-hole)"/></svg>`
   el.addEventListener('click', (event) => event.stopPropagation())
   return el
 }

@@ -163,13 +163,13 @@ export default function PlaceSearchField({
           active
             ? accent === 'dest'
               ? 'border-red-500/60 ring-1 ring-red-500/30'
-              : 'border-blue-500/60 ring-1 ring-blue-500/30'
+              : 'border-[#198754]/60 ring-1 ring-[#198754]/30'
             : 'border-line'
         }`}
       >
         <MapPin
           className={`size-3.5 shrink-0 ${
-            hasCoords ? (accent === 'dest' ? 'text-red-500' : 'text-blue-500') : 'text-mist'
+            hasCoords ? (accent === 'dest' ? 'text-red-500' : 'text-[#198754]') : 'text-mist'
           }`}
         />
         <input
