@@ -11,6 +11,8 @@ import {
 import {
   createAdvancedMarker,
   createOrderPinElement,
+  ORDER_PIN_DEST,
+  ORDER_PIN_ORIGIN,
   removeMarker,
 } from '../lib/mapPins'
 
@@ -94,7 +96,7 @@ function ServiceTrackController({
       originMarkerRef.current = createStaticPin(
         map,
         originCoords,
-        '#fbbf24',
+        ORDER_PIN_ORIGIN,
         'Origen',
         pinInfoRef.current,
       )
@@ -103,7 +105,7 @@ function ServiceTrackController({
       destMarkerRef.current = createStaticPin(
         map,
         destCoords,
-        '#34d399',
+        ORDER_PIN_DEST,
         'Destino',
         pinInfoRef.current,
       )

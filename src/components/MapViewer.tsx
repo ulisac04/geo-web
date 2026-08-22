@@ -18,6 +18,8 @@ import {
   createDriverPopup,
   createOrderPinElement,
   markerLngLat,
+  ORDER_PIN_DEST,
+  ORDER_PIN_ORIGIN,
   removeMarker,
   setMarkerLngLat,
   togglePinActive,
@@ -67,7 +69,7 @@ export default function MapViewer(props: MapViewerProps) {
               <p>
                 {props.mode === 'none'
                   ? 'Solo puntos de la orden. Flota y viajes ocultos.'
-                  : 'Verde: recogida · Rojo: entrega · Ámbar: chofer'}
+                  : 'Azul: recogida · Rojo: entrega · Ámbar: chofer'}
               </p>
               <p className="mt-1">
                 Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Arrastra para
@@ -239,7 +241,7 @@ function MapViewerController({
       map,
       marker: originMarkerRef.current,
       coords: order.originCoords,
-      color: '#34d399',
+      color: ORDER_PIN_ORIGIN,
       label: 'Punto A · Recogida',
       active: activePin === 'origin',
       draggingRef: draggingOriginRef,
@@ -250,7 +252,7 @@ function MapViewerController({
       map,
       marker: destMarkerRef.current,
       coords: order.destCoords,
-      color: '#f43f5e',
+      color: ORDER_PIN_DEST,
       label: 'Punto B · Entrega',
       active: activePin === 'dest',
       draggingRef: draggingDestRef,
@@ -273,7 +275,7 @@ function MapViewerController({
           createLivePin({
             map,
             coords: record.originCoords,
-            color: '#34d399',
+            color: ORDER_PIN_ORIGIN,
             label: `A · ${record.origin}`,
             active: focusedTripId === record.id,
             infoWindow: pinInfoRef.current,
@@ -286,7 +288,7 @@ function MapViewerController({
           createLivePin({
             map,
             coords: record.destCoords,
-            color: '#f43f5e',
+            color: ORDER_PIN_DEST,
             label: `B · ${record.destination}`,
             active: focusedTripId === record.id,
             infoWindow: pinInfoRef.current,
@@ -556,6 +558,10 @@ function syncOrderPin({
   }
 
   togglePinActive(marker, active)
+  const el = marker.content
+  if (el instanceof HTMLElement) {
+    el.querySelector('path')?.setAttribute('fill', color)
+  }
   if (!draggingRef.current) setMarkerLngLat(marker, coords)
   return marker
 }

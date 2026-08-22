@@ -1,6 +1,9 @@
 import type { Driver } from '../types'
 import { fromLatLng, toLatLng } from './mapsConfig'
 
+export const ORDER_PIN_ORIGIN = '#2563eb'
+export const ORDER_PIN_DEST = '#ef4444'
+
 export function removeMarker(marker: google.maps.marker.AdvancedMarkerElement | null) {
   if (!marker) return
   marker.map = null

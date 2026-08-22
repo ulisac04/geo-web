@@ -15,6 +15,7 @@ interface PlaceSearchFieldProps {
   hasCoords: boolean
   hint?: string
   placeholder?: string
+  accent?: 'origin' | 'dest'
   onActivate: () => void
   onQueryChange: (value: string) => void
   onSelect: (hit: PlaceHit) => void
@@ -27,6 +28,7 @@ export default function PlaceSearchField({
   hasCoords,
   hint,
   placeholder,
+  accent = 'origin',
   onActivate,
   onQueryChange,
   onSelect,
@@ -158,10 +160,18 @@ export default function PlaceSearchField({
       <span className="text-[11px] font-medium tracking-wide text-mist uppercase">{label}</span>
       <div
         className={`flex items-center gap-2 rounded-md border bg-ink px-2.5 py-1.5 ${
-          active ? 'border-signal/60 ring-1 ring-signal/30' : 'border-line'
+          active
+            ? accent === 'dest'
+              ? 'border-red-500/60 ring-1 ring-red-500/30'
+              : 'border-blue-500/60 ring-1 ring-blue-500/30'
+            : 'border-line'
         }`}
       >
-        <MapPin className={`size-3.5 shrink-0 ${hasCoords ? 'text-signal' : 'text-mist'}`} />
+        <MapPin
+          className={`size-3.5 shrink-0 ${
+            hasCoords ? (accent === 'dest' ? 'text-red-500' : 'text-blue-500') : 'text-mist'
+          }`}
+        />
         <input
           value={value}
           placeholder={placeholder}

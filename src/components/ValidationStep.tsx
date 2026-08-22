@@ -108,6 +108,7 @@ export default function ValidationStep() {
         hasCoords={Boolean(order.originCoords)}
         hint={order.originHint}
         placeholder={`Empieza a escribir un barrio de ${city.name}…`}
+        accent="origin"
         onActivate={() => setActivePin('origin')}
         onQueryChange={(value) => updateOrder({ origin: value, originHint: '' })}
         onSelect={(hit) => {
@@ -125,6 +126,7 @@ export default function ValidationStep() {
         hasCoords={Boolean(order.destCoords)}
         hint={order.destHint}
         placeholder={`Empieza a escribir un barrio de ${city.name}…`}
+        accent="dest"
         onActivate={() => setActivePin('dest')}
         onQueryChange={(value) => updateOrder({ destination: value, destHint: '' })}
         onSelect={(hit) => {
