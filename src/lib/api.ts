@@ -24,7 +24,15 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
   body?: unknown
   auth?: boolean
+  signal?: AbortSignal
   query?: Record<string, string | number | boolean | undefined | null>
+}
+
+export function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === 'AbortError') ||
+    (error instanceof Error && error.name === 'AbortError')
+  )
 }
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -53,6 +61,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     method: options.method ?? 'GET',
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    signal: options.signal,
   })
 
   if (response.status === 204) {

@@ -16,7 +16,7 @@ import type {
   OrderDraft,
   PinFocus,
 } from '../types'
-import { ApiError } from '../lib/api'
+import { ApiError, isAbortError } from '../lib/api'
 import { fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
 import { formatPlaceHint, geocodeFirst, reverseGeocode } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
@@ -57,6 +57,7 @@ interface DispatchContextValue {
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
   extractWithAI: () => Promise<void>
+  cancelExtract: () => void
   continueManually: () => void
   acceptService: () => Promise<void>
   hoverDriver: (id: string | null) => void
@@ -108,6 +109,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     null,
   )
   const [takingOffline, setTakingOffline] = useState(false)
+  const extractAbortRef = useRef<AbortController | null>(null)
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
@@ -261,15 +263,20 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   )
 
   const extractWithAI = useCallback(async () => {
+    extractAbortRef.current?.abort()
+    const controller = new AbortController()
+    extractAbortRef.current = controller
     setExtractError(null)
     setExtracting(true)
     try {
-      const extracted = await extractOrder({ rawText })
+      const extracted = await extractOrder({ rawText }, controller.signal)
+      if (controller.signal.aborted) return
       const draft = extractedToDraft(extracted, order.serviceTypeId)
       const [originHit, destHit] = await Promise.all([
-        geocodeFirst(draft.origin, city),
-        geocodeFirst(draft.destination, city),
+        geocodeFirst(draft.origin, city, controller.signal),
+        geocodeFirst(draft.destination, city, controller.signal),
       ])
+      if (controller.signal.aborted) return
       setOrder({
         ...draft,
         originCoords: originHit?.coords ?? null,
@@ -281,6 +288,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setAcceptedServiceId(null)
       setStep(2)
     } catch (error) {
+      if (controller.signal.aborted || isAbortError(error)) return
       const message =
         error instanceof ParserError || error instanceof ApiError
           ? error.message
@@ -289,9 +297,22 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
             : 'No se pudo extraer el pedido'
       setExtractError(message)
     } finally {
+      if (extractAbortRef.current === controller) {
+        extractAbortRef.current = null
+      }
       setExtracting(false)
     }
   }, [city, order.serviceTypeId, rawText])
+
+  const cancelExtract = useCallback(() => {
+    extractAbortRef.current?.abort()
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      extractAbortRef.current?.abort()
+    }
+  }, [])
 
   const continueManually = useCallback(() => {
     setExtractError(null)
@@ -503,6 +524,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setActivePin,
       updateOrder,
       extractWithAI,
+      cancelExtract,
       continueManually,
       acceptService,
       hoverDriver: setHoveredDriverId,
@@ -548,6 +570,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       focusTrip,
       updateOrder,
       extractWithAI,
+      cancelExtract,
       continueManually,
       acceptService,
       focusDriver,

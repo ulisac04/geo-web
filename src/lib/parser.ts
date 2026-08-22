@@ -19,15 +19,19 @@ export interface ExtractedOrder {
   notes: string | null
 }
 
-export async function extractOrder(input: {
-  rawText?: string
-  imageDataUrl?: string | null
-}): Promise<ExtractedOrder> {
+export async function extractOrder(
+  input: {
+    rawText?: string
+    imageDataUrl?: string | null
+  },
+  signal?: AbortSignal,
+): Promise<ExtractedOrder> {
   const body = buildRequestBody(input)
   try {
     return await api<ExtractedOrder>('/api/v1/parser/extract', {
       method: 'POST',
       body,
+      signal,
     })
   } catch (error) {
     if (error instanceof ApiError) {

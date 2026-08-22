@@ -12,6 +12,7 @@ import {
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
 import { ParserError, ocrImage, transcribeAudio } from '../lib/parser'
 import { ApiError } from '../lib/api'
+import BlockingProgressOverlay from './BlockingProgressOverlay'
 import NearbyDriverList from './NearbyDriverList'
 
 export default function OrderInputStep() {
@@ -19,6 +20,7 @@ export default function OrderInputStep() {
     rawText,
     setRawText,
     extractWithAI,
+    cancelExtract,
     continueManually,
     extracting,
     extractError,
@@ -216,7 +218,7 @@ export default function OrderInputStep() {
             onChange={(e) => setRawText(e.target.value)}
             onPaste={(event) => takeImageFromClipboard(event)}
             placeholder="Pega aquí el mensaje del cliente (Ctrl + V)..."
-            disabled={recording || transcribing || ocring}
+            disabled={busy}
             className="min-h-44 w-full resize-none rounded-lg border border-line bg-ink px-3 py-3 pr-20 text-sm leading-relaxed text-snow placeholder:text-mist/50 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none disabled:opacity-70"
           />
           <div className="absolute right-2 bottom-2 flex items-center gap-1">
@@ -321,6 +323,7 @@ export default function OrderInputStep() {
       ) : null}
 
       <NearbyDriverList />
+      <BlockingProgressOverlay open={extracting} onCancel={cancelExtract} />
     </div>
   )
 }

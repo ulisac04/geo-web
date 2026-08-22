@@ -388,14 +388,18 @@ export async function searchPlaces(
   return merged.slice(0, 8)
 }
 
-export async function geocodeFirst(query: string, city: City): Promise<PlaceHit | null> {
+export async function geocodeFirst(
+  query: string,
+  city: City,
+  signal?: AbortSignal,
+): Promise<PlaceHit | null> {
   const q = query.trim()
   if (!q) return null
   try {
-    const hits = await searchPlaces(q, city)
+    const hits = await searchPlaces(q, city, signal)
     const first = hits[0]
     if (!first) return null
-    return hydratePlaceHit(first)
+    return hydratePlaceHit(first, signal)
   } catch {
     return null
   }
