@@ -33,8 +33,8 @@ Ciudades que usa la UI: `caracas` | `san_cristobal` | `cucuta` | `bogota`.
 | Extraer pedido (texto/captura/audio) | `POST /v1/parser/extract`             | **existe** (API key). Alias Bearer **falta**                                                                    |
 | Candidatos cercanos            | Haversine local                       | `POST /api/v1/dispatch/candidates` **falta** (sí existe `/v1` con API key)                                      |
 | Costos + preview tarifa        | Reglas + `estimateFare` local         | `/api/v1/cost-rules` + `.../estimate` **existe**                                                                |
-| Autocomplete A/B               | Photon público                        | **no hace falta** (front)                                                                                       |
-| Ruta en mapa                   | OSRM público                          | **no hace falta** (front)                                                                                       |
+| Autocomplete A/B               | Google Places (New)                   | **no hace falta** (front)                                                                                       |
+| Ruta en mapa                   | Google Directions                     | **no hace falta** (front)                                                                                       |
 | WhatsApp al chofer / cliente   | `wa.me` en el cliente                 | **no hace falta** (front)                                                                                       |
 
 
@@ -475,7 +475,7 @@ Pedido: el mismo body en `POST /api/v1/parser/extract` con Bearer.
 ```
 
 Ausentes en `null`. `400` sin input, `429` cuota Gemini, `503` sin `GEMINI_API_KEY`.  
-La SPA geocodifica A/B después (Photon); el parser no devuelve coords.
+La SPA geocodifica A/B después (Google Places); el parser no devuelve coords.
 
 ---
 
@@ -520,7 +520,7 @@ GET  /drivers?city_id=…          (poll cada N s)
 
 [texto o captura]
 POST /parser/extract
-     → front geocodifica Photon
+     → front geocodifica Places
 
 POST /cost-rules/estimate        (A/B en el mapa)
 POST /services                   (sin driver → pending)
@@ -535,8 +535,8 @@ PATCH /services/{id}             { driver_id } → assigned + busy
 
 ## 13. Fuera de alcance (el front lo resuelve)
 
-- Photon (`photon.komoot.io`) — autocomplete / geocode
-- OSRM (`router.project-osrm.org`) — polyline A→B
+- Google Places Autocomplete (New) — autocomplete / geocode
+- Google Directions — polyline A→B
 - WhatsApp (`wa.me`) — mensaje al chofer
 - Tema claro/oscuro
 - Media service de fotos (data URL en el JSON alcanza)

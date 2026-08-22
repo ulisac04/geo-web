@@ -9,7 +9,7 @@ Repos hermanos: **geo** (API) · **geo-mobile** (app conductor).
 ## Levantar
 
 ```bash
-cp -n .env.example .env   # VITE_API_URL=http://127.0.0.1:8080
+cp -n .env.example .env   # VITE_API_URL y VITE_GOOGLE_MAPS_API_KEY
 npm install
 npm run dev
 ```
@@ -39,7 +39,9 @@ Ya no hay flota/servicios/costos en `localStorage`. El poll del mapa **no** muev
 | Candidatos al aceptar | `POST /api/v1/dispatch/candidates` |
 | Asignar chofer | `PATCH /api/v1/services/{id}` `{ driver_id, status: en_route }` |
 
-Sigue en el browser: autocomplete Photon, ruta OSRM, WhatsApp (`wa.me`), tema.
+Sigue en el browser: Google Maps (pines/rutas), Places Autocomplete, Directions, WhatsApp (`wa.me`), tema.
+
+En Google Cloud activa **Maps JavaScript API**, **Places API (New)** y **Directions API**. Pon la key en `VITE_GOOGLE_MAPS_API_KEY` (referrer `http://localhost:5173/*`). Un Map ID vectorial va en `VITE_GOOGLE_MAPS_MAP_ID` (`DEMO_MAP_ID` sirve en local). Sin key el mapa muestra un aviso y no arranca.
 
 ## Asignación híbrida
 

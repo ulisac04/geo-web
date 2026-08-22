@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Loader2, MapPin } from 'lucide-react'
-import { searchPlaces, type PlaceHit } from '../lib/geocode'
+import { hydratePlaceHit, searchPlaces, type PlaceHit } from '../lib/geocode'
 import { useSettings } from '../context/SettingsContext'
 
 interface PlaceSearchFieldProps {
@@ -93,10 +93,21 @@ export default function PlaceSearchField({
 
   function choose(hit: PlaceHit) {
     skipQueryRef.current = value.trim()
-    onSelect(hit)
     setOpen(false)
     setHits([])
     setEmpty(false)
+    setSearching(true)
+    void hydratePlaceHit(hit)
+      .then((resolved) => {
+        skipQueryRef.current = resolved.label
+        onSelect(resolved)
+      })
+      .catch(() => {
+        onSelect(hit)
+      })
+      .finally(() => {
+        setSearching(false)
+      })
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {

@@ -1,52 +1,18 @@
 import { useEffect, useRef } from 'react'
+import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
+import GoogleMapFrame from './GoogleMapFrame'
+import { hasGoogleMapsKey } from '../lib/mapsConfig'
 import {
-  LngLatBounds,
-  Map as MapLibreMap,
-  Marker,
-  NavigationControl,
-  Popup,
-  setWorkerUrl,
-  type GeoJSONSource,
-  type StyleSpecification,
-} from 'maplibre-gl'
-import maplibreWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { useTheme } from '../context/ThemeContext'
-
-setWorkerUrl(maplibreWorker)
-
-type RouteFeature = {
-  type: 'Feature'
-  properties: Record<string, string>
-  geometry: { type: 'LineString'; coordinates: [number, number][] }
-}
-
-function cartoStyle(variant: 'dark_all' | 'light_all'): StyleSpecification {
-  return {
-    version: 8,
-    sources: {
-      carto: {
-        type: 'raster',
-        tiles: [
-          `https://a.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}@2x.png`,
-          `https://b.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}@2x.png`,
-          `https://c.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}@2x.png`,
-        ],
-        tileSize: 256,
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-      },
-    },
-    layers: [{ id: 'carto', type: 'raster', source: 'carto' }],
-  }
-}
-
-const DARK_STYLE = cartoStyle('dark_all')
-const LIGHT_STYLE = cartoStyle('light_all')
-
-const EMPTY_ROUTE: RouteFeature = {
-  type: 'Feature',
-  properties: {},
-  geometry: { type: 'LineString', coordinates: [] },
-}
+  clearPolyline,
+  createRoutePolyline,
+  fitTo,
+  setPolylineCoords,
+} from '../lib/mapGeometry'
+import {
+  createAdvancedMarker,
+  createOrderPinElement,
+  removeMarker,
+} from '../lib/mapPins'
 
 export default function ServiceTrackMap({
   center,
@@ -61,128 +27,103 @@ export default function ServiceTrackMap({
   coordinates: [number, number][]
   estimated: boolean
 }) {
-  const { theme } = useTheme()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<MapLibreMap | null>(null)
-  const originMarkerRef = useRef<Marker | null>(null)
-  const destMarkerRef = useRef<Marker | null>(null)
-  const skipThemeStyleRef = useRef(true)
+  if (!hasGoogleMapsKey()) {
+    return <GoogleMapFrame id="service-track-map" center={center} className="h-full min-h-[240px] w-full" />
+  }
+
+  return (
+    <GoogleMapFrame id="service-track-map" center={center} className="h-full min-h-[240px] w-full">
+      <ServiceTrackController
+        center={center}
+        originCoords={originCoords}
+        destCoords={destCoords}
+        coordinates={coordinates}
+        estimated={estimated}
+      />
+    </GoogleMapFrame>
+  )
+}
+
+function ServiceTrackController({
+  center,
+  originCoords,
+  destCoords,
+  coordinates,
+  estimated,
+}: {
+  center: [number, number]
+  originCoords: [number, number] | null
+  destCoords: [number, number] | null
+  coordinates: [number, number][]
+  estimated: boolean
+}) {
+  const map = useMap('service-track-map')
+  const markerLib = useMapsLibrary('marker')
+  const originMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
+  const destMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
+  const lineRef = useRef<google.maps.Polyline | null>(null)
+  const pinInfoRef = useRef<google.maps.InfoWindow | null>(null)
   const fitKeyRef = useRef('')
-  const initialCenterRef = useRef(center)
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return
-
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: document.documentElement.classList.contains('light') ? LIGHT_STYLE : DARK_STYLE,
-      center: initialCenterRef.current,
-      zoom: 13.2,
-      attributionControl: { compact: true },
+    if (!map) return
+    lineRef.current = createRoutePolyline({
+      map,
+      color: estimated ? '#fbbf24' : '#34d399',
+      dashed: estimated,
+      weight: 3.5,
     })
-
-    map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
-
-    const ensureLayers = () => {
-      if (map.getSource('service-track')) return
-      map.addSource('service-track', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [EMPTY_ROUTE] },
-      })
-      map.addLayer({
-        id: 'service-track-line',
-        type: 'line',
-        source: 'service-track',
-        paint: {
-          'line-color': '#34d399',
-          'line-width': 3.5,
-          'line-opacity': 0.9,
-        },
-      })
-    }
-
-    map.on('load', ensureLayers)
-    map.on('styledata', ensureLayers)
-    mapRef.current = map
-
-    const observer = new ResizeObserver(() => map.resize())
-    observer.observe(containerRef.current)
-
+    pinInfoRef.current ??= new google.maps.InfoWindow({
+      pixelOffset: new google.maps.Size(0, -28),
+    })
     return () => {
-      observer.disconnect()
-      originMarkerRef.current?.remove()
-      destMarkerRef.current?.remove()
-      originMarkerRef.current = null
-      destMarkerRef.current = null
-      map.remove()
-      mapRef.current = null
+      clearPolyline(lineRef.current)
+      lineRef.current = null
     }
-  }, [])
+  }, [map, estimated])
 
   useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    if (skipThemeStyleRef.current) {
-      skipThemeStyleRef.current = false
-      return
-    }
-    map.setStyle(theme === 'light' ? LIGHT_STYLE : DARK_STYLE)
-  }, [theme])
+    if (!map || !markerLib) return
 
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-
-    originMarkerRef.current?.remove()
-    destMarkerRef.current?.remove()
+    removeMarker(originMarkerRef.current)
+    removeMarker(destMarkerRef.current)
     originMarkerRef.current = null
     destMarkerRef.current = null
 
     if (originCoords) {
-      originMarkerRef.current = createPin(map, originCoords, '#fbbf24', 'Origen')
+      originMarkerRef.current = createStaticPin(
+        map,
+        originCoords,
+        '#fbbf24',
+        'Origen',
+        pinInfoRef.current,
+      )
     }
     if (destCoords) {
-      destMarkerRef.current = createPin(map, destCoords, '#34d399', 'Destino')
-    }
-  }, [originCoords, destCoords, theme])
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-
-    const apply = () => {
-      const source = map.getSource('service-track') as GeoJSONSource | undefined
-      if (!source) return
-      source.setData({
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates },
-          },
-        ],
-      })
-      if (map.getLayer('service-track-line')) {
-        map.setPaintProperty(
-          'service-track-line',
-          'line-dasharray',
-          estimated ? [2, 1.4] : [1, 0],
-        )
-        map.setPaintProperty(
-          'service-track-line',
-          'line-color',
-          estimated ? '#fbbf24' : '#34d399',
-        )
-      }
+      destMarkerRef.current = createStaticPin(
+        map,
+        destCoords,
+        '#34d399',
+        'Destino',
+        pinInfoRef.current,
+      )
     }
 
-    if (map.isStyleLoaded()) apply()
-    else map.once('load', apply)
-  }, [coordinates, estimated, theme])
+    return () => {
+      removeMarker(originMarkerRef.current)
+      removeMarker(destMarkerRef.current)
+      originMarkerRef.current = null
+      destMarkerRef.current = null
+    }
+  }, [originCoords, destCoords, map, markerLib])
 
   useEffect(() => {
-    const map = mapRef.current
+    const line = lineRef.current
+    if (!line) return
+    setPolylineCoords(line, coordinates)
+  }, [coordinates, estimated])
+
+  useEffect(() => {
     if (!map) return
 
     const points: [number, number][] = [
@@ -190,41 +131,37 @@ export default function ServiceTrackMap({
       ...(originCoords ? [originCoords] : []),
       ...(destCoords ? [destCoords] : []),
     ]
-    const key = points.map((p) => p.join(',')).join('|')
+    const key = points.map((point) => point.join(',')).join('|')
     if (!points.length) {
       fitKeyRef.current = ''
-      map.easeTo({ center, zoom: 13.2, duration: 400 })
+      map.panTo({ lat: center[1], lng: center[0] })
+      map.setZoom(13.2)
       return
     }
     if (fitKeyRef.current === key) return
     fitKeyRef.current = key
+    fitTo(map, points, 48)
+  }, [center, coordinates, destCoords, originCoords, map])
 
-    if (points.length === 1) {
-      map.easeTo({ center: points[0], zoom: 14, duration: 400 })
-      return
-    }
-
-    const bounds = points.reduce(
-      (next, coords) => next.extend(coords),
-      new LngLatBounds(points[0], points[0]),
-    )
-    map.fitBounds(bounds, { padding: 48, maxZoom: 16, duration: 500 })
-  }, [center, coordinates, destCoords, originCoords])
-
-  return <div ref={containerRef} className="h-full min-h-[240px] w-full" />
+  return null
 }
 
-function createPin(
-  map: MapLibreMap,
+function createStaticPin(
+  map: google.maps.Map,
   coords: [number, number],
   color: string,
   label: string,
-): Marker {
-  const el = document.createElement('div')
-  el.className = 'order-pin is-static'
-  el.innerHTML = `<svg viewBox="0 0 24 32" width="28" height="36"><path d="M12 0C6.5 0 2 4.4 2 9.8c0 7.2 10 22.2 10 22.2s10-15 10-22.2C22 4.4 17.5 0 12 0z" fill="${color}"/><circle cx="12" cy="10" r="3.4" fill="var(--pin-hole)"/></svg>`
-  return new Marker({ element: el, anchor: 'bottom' })
-    .setLngLat(coords)
-    .setPopup(new Popup({ offset: 18, closeButton: false }).setText(label))
-    .addTo(map)
+  infoWindow: google.maps.InfoWindow | null,
+): google.maps.marker.AdvancedMarkerElement {
+  const marker = createAdvancedMarker({
+    map,
+    coords,
+    content: createOrderPinElement(color, false),
+    title: label,
+  })
+  marker.addListener('click', () => {
+    infoWindow?.setContent(label)
+    infoWindow?.open({ map, anchor: marker })
+  })
+  return marker
 }

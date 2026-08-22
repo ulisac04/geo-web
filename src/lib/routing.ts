@@ -1,15 +1,9 @@
+import { toLatLng, waitForMaps } from './mapsConfig'
+
 export interface DrivingRoute {
   coordinates: [number, number][]
   distanceM: number
   durationMin: number
-}
-
-interface OsrmRouteResponse {
-  routes?: Array<{
-    distance: number
-    duration: number
-    geometry?: { coordinates?: [number, number][] }
-  }>
 }
 
 export async function fetchDrivingRoute(
@@ -17,26 +11,31 @@ export async function fetchDrivingRoute(
   to: [number, number],
   signal?: AbortSignal,
 ): Promise<DrivingRoute> {
-  const url =
-    `https://router.project-osrm.org/route/v1/driving/` +
-    `${from[0]},${from[1]};${to[0]},${to[1]}` +
-    `?overview=full&geometries=geojson`
+  await waitForMaps(signal)
+  const service = new google.maps.DirectionsService()
+  const result = await service.route({
+    origin: toLatLng(from),
+    destination: toLatLng(to),
+    travelMode: google.maps.TravelMode.DRIVING,
+  })
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
-  const response = await fetch(url, { signal })
-  if (!response.ok) {
-    throw new Error('No se pudo calcular la ruta')
-  }
-
-  const data = (await response.json()) as OsrmRouteResponse
-  const route = data.routes?.[0]
-  const coordinates = route?.geometry?.coordinates
-  if (!route || !coordinates?.length) {
+  const route = result.routes[0]
+  const path = route?.overview_path
+  if (!route || !path?.length) {
     throw new Error('Sin ruta disponible')
   }
 
+  let distanceM = 0
+  let durationSec = 0
+  for (const leg of route.legs) {
+    distanceM += leg.distance?.value ?? 0
+    durationSec += leg.duration?.value ?? 0
+  }
+
   return {
-    coordinates,
-    distanceM: route.distance,
-    durationMin: Math.max(1, Math.round(route.duration / 60)),
+    coordinates: path.map((point) => [point.lng(), point.lat()] as [number, number]),
+    distanceM,
+    durationMin: Math.max(1, Math.round(durationSec / 60)),
   }
 }

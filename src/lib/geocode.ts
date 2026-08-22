@@ -1,32 +1,15 @@
 import type { City } from './cities'
+import { fromLatLng, hasGoogleMapsKey, toLatLng, waitForMaps } from './mapsConfig'
 
 export interface PlaceHit {
   id: string
   label: string
   secondary: string
   coords: [number, number]
+  placeId?: string
 }
 
-interface PhotonFeature {
-  geometry?: { coordinates?: number[] }
-  properties?: {
-    osm_id?: number
-    osm_type?: string
-    name?: string
-    street?: string
-    housenumber?: string
-    district?: string
-    city?: string
-    state?: string
-    country?: string
-  }
-}
-
-interface PhotonResponse {
-  features?: PhotonFeature[]
-}
-
-const PHOTON_URL = 'https://photon.komoot.io/api/'
+const CITY_BIAS_RADIUS_M = 35_000
 
 function titleCase(value: string): string {
   return value
@@ -55,6 +38,10 @@ function withCitySuffix(query: string, city: City): string {
   return `${query}, ${city.geocodeSuffix}`
 }
 
+function regionCode(city: City): string {
+  return city.country === 'Colombia' ? 'CO' : 'VE'
+}
+
 function localHits(query: string, city: City): PlaceHit[] {
   const normalized = query.toLowerCase()
   return Object.entries(city.places)
@@ -67,57 +54,78 @@ function localHits(query: string, city: City): PlaceHit[] {
     }))
 }
 
-function featureLabel(feature: PhotonFeature, fallback: string): { label: string; secondary: string } {
-  const props = feature.properties ?? {}
-  const street = [props.housenumber, props.street].filter(Boolean).join(' ')
-  const label = props.name?.trim() || street || 'Punto en el mapa'
-  const secondary = [street !== label ? street : '', props.district, props.city, props.state]
-    .filter((part, index, all) => Boolean(part) && all.indexOf(part) === index)
-    .join(', ')
-  return { label, secondary: secondary || fallback }
-}
-
-function featureId(feature: PhotonFeature, index: number): string {
-  const props = feature.properties ?? {}
-  if (props.osm_type && props.osm_id) return `${props.osm_type}-${props.osm_id}`
-  return `hit-${index}`
-}
-
 function hitKey(hit: PlaceHit): string {
-  return `${hit.coords[0].toFixed(5)}:${hit.coords[1].toFixed(5)}:${hit.label.toLowerCase()}`
+  return `${hit.placeId ?? ''}:${hit.coords[0].toFixed(5)}:${hit.coords[1].toFixed(5)}:${hit.label.toLowerCase()}`
 }
 
-async function fetchPhoton(query: string, city: City, signal?: AbortSignal): Promise<PlaceHit[]> {
-  const url = new URL(PHOTON_URL)
-  url.searchParams.set('q', withCitySuffix(query, city))
-  url.searchParams.set('lat', String(city.center[1]))
-  url.searchParams.set('lon', String(city.center[0]))
-  url.searchParams.set('limit', '8')
-  url.searchParams.set('lang', 'es')
-  url.searchParams.set('location_bias_scale', '0.5')
+function predictionText(
+  value: google.maps.places.FormattableText | string | null | undefined,
+): string {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  return value.text
+}
 
-  const response = await fetch(url, { signal })
-  if (!response.ok) {
-    throw new Error('No se pudo buscar el punto')
-  }
+async function fetchGooglePlaces(
+  query: string,
+  city: City,
+  signal?: AbortSignal,
+): Promise<PlaceHit[]> {
+  await waitForMaps(signal)
+  const { AutocompleteSuggestion } = (await google.maps.importLibrary(
+    'places',
+  )) as google.maps.PlacesLibrary
 
-  const data = (await response.json()) as PhotonResponse
-  return (data.features ?? []).flatMap((feature, index) => {
-    const coords = feature.geometry?.coordinates
-    if (!Array.isArray(coords) || coords.length < 2) return []
-    const lng = Number(coords[0])
-    const lat = Number(coords[1])
-    if (!Number.isFinite(lng) || !Number.isFinite(lat)) return []
-    const { label, secondary } = featureLabel(feature, city.name)
+  const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+    input: withCitySuffix(query, city),
+    language: 'es',
+    region: regionCode(city),
+    includedRegionCodes: [regionCode(city)],
+    origin: toLatLng(city.center),
+    locationBias: {
+      center: toLatLng(city.center),
+      radius: CITY_BIAS_RADIUS_M,
+    },
+  })
+
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+  return suggestions.flatMap((suggestion, index) => {
+    const prediction = suggestion.placePrediction
+    if (!prediction) return []
+    const label =
+      predictionText(prediction.mainText) || predictionText(prediction.text) || 'Punto en el mapa'
+    const secondary = predictionText(prediction.secondaryText) || city.name
     return [
       {
-        id: featureId(feature, index),
+        id: prediction.placeId || `places-${index}`,
         label,
         secondary,
-        coords: [lng, lat] as [number, number],
+        coords: city.center,
+        placeId: prediction.placeId,
       },
     ]
   })
+}
+
+export async function hydratePlaceHit(
+  hit: PlaceHit,
+  signal?: AbortSignal,
+): Promise<PlaceHit> {
+  if (!hit.placeId) return hit
+  await waitForMaps(signal)
+  const { Place } = (await google.maps.importLibrary('places')) as google.maps.PlacesLibrary
+  const place = new Place({ id: hit.placeId })
+  await place.fetchFields({ fields: ['location', 'displayName', 'formattedAddress'] })
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+  const coords = fromLatLng(place.location)
+  if (!coords) return hit
+  return {
+    ...hit,
+    label: place.displayName || hit.label,
+    secondary: place.formattedAddress || hit.secondary,
+    coords,
+  }
 }
 
 export async function searchPlaces(
@@ -131,11 +139,13 @@ export async function searchPlaces(
   const simplified = simplifyQuery(q) || q
   const local = localHits(q, city)
   let remote: PlaceHit[] = []
-  try {
-    remote = await fetchPhoton(simplified, city, signal)
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') throw error
-    remote = []
+  if (hasGoogleMapsKey()) {
+    try {
+      remote = await fetchGooglePlaces(simplified, city, signal)
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error
+      remote = []
+    }
   }
 
   const seen = new Set<string>()
@@ -154,7 +164,9 @@ export async function geocodeFirst(query: string, city: City): Promise<PlaceHit 
   if (!q) return null
   try {
     const hits = await searchPlaces(q, city)
-    return hits[0] ?? null
+    const first = hits[0]
+    if (!first) return null
+    return hydratePlaceHit(first)
   } catch {
     return null
   }

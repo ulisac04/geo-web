@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "maplibre-gl/dist/maplibre-gl.css";
 
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
@@ -188,18 +187,27 @@ html.light .driver-marker {
   cursor: pointer;
 }
 
-.maplibregl-popup-content {
+.popup-muted {
+  color: var(--mist);
+}
+
+.gm-style .gm-style-iw-c {
   background: var(--card);
   color: var(--snow);
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 10px 12px;
   box-shadow: none;
   font-family: var(--font-sans);
 }
 
-.maplibregl-popup-content .popup-muted {
-  color: var(--mist);
+.gm-style .gm-style-iw-d {
+  overflow: auto !important;
+}
+
+.gm-style .gm-style-iw-t::after,
+.gm-style .gm-style-iw-tc::after {
+  background: var(--card);
 }
 
 .driver-popup {
@@ -231,32 +239,3 @@ html.light .driver-marker {
   background: color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-  border-top-color: var(--card);
-}
-
-.maplibregl-ctrl-group {
-  background: var(--card);
-  border: 1px solid var(--line);
-}
-
-.maplibregl-ctrl-group button {
-  background: var(--card);
-}
-
-.maplibregl-ctrl button .maplibregl-ctrl-icon {
-  filter: invert(1) brightness(1.4);
-}
-
-html.light .maplibregl-ctrl button .maplibregl-ctrl-icon {
-  filter: none;
-}
-
-.maplibregl-ctrl-attrib {
-  background: color-mix(in srgb, var(--ink) 70%, transparent);
-  color: var(--mist);
-}
-
-.maplibregl-ctrl-attrib a {
-  color: var(--mist);
-}

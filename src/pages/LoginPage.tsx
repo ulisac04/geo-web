@@ -50,7 +50,7 @@ export function AuthShell({
             cercano y confirma el envío — todo en un solo panel de monitoreo.
           </p>
         </div>
-        <p className="relative text-xs text-mist/70">Caracas · Flota en vivo · OSM / CARTO</p>
+        <p className="relative text-xs text-mist/70">Caracas · Flota en vivo · Google Maps</p>
       </section>
 
       <section className="flex items-center justify-center px-6 py-12">
