@@ -10,6 +10,7 @@ import {
   Sun,
 } from 'lucide-react'
 import { getSession, logout } from '../lib/auth'
+import { useSettings } from '../context/SettingsContext'
 import { useTheme } from '../context/ThemeContext'
 
 const LINKS = [
@@ -22,6 +23,7 @@ const LINKS = [
 export default function AppNav() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { city } = useSettings()
   const session = getSession()
   const initials = (session?.operator ?? 'OP')
     .split(' ')
@@ -59,6 +61,11 @@ export default function AppNav() {
             >
               <Icon className="size-5" />
               {link.label}
+              {link.to === '/configuracion' ? (
+                <span className="max-w-[56px] truncate text-[9px] font-normal leading-tight text-current/80">
+                  {city.name}
+                </span>
+              ) : null}
             </NavLink>
           )
         })}
