@@ -66,7 +66,7 @@ export default function CandidateCard({
           className="inline-flex items-center gap-1.5 rounded-md bg-signal px-2.5 py-1.5 text-xs font-semibold text-on-signal hover:bg-emerald-300"
         >
           <UserCheck className="size-3.5" />
-          Asignar Conductor
+          Ofrecer
         </button>
       </div>
       <div className="mt-2 flex justify-end">

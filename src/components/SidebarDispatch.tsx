@@ -15,7 +15,7 @@ const STEPS: { id: DispatchStep; label: string }[] = [
   { id: 1, label: 'Datos' },
   { id: 2, label: 'Puntos' },
   { id: 3, label: 'Chofer' },
-  { id: 4, label: 'Enviar' },
+  { id: 4, label: 'Oferta' },
 ]
 
 export default function SidebarDispatch() {

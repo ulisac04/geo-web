@@ -18,6 +18,7 @@ import {
   updateServiceType,
   type CreateServiceInput,
 } from '../lib/services'
+import { useSettings } from './SettingsContext'
 
 interface ServicesContextValue {
   types: ServiceType[]
@@ -36,6 +37,7 @@ interface ServicesContextValue {
 const ServicesContext = createContext<ServicesContextValue | null>(null)
 
 export function ServicesProvider({ children }: { children: ReactNode }) {
+  const { settings } = useSettings()
   const [types, setTypes] = useState<ServiceType[]>([])
   const [records, setRecords] = useState<ServiceRecord[]>([])
 
@@ -54,6 +56,13 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
       setRecords([])
     })
   }, [refreshServices])
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void refreshServices().catch(() => undefined)
+    }, settings.mapRefreshSeconds * 1000)
+    return () => window.clearInterval(id)
+  }, [refreshServices, settings.mapRefreshSeconds])
 
   const addType = useCallback(async (draft: ServiceTypeDraft) => {
     const created = await createServiceType(draft)

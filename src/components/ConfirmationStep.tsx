@@ -12,27 +12,83 @@ export default function ConfirmationStep() {
     sendWhatsApp,
     getFormattedMessage,
     resetOrder,
+    offeredRecord,
+    acceptedServiceId,
+    confirmOffer,
+    beginReassign,
+    actingTripId,
   } = useDispatchFlow()
 
   if (!selectedDriver) return null
 
   const canMessageClient = order.clientPhone.replace(/\D/g, '').length > 0
+  const status = offeredRecord?.status
+  const waiting = !status || status === 'assigned'
+  const taken = status === 'en_route' || status === 'in_progress'
+  const rejected = status === 'pending'
+  const closed = status === 'completed' || status === 'cancelled'
+  const acting = actingTripId === acceptedServiceId
+  const title = rejected
+    ? `${selectedDriver.name} no tomó el servicio`
+    : taken
+      ? `Lo tomó ${selectedDriver.name}`
+      : closed
+        ? `Servicio ${status === 'completed' ? 'completado' : 'cancelado'}`
+        : `Ofrecido a ${selectedDriver.name}`
+  const subtitle = waiting
+    ? 'Esperando que lo tome en la app, o confírmalo aquí.'
+    : rejected
+      ? 'Reasigna a otro conductor.'
+      : formatVehicleLine(selectedDriver.vehicleType, selectedDriver.vehicle)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-3 rounded-lg border border-signal/30 bg-signal/10 px-3 py-3">
-        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-signal" />
+      <div
+        className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${
+          waiting
+            ? 'border-amber-400/40 bg-amber-400/10'
+            : rejected
+              ? 'border-danger/30 bg-danger/10'
+              : 'border-signal/30 bg-signal/10'
+        }`}
+      >
+        <CheckCircle2
+          className={`mt-0.5 size-5 shrink-0 ${waiting ? 'text-amber-300' : 'text-signal'}`}
+        />
         <DriverAvatar src={selectedDriver.driverPhoto} name={selectedDriver.name} />
         <div>
-          <p className="text-sm font-semibold text-snow">
-            Servicio asignado a {selectedDriver.name}
-          </p>
+          <p className="text-sm font-semibold text-snow">{title}</p>
           <p className="text-xs text-mist">
-            {formatVehicleLine(selectedDriver.vehicleType, selectedDriver.vehicle)}
+            {subtitle}
             {selectedDriver.licensePlate ? ` · ${selectedDriver.licensePlate}` : ''}
           </p>
         </div>
       </div>
+
+      {waiting || rejected ? (
+        <div className="grid grid-cols-2 gap-2">
+          {waiting ? (
+            <button
+              type="button"
+              disabled={acting || !acceptedServiceId}
+              onClick={() => void confirmOffer()}
+              className="rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-40"
+            >
+              Confirmar que lo tomó
+            </button>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            disabled={acting || !acceptedServiceId}
+            onClick={() => acceptedServiceId && void beginReassign(acceptedServiceId)}
+            className="rounded-lg border border-line bg-card py-2.5 text-sm font-semibold text-snow hover:border-mist/50 disabled:opacity-40"
+          >
+            Reasignar
+          </button>
+        </div>
+      ) : null}
 
       <pre className="max-h-36 overflow-auto rounded-lg border border-line bg-ink px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap text-mist">
         {getFormattedMessage('driver')}

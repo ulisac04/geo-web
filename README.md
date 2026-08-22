@@ -37,7 +37,7 @@ Ya no hay flota/servicios/costos en `localStorage`. El poll del mapa **no** muev
 | Costos + tarifa | `/api/v1/cost-rules` + `.../estimate` |
 | Extraer pedido | `POST /api/v1/parser/extract` (Gemini; `503` sin `GEMINI_API_KEY` en Geo) |
 | Candidatos al aceptar | `POST /api/v1/dispatch/candidates` |
-| Asignar chofer | `PATCH /api/v1/services/{id}` `{ driver_id, status: en_route }` |
+| Ofrecer chofer | `PATCH /api/v1/services/{id}` `{ driver_id }` → `assigned` |
 
 Sigue en el browser: Google Maps (pines/rutas), Places Autocomplete, Directions, WhatsApp (`wa.me`), tema.
 
@@ -45,22 +45,24 @@ En Google Cloud activa **Maps JavaScript API**, **Places API (New)** y **Directi
 
 ## Asignación híbrida
 
-Wizard: crear `pending` → elegir candidato → `en_route`.
+Wizard: crear `pending` → ofrecer candidato (`assigned`) → el chofer acepta en la app **o** el operador confirma (`en_route`). El operador marca **En viaje** y **Finalizar**.
 
-Al pulsar **Asignar Conductor**:
+Al pulsar **Ofrecer**:
 
-1. `PATCH` del servicio (Geo marca al chofer `busy` y manda **push FCM** a **geo-mobile** si hay token).
+1. `PATCH` del servicio (Geo deja `assigned`, marca al chofer `busy` y manda **push FCM** a **geo-mobile** si hay token).
 2. Se copia el mensaje de despacho al portapapeles.
 3. Se abre WhatsApp del **conductor** (`wa.me`) con ese texto.
 
-Paso 4 (confirmación):
+Paso 4 (oferta):
 
+- **Confirmar que lo tomó** — `assigned` → `en_route` si el chofer no pulsó Aceptar.
+- **Reasignar** — otro candidato mientras siga en oferta (o si rechazó).
 - **WhatsApp conductor** — vuelve a copiar y abrir el chat del chofer.
 - **WhatsApp cliente** — copia un mensaje con conductor / teléfono / vehículo / placa y abre el chat del cliente. Deshabilitado si no hay teléfono.
 
-El API **no** envía WhatsApp (no hay Cloud API). Sin Firebase en Geo, el `PATCH` igual asigna; solo falta el push.
+El API **no** envía WhatsApp (no hay Cloud API). Sin Firebase en Geo, el `PATCH` igual ofrece; solo falta el push.
 
-El backend también acepta `in_progress` / `completed` / `cancelled`.
+Cerrar el viaje (`in_progress` / `completed` / `cancelled`) es solo el operador (lista live o historial).
 
 La API **no siembra conductores**. Crea fichas en Agenda. Para GPS en vivo y para el push, **geo-mobile** debe usar el **mismo UUID** de esa ficha y tenant `andina`.
 

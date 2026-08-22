@@ -15,6 +15,7 @@ import type {
   MapMode,
   OrderDraft,
   PinFocus,
+  ServiceStatus,
 } from '../types'
 import { ApiError, isAbortError } from '../lib/api'
 import { closestAssignable, fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
@@ -51,6 +52,8 @@ interface DispatchContextValue {
   mapMode: MapMode
   focusedTripId: string | null
   liveTrips: LiveTrip[]
+  offeredRecord: LiveTrip['record'] | null
+  acceptedServiceId: string | null
   setMapMode: (mode: MapMode) => void
   focusTrip: (id: string | null) => void
   setRawText: (value: string) => void
@@ -67,6 +70,12 @@ interface DispatchContextValue {
   moveDest: (coords: [number, number]) => void
   clearPin: (pin: PinFocus) => void
   assignDriver: (driver: Driver) => Promise<void>
+  confirmOffer: (serviceId?: string) => Promise<void>
+  markInProgress: (serviceId: string) => Promise<void>
+  completeTrip: (serviceId: string) => Promise<void>
+  cancelTrip: (serviceId: string) => Promise<void>
+  beginReassign: (serviceId: string) => Promise<void>
+  actingTripId: string | null
   takeOffline: (driverId: string) => void
   pendingOffline: { id: string; name: string } | null
   takingOffline: boolean
@@ -109,6 +118,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     null,
   )
   const [takingOffline, setTakingOffline] = useState(false)
+  const [actingTripId, setActingTripId] = useState<string | null>(null)
   const extractAbortRef = useRef<AbortController | null>(null)
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
@@ -135,6 +145,11 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       return driver ? [{ record, driver }] : []
     })
   }, [city.id, fleet, records])
+
+  const offeredRecord = useMemo(
+    () => records.find((record) => record.id === acceptedServiceId) ?? null,
+    [acceptedServiceId, records],
+  )
 
   const nearbyDrivers = useMemo(() => {
     if (!order.originCoords) return []
@@ -384,7 +399,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         if (acceptedServiceId) {
           await updateRecord(acceptedServiceId, {
             driverId: driver.id,
-            status: 'en_route',
           })
           await refreshDrivers()
         }
@@ -398,11 +412,150 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         setSearchError(
           error instanceof ApiError || error instanceof Error
             ? error.message
-            : 'No se pudo asignar el conductor',
+            : 'No se pudo ofrecer el servicio',
         )
       }
     },
     [acceptedServiceId, order, refreshDrivers, updateRecord],
+  )
+
+  const patchTripStatus = useCallback(
+    async (serviceId: string, status: ServiceStatus) => {
+      setActingTripId(serviceId)
+      try {
+        await updateRecord(serviceId, { status })
+        await refreshDrivers()
+      } finally {
+        setActingTripId(null)
+      }
+    },
+    [refreshDrivers, updateRecord],
+  )
+
+  const confirmOffer = useCallback(
+    async (serviceId?: string) => {
+      const id = serviceId ?? acceptedServiceId
+      if (!id) return
+      try {
+        await patchTripStatus(id, 'en_route')
+      } catch (error) {
+        setSearchError(
+          error instanceof ApiError || error instanceof Error
+            ? error.message
+            : 'No se pudo confirmar la toma',
+        )
+      }
+    },
+    [acceptedServiceId, patchTripStatus],
+  )
+
+  const markInProgress = useCallback(
+    async (serviceId: string) => {
+      try {
+        await patchTripStatus(serviceId, 'in_progress')
+      } catch (error) {
+        setSearchError(
+          error instanceof ApiError || error instanceof Error
+            ? error.message
+            : 'No se pudo marcar en viaje',
+        )
+      }
+    },
+    [patchTripStatus],
+  )
+
+  const completeTrip = useCallback(
+    async (serviceId: string) => {
+      try {
+        await patchTripStatus(serviceId, 'completed')
+      } catch (error) {
+        setSearchError(
+          error instanceof ApiError || error instanceof Error
+            ? error.message
+            : 'No se pudo finalizar el servicio',
+        )
+      }
+    },
+    [patchTripStatus],
+  )
+
+  const cancelTrip = useCallback(
+    async (serviceId: string) => {
+      try {
+        await patchTripStatus(serviceId, 'cancelled')
+      } catch (error) {
+        setSearchError(
+          error instanceof ApiError || error instanceof Error
+            ? error.message
+            : 'No se pudo cancelar el servicio',
+        )
+      }
+    },
+    [patchTripStatus],
+  )
+
+  const loadCandidatesFor = useCallback(
+    async (pickup: [number, number], dropoff: [number, number] | null, serviceTypeId: string) => {
+      let ranked: Driver[] = []
+      try {
+        ranked = await fetchCandidates({
+          pickup,
+          dropoff: dropoff ?? undefined,
+          cityId: city.id,
+          limit: 5,
+          serviceTypeId: serviceTypeId || undefined,
+        })
+      } catch (error) {
+        if (!(error instanceof ApiError && error.status === 404)) {
+          throw error
+        }
+      }
+      if (ranked.length === 0) {
+        ranked = closestAssignable(fleet, pickup)
+      }
+      setCandidates(ranked)
+    },
+    [city.id, fleet],
+  )
+
+  const beginReassign = useCallback(
+    async (serviceId: string) => {
+      const record = records.find((item) => item.id === serviceId)
+      if (!record) return
+      setSearchError(null)
+      setAcceptedServiceId(record.id)
+      setSelectedDriver(null)
+      if (record.originCoords) {
+        setOrder((prev) => ({
+          ...prev,
+          origin: record.origin,
+          destination: record.destination,
+          originCoords: record.originCoords,
+          destCoords: record.destCoords,
+          clientName: record.clientName,
+          clientPhone: record.clientPhone,
+          paymentMethod: record.paymentMethod,
+          amount: record.amount,
+          serviceTypeId: record.typeId || prev.serviceTypeId,
+        }))
+        setSearching(true)
+        try {
+          await loadCandidatesFor(record.originCoords, record.destCoords, record.typeId)
+          setStep(3)
+        } catch (error) {
+          setSearchError(
+            error instanceof ApiError || error instanceof Error
+              ? error.message
+              : 'No se pudieron cargar candidatos',
+          )
+        } finally {
+          setSearching(false)
+        }
+      } else {
+        setStep(3)
+      }
+    },
+    [loadCandidatesFor, records],
   )
 
   const takeOffline = useCallback(
@@ -520,6 +673,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       mapMode,
       focusedTripId,
       liveTrips,
+      offeredRecord,
+      acceptedServiceId,
       setMapMode,
       focusTrip,
       setRawText,
@@ -536,6 +691,12 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       moveDest,
       clearPin,
       assignDriver,
+      confirmOffer,
+      markInProgress,
+      completeTrip,
+      cancelTrip,
+      beginReassign,
+      actingTripId,
       takeOffline,
       pendingOffline,
       takingOffline,
@@ -569,6 +730,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       mapMode,
       focusedTripId,
       liveTrips,
+      offeredRecord,
+      acceptedServiceId,
       focusTrip,
       updateOrder,
       extractWithAI,
@@ -581,6 +744,12 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       moveDest,
       clearPin,
       assignDriver,
+      confirmOffer,
+      markInProgress,
+      completeTrip,
+      cancelTrip,
+      beginReassign,
+      actingTripId,
       takeOffline,
       pendingOffline,
       takingOffline,

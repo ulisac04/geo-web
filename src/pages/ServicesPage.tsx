@@ -20,7 +20,7 @@ const TABS: { value: Tab; label: string }[] = [
 const STATUS_FILTERS: { value: 'all' | ServiceStatus; label: string }[] = [
   { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'Pendientes' },
-  { value: 'assigned', label: 'Asignados' },
+  { value: 'assigned', label: 'Ofrecidos' },
   { value: 'en_route', label: 'En ruta' },
   { value: 'in_progress', label: 'En viaje' },
   { value: 'completed', label: 'Completados' },
@@ -29,7 +29,7 @@ const STATUS_FILTERS: { value: 'all' | ServiceStatus; label: string }[] = [
 
 const STATUS_LABEL: Record<ServiceStatus, string> = {
   pending: 'Pendiente',
-  assigned: 'Asignado',
+  assigned: 'Ofrecido',
   en_route: 'En ruta',
   in_progress: 'En viaje',
   completed: 'Completado',

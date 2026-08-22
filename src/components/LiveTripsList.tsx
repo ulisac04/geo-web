@@ -6,7 +6,18 @@ import { etaFromMeters, formatDistance, haversineMeters } from '../lib/geo'
 import { isPickupLeg } from '../lib/services'
 
 export default function LiveTripsList() {
-  const { liveTrips, focusedTripId, focusTrip, takeOffline } = useDispatchFlow()
+  const {
+    liveTrips,
+    focusedTripId,
+    focusTrip,
+    takeOffline,
+    confirmOffer,
+    markInProgress,
+    completeTrip,
+    cancelTrip,
+    beginReassign,
+    actingTripId,
+  } = useDispatchFlow()
 
   if (liveTrips.length === 0) {
     return (
@@ -21,9 +32,16 @@ export default function LiveTripsList() {
       {liveTrips.map((trip) => {
         const { record, driver } = trip
         const pickup = isPickupLeg(record.status)
+        const waiting = record.status === 'assigned'
         const target = pickup ? record.originCoords : record.destCoords
         const meters = target ? haversineMeters(driver.coords, target) : 0
         const highlighted = focusedTripId === record.id
+        const acting = actingTripId === record.id
+        const badge = waiting
+          ? 'Esperando respuesta'
+          : pickup
+            ? 'Va a buscar'
+            : 'Va a dejar'
 
         return (
           <article
@@ -45,11 +63,15 @@ export default function LiveTripsList() {
               </div>
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                  pickup ? 'bg-warn/15 text-amber-300' : 'bg-signal/15 text-signal'
+                  waiting
+                    ? 'bg-amber-400/15 text-amber-300'
+                    : pickup
+                      ? 'bg-warn/15 text-amber-300'
+                      : 'bg-signal/15 text-signal'
                 }`}
               >
                 <Navigation className="size-3" />
-                {pickup ? 'Va a buscar' : 'Va a dejar'}
+                {badge}
               </span>
             </div>
 
@@ -61,13 +83,57 @@ export default function LiveTripsList() {
                 <MapPin className="size-3 text-signal" />
                 {record.typeName}
               </span>
-              {target ? (
+              {target && !waiting ? (
                 <span className="inline-flex items-center gap-1">
                   <Clock className="size-3" />
                   {etaFromMeters(meters)} min · {formatDistance(meters)}
                 </span>
               ) : null}
             </div>
+
+            <div
+              className="mt-2 flex flex-wrap gap-1.5"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {waiting ? (
+                <>
+                  <TripAction
+                    disabled={acting}
+                    onClick={() => void confirmOffer(record.id)}
+                    label="Confirmar"
+                    primary
+                  />
+                  <TripAction
+                    disabled={acting}
+                    onClick={() => void beginReassign(record.id)}
+                    label="Reasignar"
+                  />
+                </>
+              ) : null}
+              {record.status === 'en_route' ? (
+                <TripAction
+                  disabled={acting}
+                  onClick={() => void markInProgress(record.id)}
+                  label="En viaje"
+                  primary
+                />
+              ) : null}
+              {record.status === 'in_progress' ? (
+                <TripAction
+                  disabled={acting}
+                  onClick={() => void completeTrip(record.id)}
+                  label="Finalizar"
+                  primary
+                />
+              ) : null}
+              <TripAction
+                disabled={acting}
+                onClick={() => void cancelTrip(record.id)}
+                label="Cancelar"
+                danger
+              />
+            </div>
+
             {driver.status === 'offline' ? (
               <p className="mt-2 text-[11px] text-rose-300">Fuera de servicio · oculto en el mapa</p>
             ) : (
@@ -83,5 +149,36 @@ export default function LiveTripsList() {
         )
       })}
     </div>
+  )
+}
+
+function TripAction({
+  label,
+  onClick,
+  disabled,
+  primary,
+  danger,
+}: {
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  primary?: boolean
+  danger?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold disabled:opacity-40 ${
+        danger
+          ? 'border border-danger/40 text-rose-300 hover:bg-danger/15'
+          : primary
+            ? 'bg-signal text-on-signal hover:bg-emerald-300'
+            : 'border border-line text-snow hover:border-mist/50'
+      }`}
+    >
+      {label}
+    </button>
   )
 }
