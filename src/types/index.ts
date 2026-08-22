@@ -14,6 +14,7 @@ export type CostRuleType = 'distance' | 'night'
 export type SurchargeType = 'fixed' | 'percent'
 export type MapRefreshSeconds = 5 | 10 | 15 | 30 | 60
 export type VehicleType = 'car' | 'motorcycle'
+export type VehicleFilter = VehicleType | 'all'
 
 export interface Driver {
   id: string

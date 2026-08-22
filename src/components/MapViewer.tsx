@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import GoogleMapFrame from './GoogleMapFrame'
 import MapModeToggle from './MapModeToggle'
-import type { Driver, LiveTrip, MapMode, OrderDraft, PinFocus } from '../types'
+import type { Driver, LiveTrip, MapMode, OrderDraft, PinFocus, VehicleFilter } from '../types'
+import { vehicleTypeLabel } from '../lib/vehicles'
 import { rankNearestToOrigin } from '../lib/fleet'
 import { isPickupLeg } from '../lib/services'
 import { fetchDrivingRoute } from '../lib/routing'
@@ -51,18 +52,34 @@ const NEAREST_LIMIT = 5
 export default function MapViewer(props: MapViewerProps) {
   const routeMapped = Boolean(props.order.originCoords && props.order.destCoords)
   const [nearestOnly, setNearestOnly] = useState(false)
+  const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('all')
   const canFilterNearest = props.mode === 'fleet' && routeMapped
 
   useEffect(() => {
     if (!canFilterNearest) setNearestOnly(false)
   }, [canFilterNearest])
 
+  const typedDrivers = useMemo(
+    () =>
+      vehicleFilter === 'all'
+        ? props.drivers
+        : props.drivers.filter((driver) => driver.vehicleType === vehicleFilter),
+    [props.drivers, vehicleFilter],
+  )
+  const typedLiveTrips = useMemo(
+    () =>
+      vehicleFilter === 'all'
+        ? props.liveTrips
+        : props.liveTrips.filter((trip) => trip.driver.vehicleType === vehicleFilter),
+    [props.liveTrips, vehicleFilter],
+  )
+
   const mapDrivers = useMemo(() => {
     if (!nearestOnly || !props.order.originCoords || props.mode !== 'fleet') {
-      return props.drivers
+      return typedDrivers
     }
-    return rankNearestToOrigin(props.drivers, props.order.originCoords, NEAREST_LIMIT)
-  }, [nearestOnly, props.drivers, props.mode, props.order.originCoords])
+    return rankNearestToOrigin(typedDrivers, props.order.originCoords, NEAREST_LIMIT)
+  }, [nearestOnly, typedDrivers, props.mode, props.order.originCoords])
 
   return (
     <section className="relative h-full w-full min-w-0">
@@ -71,6 +88,7 @@ export default function MapViewer(props: MapViewerProps) {
           <MapViewerController
             {...props}
             drivers={mapDrivers}
+            liveTrips={typedLiveTrips}
             nearestOnly={nearestOnly}
           />
         </GoogleMapFrame>
@@ -78,11 +96,20 @@ export default function MapViewer(props: MapViewerProps) {
         <GoogleMapFrame id="dispatch-map" center={props.center} className="h-full w-full" />
       )}
       <div className="absolute top-4 left-4 flex flex-col gap-2">
-        <MapModeToggle mode={props.mode} onChange={props.onModeChange} showNone />
+        <MapModeToggle
+          mode={props.mode}
+          onChange={props.onModeChange}
+          showNone
+          vehicleFilter={vehicleFilter}
+          onVehicleFilterChange={setVehicleFilter}
+        />
         <div className="pointer-events-none rounded-lg border border-line bg-panel/90 px-3 py-2 text-xs text-mist backdrop-blur">
           {props.mode === 'live' ? (
             <>
-              <p className="font-medium text-snow">Servicios en curso</p>
+              <p className="font-medium text-snow">
+                Servicios en curso
+                {vehicleFilter === 'all' ? '' : ` · ${vehicleTypeLabel(vehicleFilter)}`}
+              </p>
               <p>Ámbar: va a buscar · Verde: va a dejar</p>
               <p className="mt-1">Click en un viaje o chofer para enfocar la ruta.</p>
             </>
@@ -94,7 +121,9 @@ export default function MapViewer(props: MapViewerProps) {
                   ? 'Solo puntos de la orden. Flota y viajes ocultos.'
                   : nearestOnly
                     ? `Solo los ${NEAREST_LIMIT} choferes más cercanos al punto A (disponibles u ocupados).`
-                    : 'Verde: recogida · Rojo: entrega · Ámbar: chofer'}
+                    : vehicleFilter === 'all'
+                      ? 'Verde: recogida · Rojo: entrega · Ámbar: chofer'
+                      : `Solo ${vehicleTypeLabel(vehicleFilter).toLowerCase()}. Verde: recogida · Rojo: entrega · Ámbar: chofer`}
               </p>
               <p className="mt-1">
                 Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Arrastra para
