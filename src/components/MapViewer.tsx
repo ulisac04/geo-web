@@ -39,6 +39,7 @@ interface MapViewerProps {
   focusedTripId: string | null
   center: [number, number]
   onModeChange: (mode: MapMode) => void
+  onFocusDriver: (id: string | null) => void
   onFocusTrip: (id: string | null) => void
   onSetPin: (coords: [number, number]) => void
   onMoveOrigin: (coords: [number, number]) => void
@@ -78,8 +79,19 @@ export default function MapViewer(props: MapViewerProps) {
     if (!nearestOnly || !props.order.originCoords || props.mode !== 'fleet') {
       return typedDrivers
     }
-    return rankNearestToOrigin(typedDrivers, props.order.originCoords, NEAREST_LIMIT)
-  }, [nearestOnly, typedDrivers, props.mode, props.order.originCoords])
+    const nearest = rankNearestToOrigin(typedDrivers, props.order.originCoords, NEAREST_LIMIT)
+    const focusedId = props.focusedDriverId ?? props.selectedDriver?.id ?? null
+    if (!focusedId || nearest.some((driver) => driver.id === focusedId)) return nearest
+    const extra = typedDrivers.find((driver) => driver.id === focusedId)
+    return extra ? [...nearest, extra] : nearest
+  }, [
+    nearestOnly,
+    typedDrivers,
+    props.mode,
+    props.order.originCoords,
+    props.focusedDriverId,
+    props.selectedDriver?.id,
+  ])
 
   return (
     <section className="relative h-full w-full min-w-0">
@@ -164,6 +176,7 @@ function MapViewerController({
   focusedTripId,
   center,
   nearestOnly,
+  onFocusDriver,
   onFocusTrip,
   onSetPin,
   onMoveOrigin,
@@ -195,10 +208,12 @@ function MapViewerController({
   const onMoveDestRef = useRef(onMoveDest)
   const onClearPinRef = useRef(onClearPin)
   const onTakeOfflineRef = useRef(onTakeOffline)
+  const onFocusDriverRef = useRef(onFocusDriver)
   const onFocusTripRef = useRef(onFocusTrip)
   const modeRef = useRef(mode)
   const liveTripsRef = useRef(liveTrips)
   const focusedTripIdRef = useRef(focusedTripId)
+  const focusedDriverIdRef = useRef(focusedDriverId)
   const nearestOnlyRef = useRef(nearestOnly)
 
   onSetPinRef.current = onSetPin
@@ -206,10 +221,12 @@ function MapViewerController({
   onMoveDestRef.current = onMoveDest
   onClearPinRef.current = onClearPin
   onTakeOfflineRef.current = onTakeOffline
+  onFocusDriverRef.current = onFocusDriver
   onFocusTripRef.current = onFocusTrip
   modeRef.current = mode
   liveTripsRef.current = liveTrips
   focusedTripIdRef.current = focusedTripId
+  focusedDriverIdRef.current = focusedDriverId
   nearestOnlyRef.current = nearestOnly
 
   useEffect(() => {
@@ -276,26 +293,27 @@ function MapViewerController({
     driverMarkersRef.current = []
 
     for (const driver of drivers) {
-      const highlighted =
-        hoveredDriverId === driver.id ||
-        focusedDriverId === driver.id ||
-        selectedDriver?.id === driver.id
-      const el = createDriverPinElement(driver, highlighted)
+      const focused = focusedDriverId === driver.id || selectedDriver?.id === driver.id
+      const hovered = hoveredDriverId === driver.id && !focused
+      const el = createDriverPinElement(driver, { hovered, focused })
       const marker = createAdvancedMarker({
         map,
         coords: driver.coords,
         content: el,
         title: driver.name,
-        zIndex: highlighted ? 20 : 10,
+        zIndex: focused ? 25 : hovered ? 20 : 10,
       })
       marker.addListener('click', () => {
         driverInfoRef.current?.setContent(
           createDriverPopup(driver, () => onTakeOfflineRef.current(driver.id)),
         )
         driverInfoRef.current?.open({ map, anchor: marker })
-        if (modeRef.current !== 'live') return
-        const trip = liveTripsRef.current.find((item) => item.driver.id === driver.id)
-        if (trip) onFocusTripRef.current(trip.record.id)
+        if (modeRef.current === 'live') {
+          const trip = liveTripsRef.current.find((item) => item.driver.id === driver.id)
+          if (trip) onFocusTripRef.current(trip.record.id)
+          return
+        }
+        onFocusDriverRef.current(driver.id)
       })
       driverMarkersRef.current.push(marker)
     }
@@ -396,7 +414,9 @@ function MapViewerController({
     }
 
     setPolylineCoords(line, [originCoords, destCoords])
-    if (!nearestOnlyRef.current) fitTo(map, [originCoords, destCoords])
+    if (!nearestOnlyRef.current && !focusedDriverIdRef.current) {
+      fitTo(map, [originCoords, destCoords])
+    }
 
     const controller = new AbortController()
     abortTripRef.current = controller
@@ -404,7 +424,9 @@ function MapViewerController({
       .then((route) => {
         if (controller.signal.aborted) return
         setPolylineCoords(line, route.coordinates)
-        if (!nearestOnlyRef.current) fitTo(map, route.coordinates)
+        if (!nearestOnlyRef.current && !focusedDriverIdRef.current) {
+          fitTo(map, route.coordinates)
+        }
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
@@ -417,13 +439,14 @@ function MapViewerController({
 
   useEffect(() => {
     if (!map || !nearestOnly || mode !== 'fleet' || !originCoords) return
+    if (focusedDriverId) return
     const points: [number, number][] = [
       originCoords,
       ...(destCoords ? [destCoords] : []),
       ...drivers.map((driver) => driver.coords),
     ]
     fitTo(map, points)
-  }, [destCoords, map, mode, nearestIds, nearestOnly, originCoords])
+  }, [destCoords, focusedDriverId, map, mode, nearestIds, nearestOnly, originCoords])
 
   useEffect(() => {
     const line = driverLineRef.current
@@ -438,6 +461,7 @@ function MapViewerController({
 
     const from: [number, number] = [driverLng, driverLat]
     setPolylineCoords(line, [from, originCoords])
+    if (focusedDriverId) fitTo(map, [from, originCoords])
 
     const controller = new AbortController()
     abortDriverRef.current = controller
@@ -445,6 +469,7 @@ function MapViewerController({
       .then((route) => {
         if (controller.signal.aborted) return
         setPolylineCoords(line, route.coordinates)
+        if (focusedDriverIdRef.current) fitTo(map, route.coordinates)
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
@@ -453,7 +478,7 @@ function MapViewerController({
       })
 
     return () => abortDriverRef.current?.abort()
-  }, [driverLat, driverLng, originCoords, mode, map])
+  }, [driverLat, driverLng, focusedDriverId, originCoords, mode, map])
 
   const liveRouteKey = liveTrips
     .map(

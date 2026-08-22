@@ -1,13 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
-import { useCosts } from '../context/CostsContext'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
-import { estimateFare, formatFare, requestFareEstimate } from '../lib/costs'
-import { formatDistance, haversineMeters } from '../lib/geo'
 import PlaceSearchField from './PlaceSearchField'
-import type { FareEstimate } from '../types'
 
 export default function ValidationStep() {
   const { city } = useSettings()
@@ -21,7 +16,6 @@ export default function ValidationStep() {
     setActivePin,
   } = useDispatchFlow()
   const { types } = useServices()
-  const { rules } = useCosts()
 
   const activeTypes = types.filter((item) => item.active)
   const typeOptions =
@@ -30,42 +24,6 @@ export default function ValidationStep() {
           (item): item is NonNullable<typeof item> => Boolean(item),
         )
       : activeTypes
-
-  const localEstimate = useMemo(() => {
-    if (!order.originCoords || !order.destCoords) return null
-    const distanceM = haversineMeters(order.originCoords, order.destCoords)
-    return estimateFare(distanceM, new Date(), rules)
-  }, [order.originCoords, order.destCoords, rules])
-
-  const [remoteEstimate, setRemoteEstimate] = useState<FareEstimate | null>(null)
-
-  useEffect(() => {
-    if (!order.originCoords || !order.destCoords) {
-      setRemoteEstimate(null)
-      return
-    }
-    let cancelled = false
-    const handle = window.setTimeout(() => {
-      const distanceM = haversineMeters(order.originCoords!, order.destCoords!)
-      void requestFareEstimate({
-        distanceM,
-        originCoords: order.originCoords,
-        destCoords: order.destCoords,
-      })
-        .then((next) => {
-          if (!cancelled) setRemoteEstimate(next)
-        })
-        .catch(() => {
-          if (!cancelled) setRemoteEstimate(null)
-        })
-    }, 250)
-    return () => {
-      cancelled = true
-      window.clearTimeout(handle)
-    }
-  }, [order.originCoords, order.destCoords, rules])
-
-  const estimate = remoteEstimate ?? localEstimate
 
   const ready =
     Boolean(order.originCoords) &&
@@ -180,34 +138,6 @@ export default function ValidationStep() {
         value={order.notes}
         onChange={(value) => updateOrder({ notes: value })}
       />
-
-      {estimate ? (
-        <div className="rounded-lg border border-line bg-card px-3 py-2">
-          <p className="text-[11px] font-medium tracking-wide text-mist uppercase">
-            Tarifa estimada
-          </p>
-          <p className="mt-1 text-sm text-snow">
-            {formatFare(estimate.total)}
-            <span className="ml-2 text-xs text-mist">
-              {formatDistance(estimate.distanceM)} · dist. {formatFare(estimate.distanceSubtotal)}
-              {estimate.nightSurcharge > 0
-                ? ` · noche ${formatFare(estimate.nightSurcharge)}`
-                : ''}
-            </span>
-          </p>
-          <button
-            type="button"
-            onClick={() => updateOrder({ amount: formatFare(estimate.total) })}
-            className="mt-2 text-xs font-medium text-signal hover:text-emerald-300"
-          >
-            Usar tarifa
-          </button>
-        </div>
-      ) : (
-        <p className="rounded-lg border border-line bg-ink px-3 py-2 text-xs text-mist">
-          Coloca A y B para ver la ruta y la tarifa.
-        </p>
-      )}
 
       {searchError ? (
         <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">

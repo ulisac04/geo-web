@@ -27,6 +27,7 @@ function DashboardLayout() {
     liveTrips,
     focusedTripId,
     setMapMode,
+    focusDriver,
     focusTrip,
     takeOffline,
     pendingOffline,
@@ -71,6 +72,7 @@ function DashboardLayout() {
             focusedTripId={focusedTripId}
             center={city.center}
             onModeChange={setMapMode}
+            onFocusDriver={focusDriver}
             onFocusTrip={focusTrip}
             onSetPin={setPinFromMap}
             onMoveOrigin={moveOrigin}

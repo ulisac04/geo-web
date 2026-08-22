@@ -262,6 +262,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const focusDriver = useCallback((id: string | null) => {
     setFocusedDriverId(id)
+    if (id) setMapMode('fleet')
   }, [])
 
   const focusTrip = useCallback(

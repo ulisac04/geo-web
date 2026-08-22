@@ -38,9 +38,13 @@ export function createOrderPinElement(color: string, draggable: boolean): HTMLDi
   return el
 }
 
-export function createDriverPinElement(driver: Driver, highlighted: boolean): HTMLDivElement {
+export function createDriverPinElement(
+  driver: Driver,
+  { hovered = false, focused = false }: { hovered?: boolean; focused?: boolean } = {},
+): HTMLDivElement {
   const pin = document.createElement('div')
-  pin.className = `driver-pin ${driver.status}${highlighted ? ' highlighted' : ''}`
+  const accent = focused ? ' focused' : hovered ? ' highlighted' : ''
+  pin.className = `driver-pin ${driver.status}${accent}`
 
   const label = document.createElement('div')
   label.className = 'driver-marker-label'

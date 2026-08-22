@@ -37,7 +37,8 @@ export default function CandidatesStep() {
         </p>
       ) : null}
       <p className="text-xs text-mist">
-        Top {candidates.length} más cercanos al punto de recogida, aunque estén lejos.
+        Top {candidates.length} más cercanos al punto de recogida, aunque estén lejos. Clic en
+        una tarjeta para verlo en el mapa.
       </p>
       {candidates.map((driver) => (
         <CandidateCard
