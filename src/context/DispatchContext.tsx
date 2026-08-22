@@ -17,7 +17,7 @@ import type {
   PinFocus,
 } from '../types'
 import { ApiError, isAbortError } from '../lib/api'
-import { fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
+import { closestAssignable, fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
 import { formatPlaceHint, geocodeFirst, reverseGeocode } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
@@ -344,22 +344,24 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         cityId: city.id,
       })
       setAcceptedServiceId(record.id)
+      let ranked: Driver[] = []
       try {
-        const ranked = await fetchCandidates({
+        ranked = await fetchCandidates({
           pickup: order.originCoords,
           dropoff: order.destCoords,
           cityId: city.id,
           limit: 5,
           serviceTypeId: order.serviceTypeId,
         })
-        setCandidates(ranked)
       } catch (error) {
-        if (error instanceof ApiError && error.status === 404) {
-          setCandidates([])
-        } else {
+        if (!(error instanceof ApiError && error.status === 404)) {
           throw error
         }
       }
+      if (ranked.length === 0) {
+        ranked = closestAssignable(fleet, order.originCoords)
+      }
+      setCandidates(ranked)
       setStep(3)
     } catch (error) {
       setSearchError(
@@ -370,7 +372,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     } finally {
       setSearching(false)
     }
-  }, [addRecord, city.id, order])
+  }, [addRecord, city.id, fleet, order])
 
   const assignDriver = useCallback(
     async (driver: Driver) => {

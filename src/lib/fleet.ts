@@ -205,6 +205,16 @@ export function rankNearestToOrigin(
   )
 }
 
+export function closestAssignable(
+  drivers: Driver[],
+  origin: [number, number],
+  limit = 5,
+): Driver[] {
+  const available = rankCandidates(drivers, origin, limit, Infinity)
+  if (available.length > 0) return available
+  return rankNearestToOrigin(drivers, origin, limit)
+}
+
 function rankByDistanceToOrigin(
   drivers: Driver[],
   origin: [number, number],

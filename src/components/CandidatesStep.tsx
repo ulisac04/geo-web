@@ -23,7 +23,7 @@ export default function CandidatesStep() {
           </p>
         ) : null}
         <p className="rounded-lg border border-line bg-ink px-3 py-4 text-sm text-mist">
-          No hay conductores disponibles cerca del origen.
+          No hay conductores en servicio para asignar.
         </p>
       </div>
     )
@@ -37,7 +37,7 @@ export default function CandidatesStep() {
         </p>
       ) : null}
       <p className="text-xs text-mist">
-        Top {candidates.length} candidatos por distancia al punto de recogida.
+        Top {candidates.length} más cercanos al punto de recogida, aunque estén lejos.
       </p>
       {candidates.map((driver) => (
         <CandidateCard
