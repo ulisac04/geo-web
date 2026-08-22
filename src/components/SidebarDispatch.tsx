@@ -25,7 +25,6 @@ export default function SidebarDispatch() {
     step,
     order,
     rawText,
-    screenshotPreview,
     availableCount,
     busyCount,
     offlineCount,
@@ -38,7 +37,6 @@ export default function SidebarDispatch() {
   const canReset =
     step > 1 ||
     Boolean(rawText.trim()) ||
-    Boolean(screenshotPreview) ||
     Boolean(order.origin.trim()) ||
     Boolean(order.destination.trim()) ||
     Boolean(order.clientName.trim()) ||

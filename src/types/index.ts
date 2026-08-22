@@ -1,7 +1,6 @@
 export type CityId = 'caracas' | 'san_cristobal' | 'cucuta' | 'bogota'
 export type DriverStatus = 'available' | 'busy' | 'offline'
 export type DispatchStep = 1 | 2 | 3 | 4
-export type InputTab = 'text' | 'screenshot'
 export type ServiceStatus =
   | 'pending'
   | 'assigned'

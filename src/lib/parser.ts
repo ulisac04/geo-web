@@ -61,6 +61,30 @@ export async function transcribeAudio(audioDataUrl: string): Promise<string> {
   }
 }
 
+export async function ocrImage(imageDataUrl: string): Promise<string> {
+  const image = splitDataUrl(imageDataUrl)
+  if (!image) {
+    throw new ParserError('No hay imagen para leer', 400)
+  }
+  try {
+    const result = await api<{ text: string }>('/api/v1/parser/ocr', {
+      method: 'POST',
+      body: { image_base64: image.base64, mime_type: image.mimeType },
+    })
+    const text = result.text?.trim() ?? ''
+    if (!text) {
+      throw new ParserError('No se leyó texto en la imagen. Prueba otra captura.', 422)
+    }
+    return text
+  } catch (error) {
+    if (error instanceof ParserError) throw error
+    if (error instanceof ApiError) {
+      throw new ParserError(error.message, error.status, error.code)
+    }
+    throw error
+  }
+}
+
 function buildRequestBody(input: {
   rawText?: string
   imageDataUrl?: string | null

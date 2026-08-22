@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent } from 'react'
-import { FileText, Image, Loader2, Mic, PenLine, Sparkles, Square, Upload } from 'lucide-react'
+import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent } from 'react'
+import { Image, Loader2, Mic, PenLine, Sparkles, Square } from 'lucide-react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import {
   MAX_AUDIO_BYTES,
@@ -10,28 +10,24 @@ import {
   waitForPaint,
 } from '../lib/audio'
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
-import { ParserError, transcribeAudio } from '../lib/parser'
+import { ParserError, ocrImage, transcribeAudio } from '../lib/parser'
 import { ApiError } from '../lib/api'
 import NearbyDriverList from './NearbyDriverList'
 
 export default function OrderInputStep() {
   const {
-    inputTab,
-    setInputTab,
     rawText,
     setRawText,
-    screenshotPreview,
-    setScreenshot,
     extractWithAI,
     continueManually,
     extracting,
     extractError,
   } = useDispatchFlow()
-  const [dragging, setDragging] = useState(false)
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
+  const [ocring, setOcring] = useState(false)
   const [elapsed, setElapsed] = useState(0)
-  const [audioError, setAudioError] = useState<string | null>(null)
+  const [mediaError, setMediaError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -40,38 +36,62 @@ export default function OrderInputStep() {
   const rawTextRef = useRef(rawText)
   rawTextRef.current = rawText
 
-  function readFile(file: File) {
-    if (!file.type.startsWith('image/')) return
+  function appendText(chunk: string) {
+    const current = rawTextRef.current
+    setRawText(current.trim() ? `${current.trimEnd()}\n\n${chunk}` : chunk)
+  }
+
+  function readImageFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      setMediaError('Elige una imagen PNG, JPG o similar')
+      return
+    }
     const reader = new FileReader()
     reader.onload = () => {
-      if (typeof reader.result === 'string') setScreenshot(reader.result)
+      if (typeof reader.result === 'string') void processImage(reader.result)
     }
+    reader.onerror = () => setMediaError('No se pudo leer la imagen')
     reader.readAsDataURL(file)
   }
 
-  function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
-    const items = event.clipboardData?.items
-    if (!items) return
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile()
-        if (file) readFile(file)
-        event.preventDefault()
-        break
-      }
+  async function processImage(dataUrl: string) {
+    setOcring(true)
+    setMediaError(null)
+    await waitForPaint()
+    try {
+      const text = await ocrImage(dataUrl)
+      appendText(text)
+    } catch (error) {
+      const message =
+        error instanceof ParserError || error instanceof ApiError
+          ? error.message
+          : 'No se pudo leer la imagen'
+      setMediaError(message)
+    } finally {
+      setOcring(false)
     }
-  }
-
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault()
-    setDragging(false)
-    const file = event.dataTransfer.files[0]
-    if (file) readFile(file)
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    if (file) readFile(file)
+    event.target.value = ''
+    if (file) readImageFile(file)
+  }
+
+  function takeImageFromClipboard(event: ClipboardEvent | globalThis.ClipboardEvent): boolean {
+    const items = event.clipboardData?.items
+    if (!items) return false
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) {
+          event.preventDefault()
+          readImageFile(file)
+          return true
+        }
+      }
+    }
+    return false
   }
 
   function stopTracks() {
@@ -95,28 +115,27 @@ export default function OrderInputStep() {
 
   async function processRecording(blob: Blob) {
     setTranscribing(true)
-    setAudioError(null)
+    setMediaError(null)
     await waitForPaint()
     try {
       const dataUrl = await prepareRecordingDataUrl(blob)
       const transcript = await transcribeAudio(dataUrl)
-      const current = rawTextRef.current
-      setRawText(current.trim() ? `${current.trimEnd()}\n\n${transcript}` : transcript)
+      appendText(transcript)
     } catch (error) {
       const message =
         error instanceof ParserError || error instanceof ApiError
           ? error.message
           : 'No se pudo transcribir el audio'
-      setAudioError(message)
+      setMediaError(message)
     } finally {
       setTranscribing(false)
     }
   }
 
   async function startRecording() {
-    setAudioError(null)
+    setMediaError(null)
     if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setAudioError('Este navegador no permite grabar audio')
+      setMediaError('Este navegador no permite grabar audio')
       return
     }
     try {
@@ -139,11 +158,11 @@ export default function OrderInputStep() {
         chunksRef.current = []
         stopTracks()
         if (blob.size === 0) {
-          setAudioError('No se capturó audio')
+          setMediaError('No se capturó audio')
           return
         }
         if (blob.size > MAX_AUDIO_BYTES) {
-          setAudioError('La grabación es demasiado grande')
+          setMediaError('La grabación es demasiado grande')
           return
         }
         void processRecording(blob)
@@ -159,28 +178,20 @@ export default function OrderInputStep() {
       }, 1000)
     } catch {
       stopTracks()
-      setAudioError('No se pudo acceder al micrófono')
+      setMediaError('No se pudo acceder al micrófono')
     }
   }
 
   useEffect(() => {
-    if (inputTab !== 'screenshot') return
-
     function onWindowPaste(event: globalThis.ClipboardEvent) {
-      const items = event.clipboardData?.items
-      if (!items) return
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile()
-          if (file) readFile(file)
-          break
-        }
-      }
+      if (event.defaultPrevented) return
+      if (recording || transcribing || ocring || extracting) return
+      takeImageFromClipboard(event)
     }
 
     window.addEventListener('paste', onWindowPaste)
     return () => window.removeEventListener('paste', onWindowPaste)
-  }, [inputTab, setScreenshot])
+  }, [recording, transcribing, ocring, extracting])
 
   useEffect(() => {
     return () => {
@@ -192,47 +203,42 @@ export default function OrderInputStep() {
     }
   }, [])
 
-  const busy = extracting || recording || transcribing
-  const canExtract =
-    inputTab === 'screenshot' ? Boolean(screenshotPreview) : rawText.trim().length > 0
-
-  const tabClass = (active: boolean) =>
-    `flex items-center justify-center gap-1.5 rounded-md py-2 text-xs font-medium transition sm:text-sm ${
-      active ? 'bg-elevated text-snow' : 'text-mist hover:text-snow'
-    }`
+  const busy = extracting || recording || transcribing || ocring
+  const canExtract = rawText.trim().length > 0
+  const iconBusy = transcribing || ocring || extracting
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 rounded-lg border border-line bg-ink p-1">
-        <button type="button" onClick={() => setInputTab('text')} className={tabClass(inputTab === 'text')}>
-          <FileText className="size-4 shrink-0" />
-          Texto
-        </button>
-        <button
-          type="button"
-          onClick={() => setInputTab('screenshot')}
-          className={tabClass(inputTab === 'screenshot')}
-        >
-          <Image className="size-4 shrink-0" />
-          Captura
-        </button>
-      </div>
-
-      {inputTab === 'text' ? (
-        <div className="space-y-2">
-          <div className="relative">
-            <textarea
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              placeholder="Pega aquí el mensaje del cliente (Ctrl + V)..."
-              disabled={recording || transcribing}
-              className="min-h-44 w-full resize-none rounded-lg border border-line bg-ink px-3 py-3 pr-12 text-sm leading-relaxed text-snow placeholder:text-mist/50 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none disabled:opacity-70"
-            />
+      <div className="space-y-2">
+        <div className="relative">
+          <textarea
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            onPaste={(event) => takeImageFromClipboard(event)}
+            placeholder="Pega aquí el mensaje del cliente (Ctrl + V)..."
+            disabled={recording || transcribing || ocring}
+            className="min-h-44 w-full resize-none rounded-lg border border-line bg-ink px-3 py-3 pr-20 text-sm leading-relaxed text-snow placeholder:text-mist/50 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none disabled:opacity-70"
+          />
+          <div className="absolute right-2 bottom-2 flex items-center gap-1">
+            <button
+              type="button"
+              disabled={iconBusy || recording}
+              onClick={() => fileRef.current?.click()}
+              className="rounded-md border border-line bg-elevated p-1.5 text-mist hover:border-signal/50 hover:text-signal disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Subir captura"
+              title="Leer texto de una captura"
+            >
+              {ocring ? (
+                <Loader2 className="size-4 animate-spin text-signal" />
+              ) : (
+                <Image className="size-4" />
+              )}
+            </button>
             {recording ? (
               <button
                 type="button"
                 onClick={stopRecording}
-                className="absolute right-2 bottom-2 flex items-center gap-1.5 rounded-md border border-danger/40 bg-danger/10 px-2 py-1.5 text-xs font-medium text-rose-300"
+                className="flex items-center gap-1.5 rounded-md border border-danger/40 bg-danger/10 px-2 py-1.5 text-xs font-medium text-rose-300"
                 aria-label="Detener grabación"
               >
                 <Square className="size-3 fill-current" />
@@ -241,9 +247,9 @@ export default function OrderInputStep() {
             ) : (
               <button
                 type="button"
-                disabled={transcribing || extracting}
+                disabled={iconBusy}
                 onClick={() => void startRecording()}
-                className="absolute right-2 bottom-2 rounded-md border border-line bg-elevated p-1.5 text-mist hover:border-signal/50 hover:text-signal disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md border border-line bg-elevated p-1.5 text-mist hover:border-signal/50 hover:text-signal disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Grabar audio"
                 title="Dictar al micrófono"
               >
@@ -255,54 +261,6 @@ export default function OrderInputStep() {
               </button>
             )}
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setRawText(SAMPLE_WHATSAPP)}
-              className="text-xs text-mist hover:text-signal"
-            >
-              Cargar mensaje de ejemplo
-            </button>
-            {transcribing ? (
-              <span className="text-xs text-mist">Transcribiendo…</span>
-            ) : recording ? (
-              <span className="text-xs text-mist">Grabando · máx. {MAX_AUDIO_SECONDS}s</span>
-            ) : null}
-          </div>
-          {audioError ? (
-            <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-rose-300">
-              {audioError}
-            </p>
-          ) : null}
-        </div>
-      ) : (
-        <div
-          tabIndex={0}
-          onPaste={handlePaste}
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragging(true)
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileRef.current?.click()}
-          className={`flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-6 text-center transition ${
-            dragging ? 'border-signal bg-signal/10' : 'border-line bg-ink hover:border-mist/50'
-          }`}
-        >
-          {screenshotPreview ? (
-            <img
-              src={screenshotPreview}
-              alt="Captura pegada"
-              className="max-h-40 rounded-md border border-line object-contain"
-            />
-          ) : (
-            <>
-              <Upload className="mb-2 size-6 text-mist" />
-              <p className="text-sm text-snow">Arrastra una imagen o pégala (Ctrl + V)</p>
-              <p className="mt-1 text-xs text-mist">PNG, JPG · clic para seleccionar</p>
-            </>
-          )}
           <input
             ref={fileRef}
             type="file"
@@ -311,7 +269,28 @@ export default function OrderInputStep() {
             onChange={handleFileChange}
           />
         </div>
-      )}
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setRawText(SAMPLE_WHATSAPP)}
+            className="text-xs text-mist hover:text-signal"
+          >
+            Cargar mensaje de ejemplo
+          </button>
+          {ocring ? (
+            <span className="text-xs text-mist">Leyendo captura…</span>
+          ) : transcribing ? (
+            <span className="text-xs text-mist">Transcribiendo…</span>
+          ) : recording ? (
+            <span className="text-xs text-mist">Grabando · máx. {MAX_AUDIO_SECONDS}s</span>
+          ) : null}
+        </div>
+        {mediaError ? (
+          <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-rose-300">
+            {mediaError}
+          </p>
+        ) : null}
+      </div>
 
       <div className="space-y-2">
         <button

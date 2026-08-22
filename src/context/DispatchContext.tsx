@@ -11,7 +11,6 @@ import {
 import type {
   DispatchStep,
   Driver,
-  InputTab,
   LiveTrip,
   MapMode,
   OrderDraft,
@@ -39,9 +38,7 @@ interface DispatchContextValue {
   hoveredDriverId: string | null
   focusedDriverId: string | null
   selectedDriver: Driver | null
-  inputTab: InputTab
   rawText: string
-  screenshotPreview: string | null
   extracting: boolean
   extractError: string | null
   searching: boolean
@@ -56,9 +53,7 @@ interface DispatchContextValue {
   liveTrips: LiveTrip[]
   setMapMode: (mode: MapMode) => void
   focusTrip: (id: string | null) => void
-  setInputTab: (tab: InputTab) => void
   setRawText: (value: string) => void
-  setScreenshot: (dataUrl: string | null) => void
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
   extractWithAI: () => Promise<void>
@@ -99,9 +94,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [hoveredDriverId, setHoveredDriverId] = useState<string | null>(null)
   const [focusedDriverId, setFocusedDriverId] = useState<string | null>(null)
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
-  const [inputTab, setInputTab] = useState<InputTab>('text')
   const [rawText, setRawText] = useState('')
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
   const [extracting, setExtracting] = useState(false)
   const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
@@ -271,9 +264,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setExtractError(null)
     setExtracting(true)
     try {
-      const extracted = await extractOrder(
-        inputTab === 'screenshot' ? { imageDataUrl: screenshotPreview } : { rawText },
-      )
+      const extracted = await extractOrder({ rawText })
       const draft = extractedToDraft(extracted, order.serviceTypeId)
       const [originHit, destHit] = await Promise.all([
         geocodeFirst(draft.origin, city),
@@ -300,7 +291,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     } finally {
       setExtracting(false)
     }
-  }, [city, inputTab, order.serviceTypeId, rawText, screenshotPreview])
+  }, [city, order.serviceTypeId, rawText])
 
   const continueManually = useCallback(() => {
     setExtractError(null)
@@ -433,8 +424,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setFocusedDriverId(null)
     setSelectedDriver(null)
     setRawText('')
-    setScreenshotPreview(null)
-    setInputTab('text')
     setCopied(null)
     setExtractError(null)
     setSearchError(null)
@@ -495,9 +484,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       hoveredDriverId,
       focusedDriverId,
       selectedDriver,
-      inputTab,
       rawText,
-      screenshotPreview,
       extracting,
       extractError,
       searching,
@@ -512,9 +499,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       liveTrips,
       setMapMode,
       focusTrip,
-      setInputTab,
       setRawText,
-      setScreenshot: setScreenshotPreview,
       setActivePin,
       updateOrder,
       extractWithAI,
@@ -547,9 +532,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       hoveredDriverId,
       focusedDriverId,
       selectedDriver,
-      inputTab,
       rawText,
-      screenshotPreview,
       extracting,
       extractError,
       searching,
