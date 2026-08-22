@@ -164,10 +164,9 @@ html.light .driver-marker {
   object-fit: cover;
 }
 
-.driver-marker-initials {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+.driver-marker-icon {
+  display: grid;
+  place-items: center;
   color: var(--on-signal);
 }
 
