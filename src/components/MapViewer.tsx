@@ -41,6 +41,7 @@ interface MapViewerProps {
   onSetPin: (coords: [number, number]) => void
   onMoveOrigin: (coords: [number, number]) => void
   onMoveDest: (coords: [number, number]) => void
+  onClearPin: (pin: PinFocus) => void
   onTakeOffline: (driverId: string) => void
 }
 
@@ -73,7 +74,7 @@ export default function MapViewer(props: MapViewerProps) {
               </p>
               <p className="mt-1">
                 Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Arrastra para
-                ajustar.
+                ajustar. Clic derecho en un pin para quitarlo.
               </p>
             </>
           )}
@@ -98,6 +99,7 @@ function MapViewerController({
   onSetPin,
   onMoveOrigin,
   onMoveDest,
+  onClearPin,
   onTakeOffline,
 }: MapViewerProps) {
   const map = useMap('dispatch-map')
@@ -122,6 +124,7 @@ function MapViewerController({
   const onSetPinRef = useRef(onSetPin)
   const onMoveOriginRef = useRef(onMoveOrigin)
   const onMoveDestRef = useRef(onMoveDest)
+  const onClearPinRef = useRef(onClearPin)
   const onTakeOfflineRef = useRef(onTakeOffline)
   const onFocusTripRef = useRef(onFocusTrip)
   const modeRef = useRef(mode)
@@ -131,6 +134,7 @@ function MapViewerController({
   onSetPinRef.current = onSetPin
   onMoveOriginRef.current = onMoveOrigin
   onMoveDestRef.current = onMoveDest
+  onClearPinRef.current = onClearPin
   onTakeOfflineRef.current = onTakeOffline
   onFocusTripRef.current = onFocusTrip
   modeRef.current = mode
@@ -247,6 +251,7 @@ function MapViewerController({
       draggingRef: draggingOriginRef,
       infoWindow: pinInfoRef.current,
       onMove: (coords) => onMoveOriginRef.current(coords),
+      onRemove: () => onClearPinRef.current('origin'),
     })
     destMarkerRef.current = syncOrderPin({
       map,
@@ -258,6 +263,7 @@ function MapViewerController({
       draggingRef: draggingDestRef,
       infoWindow: pinInfoRef.current,
       onMove: (coords) => onMoveDestRef.current(coords),
+      onRemove: () => onClearPinRef.current('dest'),
     })
   }, [mode, activePin, order.originCoords, order.destCoords, map, markerLib])
 
@@ -516,6 +522,7 @@ function syncOrderPin({
   draggingRef,
   infoWindow,
   onMove,
+  onRemove,
 }: {
   map: google.maps.Map
   marker: google.maps.marker.AdvancedMarkerElement | null
@@ -526,6 +533,7 @@ function syncOrderPin({
   draggingRef: { current: boolean }
   infoWindow: google.maps.InfoWindow | null
   onMove: (coords: [number, number]) => void
+  onRemove: () => void
 }): google.maps.marker.AdvancedMarkerElement | null {
   if (!coords) {
     removeMarker(marker)
@@ -537,7 +545,7 @@ function syncOrderPin({
       map,
       coords,
       content: createOrderPinElement(color, true),
-      title: label,
+      title: `${label} · clic derecho para quitar`,
       draggable: true,
       zIndex: 15,
     })
@@ -553,6 +561,18 @@ function syncOrderPin({
       infoWindow?.setContent(label)
       infoWindow?.open({ map, anchor: next })
     })
+    const remove = (event: Event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      infoWindow?.close()
+      onRemove()
+    }
+    const el = next.content
+    if (el instanceof HTMLElement) {
+      el.addEventListener('contextmenu', remove)
+      el.title = `${label} · clic derecho para quitar`
+    }
+    next.addEventListener('contextmenu', remove)
     togglePinActive(next, active)
     return next
   }

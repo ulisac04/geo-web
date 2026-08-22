@@ -69,6 +69,7 @@ interface DispatchContextValue {
   setPinFromMap: (coords: [number, number]) => void
   moveOrigin: (coords: [number, number]) => void
   moveDest: (coords: [number, number]) => void
+  clearPin: (pin: PinFocus) => void
   assignDriver: (driver: Driver) => Promise<void>
   takeOffline: (driverId: string) => void
   pendingOffline: { id: string; name: string } | null
@@ -193,6 +194,30 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     (coords: [number, number]) => applyMapCoords('dest', coords),
     [applyMapCoords],
   )
+
+  const clearPin = useCallback((pin: PinFocus) => {
+    if (pin === 'origin') {
+      originReverseRef.current += 1
+      setOrder((prev) => ({
+        ...prev,
+        origin: '',
+        originHint: '',
+        originExact: '',
+        originCoords: null,
+      }))
+      setActivePin('origin')
+      return
+    }
+    destReverseRef.current += 1
+    setOrder((prev) => ({
+      ...prev,
+      destination: '',
+      destHint: '',
+      destExact: '',
+      destCoords: null,
+    }))
+    setActivePin('dest')
+  }, [])
 
   const setPinFromMap = useCallback(
     (coords: [number, number]) => {
@@ -500,6 +525,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setPinFromMap,
       moveOrigin,
       moveDest,
+      clearPin,
       assignDriver,
       takeOffline,
       pendingOffline,
@@ -545,6 +571,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setPinFromMap,
       moveOrigin,
       moveDest,
+      clearPin,
       assignDriver,
       takeOffline,
       pendingOffline,

@@ -36,6 +36,7 @@ function DashboardLayout() {
     setPinFromMap,
     moveOrigin,
     moveDest,
+    clearPin,
   } = useDispatchFlow()
   const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
   const mapDrivers =
@@ -74,6 +75,7 @@ function DashboardLayout() {
             onSetPin={setPinFromMap}
             onMoveOrigin={moveOrigin}
             onMoveDest={moveDest}
+            onClearPin={clearPin}
             onTakeOffline={takeOffline}
           />
         </Suspense>
