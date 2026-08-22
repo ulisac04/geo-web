@@ -113,18 +113,20 @@ export default function PlaceSearchField({
   }, [])
 
   function choose(hit: PlaceHit) {
-    skipQueryRef.current = value.trim()
+    const selectedLabel = hit.label
+    skipQueryRef.current = selectedLabel
     setOpen(false)
     setHits([])
     setEmpty(false)
     setSearching(true)
     void hydratePlaceHit(hit)
       .then((resolved) => {
-        skipQueryRef.current = resolved.label
-        onSelect(resolved)
+        skipQueryRef.current = selectedLabel
+        onSelect({ ...resolved, label: selectedLabel })
       })
       .catch(() => {
-        onSelect(hit)
+        skipQueryRef.current = selectedLabel
+        onSelect({ ...hit, label: selectedLabel })
       })
       .finally(() => {
         setSearching(false)

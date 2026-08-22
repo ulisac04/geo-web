@@ -113,6 +113,7 @@ export default function ValidationStep() {
         onSelect={(hit) => {
           setActivePin('dest')
           updateOrder({
+            origin: hit.label,
             originCoords: hit.coords,
             originHint: hit.secondary ? `${hit.label}, ${hit.secondary}` : hit.label,
           })
@@ -137,6 +138,7 @@ export default function ValidationStep() {
         onQueryChange={(value) => updateOrder({ destination: value, destHint: '' })}
         onSelect={(hit) => {
           updateOrder({
+            destination: hit.label,
             destCoords: hit.coords,
             destHint: hit.secondary ? `${hit.label}, ${hit.secondary}` : hit.label,
           })
