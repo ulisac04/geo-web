@@ -87,7 +87,7 @@ export default function SidebarDispatch() {
 
         <div className="mt-3">
           <MapModeToggle
-            mode={mapMode}
+            mode={mapMode === 'none' ? 'fleet' : mapMode}
             onChange={setMapMode}
             fullWidth
             fleetLabel="Nuevo"
@@ -96,7 +96,7 @@ export default function SidebarDispatch() {
         </div>
       </header>
 
-      {mapMode === 'fleet' ? (
+      {mapMode !== 'live' ? (
         <div className="border-b border-line px-4 py-3">
           <ol className="flex items-center justify-between">
             {STEPS.map((item, index) => {

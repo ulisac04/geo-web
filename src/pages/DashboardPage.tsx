@@ -40,11 +40,13 @@ function DashboardLayout() {
   } = useDispatchFlow()
   const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
   const mapDrivers =
-    mapMode === 'live'
-      ? liveTrips
-          .filter((trip) => trip.driver.status !== 'offline')
-          .map((trip) => trip.driver)
-      : liveFleet
+    mapMode === 'none'
+      ? []
+      : mapMode === 'live'
+        ? liveTrips
+            .filter((trip) => trip.driver.status !== 'offline')
+            .map((trip) => trip.driver)
+        : liveFleet
 
   return (
     <div className="flex h-full overflow-hidden bg-ink">

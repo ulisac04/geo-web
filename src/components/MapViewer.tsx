@@ -53,7 +53,7 @@ export default function MapViewer(props: MapViewerProps) {
         <GoogleMapFrame id="dispatch-map" center={props.center} className="h-full w-full" />
       )}
       <div className="absolute top-4 left-4 flex flex-col gap-2">
-        <MapModeToggle mode={props.mode} onChange={props.onModeChange} />
+        <MapModeToggle mode={props.mode} onChange={props.onModeChange} showNone />
         <div className="pointer-events-none rounded-lg border border-line bg-panel/90 px-3 py-2 text-xs text-mist backdrop-blur">
           {props.mode === 'live' ? (
             <>
@@ -64,7 +64,11 @@ export default function MapViewer(props: MapViewerProps) {
           ) : (
             <>
               <p className="font-medium text-snow">Ruta A → B</p>
-              <p>Verde: recogida · Rojo: entrega · Ámbar: chofer</p>
+              <p>
+                {props.mode === 'none'
+                  ? 'Solo puntos de la orden. Flota y viajes ocultos.'
+                  : 'Verde: recogida · Rojo: entrega · Ámbar: chofer'}
+              </p>
               <p className="mt-1">
                 Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Arrastra para
                 ajustar.
@@ -306,7 +310,7 @@ function MapViewerController({
 
     abortTripRef.current?.abort()
 
-    if (mode !== 'fleet' || !originCoords || !destCoords) {
+    if (mode === 'live' || !originCoords || !destCoords) {
       line.setPath([])
       return
     }

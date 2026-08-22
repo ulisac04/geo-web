@@ -9,7 +9,7 @@ export type ServiceStatus =
   | 'in_progress'
   | 'completed'
   | 'cancelled'
-export type MapMode = 'fleet' | 'live'
+export type MapMode = 'fleet' | 'live' | 'none'
 export type PinFocus = 'origin' | 'dest'
 export type CostRuleType = 'distance' | 'night'
 export type SurchargeType = 'fixed' | 'percent'

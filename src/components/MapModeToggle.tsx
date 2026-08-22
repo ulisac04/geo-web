@@ -6,6 +6,8 @@ interface MapModeToggleProps {
   fullWidth?: boolean
   fleetLabel?: string
   liveLabel?: string
+  noneLabel?: string
+  showNone?: boolean
 }
 
 export default function MapModeToggle({
@@ -14,10 +16,13 @@ export default function MapModeToggle({
   fullWidth,
   fleetLabel = 'Flota',
   liveLabel = 'En curso',
+  noneLabel = 'Ninguno',
+  showNone,
 }: MapModeToggleProps) {
-  const options = [
-    { value: 'fleet' as const, label: fleetLabel },
-    { value: 'live' as const, label: liveLabel },
+  const options: { value: MapMode; label: string }[] = [
+    { value: 'fleet', label: fleetLabel },
+    { value: 'live', label: liveLabel },
+    ...(showNone ? [{ value: 'none' as const, label: noneLabel }] : []),
   ]
   return (
     <div
