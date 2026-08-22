@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -18,7 +19,7 @@ import type {
 } from '../types'
 import { ApiError } from '../lib/api'
 import { fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
-import { geocodeFirst } from '../lib/geocode'
+import { formatPlaceHint, geocodeFirst, reverseGeocode } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
@@ -147,42 +148,80 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setOrder((prev) => ({ ...prev, ...patch }))
   }, [])
 
-  const moveOrigin = useCallback((coords: [number, number]) => {
-    setOrder((prev) => ({ ...prev, originCoords: coords }))
-  }, [])
+  const originReverseRef = useRef(0)
+  const destReverseRef = useRef(0)
 
-  const moveDest = useCallback((coords: [number, number]) => {
-    setOrder((prev) => ({ ...prev, destCoords: coords }))
-  }, [])
+  const applyMapCoords = useCallback(
+    (which: 'origin' | 'dest', coords: [number, number], extra?: Partial<OrderDraft>) => {
+      setOrder((prev) => ({
+        ...prev,
+        ...extra,
+        ...(which === 'origin' ? { originCoords: coords } : { destCoords: coords }),
+      }))
+      const token = which === 'origin' ? ++originReverseRef.current : ++destReverseRef.current
+      void reverseGeocode(coords, city).then((hit) => {
+        if (!hit) return
+        if (which === 'origin' && token !== originReverseRef.current) return
+        if (which === 'dest' && token !== destReverseRef.current) return
+        const hint = formatPlaceHint(hit)
+        setOrder((prev) => {
+          const current = which === 'origin' ? prev.originCoords : prev.destCoords
+          if (
+            !current ||
+            current[0] !== coords[0] ||
+            current[1] !== coords[1]
+          ) {
+            return prev
+          }
+          if (which === 'origin') {
+            return { ...prev, origin: hit.label, originHint: hint }
+          }
+          return { ...prev, destination: hit.label, destHint: hint }
+        })
+      })
+    },
+    [city],
+  )
+
+  const moveOrigin = useCallback(
+    (coords: [number, number]) => applyMapCoords('origin', coords),
+    [applyMapCoords],
+  )
+
+  const moveDest = useCallback(
+    (coords: [number, number]) => applyMapCoords('dest', coords),
+    [applyMapCoords],
+  )
 
   const setPinFromMap = useCallback(
     (coords: [number, number]) => {
       if (!order.originCoords) {
-        setOrder((prev) => ({
-          ...prev,
-          originCoords: coords,
-          origin: prev.origin.trim() ? prev.origin : 'Punto A en el mapa',
-          originHint: prev.originHint || 'Punto en el mapa',
-        }))
+        applyMapCoords('origin', coords, {
+          origin: order.origin.trim() ? order.origin : 'Punto A en el mapa',
+          originHint: order.originHint || 'Punto en el mapa',
+        })
         setActivePin('dest')
         return
       }
       if (!order.destCoords) {
-        setOrder((prev) => ({
-          ...prev,
-          destCoords: coords,
-          destination: prev.destination.trim() ? prev.destination : 'Punto B en el mapa',
-          destHint: prev.destHint || 'Punto en el mapa',
-        }))
+        applyMapCoords('dest', coords, {
+          destination: order.destination.trim() ? order.destination : 'Punto B en el mapa',
+          destHint: order.destHint || 'Punto en el mapa',
+        })
         return
       }
-      if (activePin === 'origin') {
-        setOrder((prev) => ({ ...prev, originCoords: coords }))
-        return
-      }
-      setOrder((prev) => ({ ...prev, destCoords: coords }))
+      applyMapCoords(activePin, coords)
     },
-    [activePin, order.destCoords, order.originCoords],
+    [
+      activePin,
+      applyMapCoords,
+      order.destCoords,
+      order.destHint,
+      order.destination,
+      order.origin,
+      order.originCoords,
+      order.originHint,
+    ],
   )
 
   const focusDriver = useCallback((id: string | null) => {

@@ -140,7 +140,7 @@ function MapViewerController({
 
     tripLineRef.current = createRoutePolyline({
       map,
-      color: '#34d399',
+      color: '#3b82f6',
       weight: 3.5,
     })
     driverLineRef.current = createRoutePolyline({

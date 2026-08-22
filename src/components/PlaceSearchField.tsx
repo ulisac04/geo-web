@@ -44,6 +44,9 @@ export default function PlaceSearchField({
 
   useEffect(() => {
     const q = value.trim()
+    if (hint) {
+      skipQueryRef.current = q
+    }
     if (skipQueryRef.current !== null && skipQueryRef.current === q) {
       setHits([])
       setSearching(false)
@@ -93,7 +96,7 @@ export default function PlaceSearchField({
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [city, value])
+  }, [city, hint, value])
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {

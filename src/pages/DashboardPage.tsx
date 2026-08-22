@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import ConfirmDialog from '../components/ConfirmDialog'
-import CostRulesFab from '../components/CostRulesFab'
 import SidebarDispatch from '../components/SidebarDispatch'
 import { DispatchProvider, useDispatchFlow } from '../context/DispatchContext'
 import { useSettings } from '../context/SettingsContext'
@@ -78,7 +77,6 @@ function DashboardLayout() {
             onTakeOffline={takeOffline}
           />
         </Suspense>
-        <CostRulesFab />
       </div>
       <ConfirmDialog
         open={pendingOffline !== null}

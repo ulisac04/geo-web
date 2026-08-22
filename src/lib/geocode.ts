@@ -195,19 +195,53 @@ async function fetchGeocodeHits(
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
   return (response.results ?? []).flatMap((result, index) => {
-    const coords = fromLatLng(result.geometry.location)
-    if (!coords) return []
-    const parts = result.formatted_address.split(',').map((part) => part.trim())
-    return [
-      {
-        id: result.place_id || `geocode-${index}`,
-        label: parts[0] || result.formatted_address,
-        secondary: parts.slice(1).join(', ') || city.name,
-        coords,
-        placeId: result.place_id,
-      },
-    ]
+    const hit = hitFromGeocodeResult(result, city, index)
+    return hit ? [hit] : []
   })
+}
+
+function hitFromGeocodeResult(
+  result: google.maps.GeocoderResult,
+  city: City,
+  index = 0,
+): PlaceHit | null {
+  const coords = fromLatLng(result.geometry.location)
+  if (!coords) return null
+  const parts = result.formatted_address.split(',').map((part) => part.trim())
+  return {
+    id: result.place_id || `geocode-${index}`,
+    label: parts[0] || result.formatted_address,
+    secondary: parts.slice(1).join(', ') || city.name,
+    coords,
+    placeId: result.place_id,
+  }
+}
+
+export function formatPlaceHint(hit: PlaceHit): string {
+  return hit.secondary ? `${hit.label}, ${hit.secondary}` : hit.label
+}
+
+export async function reverseGeocode(
+  coords: [number, number],
+  city: City,
+  signal?: AbortSignal,
+): Promise<PlaceHit | null> {
+  if (!hasGoogleMapsKey()) return null
+  try {
+    await waitForMaps(signal)
+    const geocoder = new google.maps.Geocoder()
+    const response = await geocoder.geocode({
+      location: toLatLng(coords),
+      language: 'es',
+    })
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+    const result = response.results[0]
+    if (!result) return null
+    return hitFromGeocodeResult(result, city)
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error
+    return null
+  }
 }
 
 async function fetchGooglePlaces(
