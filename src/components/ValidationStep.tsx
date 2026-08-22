@@ -78,8 +78,7 @@ export default function ValidationStep() {
   return (
     <div className="space-y-3">
       <p className="text-xs text-mist">
-        Busca como en Maps: escribe el barrio o el sitio y elige una coincidencia. El pin queda
-        aproximado; arrástralo para el punto exacto.
+        Busca como en Maps: el pin es una referencia. Debajo, el operador escribe el punto exacto.
       </p>
 
       {typeOptions.length > 0 ? (
@@ -118,7 +117,14 @@ export default function ValidationStep() {
             originHint: hit.secondary ? `${hit.label}, ${hit.secondary}` : hit.label,
           })
         }}
-      />
+      >
+        <Field
+          label="Punto exacto"
+          value={order.originExact}
+          placeholder="Apto, local, portón, km…"
+          onChange={(value) => updateOrder({ originExact: value })}
+        />
+      </PlaceSearchField>
       <PlaceSearchField
         label="Destino (Punto B)"
         value={order.destination}
@@ -135,7 +141,14 @@ export default function ValidationStep() {
             destHint: hit.secondary ? `${hit.label}, ${hit.secondary}` : hit.label,
           })
         }}
-      />
+      >
+        <Field
+          label="Punto exacto"
+          value={order.destExact}
+          placeholder="Apto, local, portón, km…"
+          onChange={(value) => updateOrder({ destExact: value })}
+        />
+      </PlaceSearchField>
       <div className="grid grid-cols-2 gap-2">
         <Field
           label="Nombre cliente"
@@ -217,18 +230,21 @@ function Field({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
+  placeholder?: string
 }) {
   return (
     <label className="block space-y-1">
       <span className="text-[11px] font-medium tracking-wide text-mist uppercase">{label}</span>
       <input
         value={value}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+        className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow placeholder:text-mist/40 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
       />
     </label>
   )

@@ -55,6 +55,8 @@ export interface OrderDraft {
   destCoords: [number, number] | null
   originHint: string
   destHint: string
+  originExact: string
+  destExact: string
   clientName: string
   clientPhone: string
   paymentMethod: string

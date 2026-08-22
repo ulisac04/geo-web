@@ -122,6 +122,8 @@ export function extractedToDraft(
     destCoords: null,
     originHint: '',
     destHint: '',
+    originExact: '',
+    destExact: '',
     clientName: extracted.customer_name?.trim() ?? '',
     clientPhone: extracted.customer_phone?.trim() ?? '',
     paymentMethod: formatPayment(extracted.payment_method),

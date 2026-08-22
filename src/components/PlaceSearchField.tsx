@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Loader2, MapPin } from 'lucide-react'
 import {
   hydratePlaceHit,
@@ -16,6 +16,7 @@ interface PlaceSearchFieldProps {
   hint?: string
   placeholder?: string
   accent?: 'origin' | 'dest'
+  children?: ReactNode
   onActivate: () => void
   onQueryChange: (value: string) => void
   onSelect: (hit: PlaceHit) => void
@@ -29,6 +30,7 @@ export default function PlaceSearchField({
   hint,
   placeholder,
   accent = 'origin',
+  children,
   onActivate,
   onQueryChange,
   onSelect,
@@ -156,81 +158,84 @@ export default function PlaceSearchField({
   const showList = open && (hits.length > 0 || empty)
 
   return (
-    <div ref={rootRef} className="relative block space-y-1">
-      <span className="text-[11px] font-medium tracking-wide text-mist uppercase">{label}</span>
-      <div
-        className={`flex items-center gap-2 rounded-md border bg-ink px-2.5 py-1.5 ${
-          active
-            ? accent === 'dest'
-              ? 'border-red-500/60 ring-1 ring-red-500/30'
-              : 'border-[#198754]/60 ring-1 ring-[#198754]/30'
-            : 'border-line'
-        }`}
-      >
-        <MapPin
-          className={`size-3.5 shrink-0 ${
-            hasCoords ? (accent === 'dest' ? 'text-red-500' : 'text-[#198754]') : 'text-mist'
+    <div className="block space-y-1">
+      <div ref={rootRef} className="relative">
+        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">{label}</span>
+        <div
+          className={`mt-1 flex items-center gap-2 rounded-md border bg-ink px-2.5 py-1.5 ${
+            active
+              ? accent === 'dest'
+                ? 'border-red-500/60 ring-1 ring-red-500/30'
+                : 'border-[#198754]/60 ring-1 ring-[#198754]/30'
+              : 'border-line'
           }`}
-        />
-        <input
-          value={value}
-          placeholder={placeholder}
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          onFocus={() => {
-            onActivate()
-            if (hits.length > 0 || empty) setOpen(true)
-          }}
-          onChange={(event) => {
-            skipQueryRef.current = null
-            onQueryChange(event.target.value)
-            setOpen(true)
-          }}
-          onKeyDown={onKeyDown}
-          className="w-full bg-transparent text-sm text-snow placeholder:text-mist/50 focus:outline-none"
-        />
-        {searching ? <Loader2 className="size-3.5 shrink-0 animate-spin text-mist" /> : null}
+        >
+          <MapPin
+            className={`size-3.5 shrink-0 ${
+              hasCoords ? (accent === 'dest' ? 'text-red-500' : 'text-[#198754]') : 'text-mist'
+            }`}
+          />
+          <input
+            value={value}
+            placeholder={placeholder}
+            role="combobox"
+            aria-expanded={open}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            onFocus={() => {
+              onActivate()
+              if (hits.length > 0 || empty) setOpen(true)
+            }}
+            onChange={(event) => {
+              skipQueryRef.current = null
+              onQueryChange(event.target.value)
+              setOpen(true)
+            }}
+            onKeyDown={onKeyDown}
+            className="w-full bg-transparent text-sm text-snow placeholder:text-mist/50 focus:outline-none"
+          />
+          {searching ? <Loader2 className="size-3.5 shrink-0 animate-spin text-mist" /> : null}
+        </div>
+        {showList ? (
+          <ul
+            id={listId}
+            role="listbox"
+            className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-line bg-panel py-1 shadow-lg"
+          >
+            {hits.length === 0 ? (
+              <li className="px-3 py-2 text-xs text-mist">
+                {errorMessage ??
+                  `Sin coincidencias. Prueba un barrio de ${city.name} o coloca el pin en el mapa.`}
+              </li>
+            ) : (
+              hits.map((hit, index) => (
+                <li key={hit.id}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={index === highlight}
+                    onMouseEnter={() => setHighlight(index)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => choose(hit)}
+                    className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left ${
+                      index === highlight ? 'bg-elevated' : 'hover:bg-elevated'
+                    }`}
+                  >
+                    <span className="text-xs font-medium text-snow">{hit.label}</span>
+                    {hit.secondary ? (
+                      <span className="text-[11px] text-mist">{hit.secondary}</span>
+                    ) : null}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        ) : null}
       </div>
       {hasCoords && hint ? (
-        <p className="text-[11px] text-signal">Aprox. en el mapa: {hint}</p>
+        <p className="text-[11px] text-signal">Referencia en el mapa: {hint}</p>
       ) : null}
-      {showList ? (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-line bg-panel py-1 shadow-lg"
-        >
-          {hits.length === 0 ? (
-            <li className="px-3 py-2 text-xs text-mist">
-              {errorMessage ??
-                `Sin coincidencias. Prueba un barrio de ${city.name} o coloca el pin en el mapa.`}
-            </li>
-          ) : (
-            hits.map((hit, index) => (
-              <li key={hit.id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={index === highlight}
-                  onMouseEnter={() => setHighlight(index)}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => choose(hit)}
-                  className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left ${
-                    index === highlight ? 'bg-elevated' : 'hover:bg-elevated'
-                  }`}
-                >
-                  <span className="text-xs font-medium text-snow">{hit.label}</span>
-                  {hit.secondary ? (
-                    <span className="text-[11px] text-mist">{hit.secondary}</span>
-                  ) : null}
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : null}
+      {children}
     </div>
   )
 }

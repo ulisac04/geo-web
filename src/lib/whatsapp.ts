@@ -1,12 +1,13 @@
 import type { Driver, OrderDraft } from '../types'
+import { formatStopLines } from './orderStops'
 import { formatVehicleLine } from './vehicles'
 
 export function buildDispatchMessage(order: OrderDraft, driver: Driver): string {
   return [
     `Hola ${driver.name}, tienes un servicio asignado:`,
     '',
-    `📍 Recogida: ${order.origin}`,
-    `🎯 Destino: ${order.destination}`,
+    ...formatStopLines('📍 Recogida (ref. mapa)', order.origin, order.originExact),
+    ...formatStopLines('🎯 Destino (ref. mapa)', order.destination, order.destExact),
     `👤 Cliente: ${order.clientName}`,
     `📞 Tel: ${order.clientPhone}`,
     `💳 Pago: ${order.paymentMethod} — ${order.amount}`,
@@ -26,8 +27,8 @@ export function buildClientMessage(order: OrderDraft, driver: Driver): string {
     `📞 Tel: ${driver.phone}`,
     plate ? `${vehicle} · ${plate}` : vehicle,
     '',
-    `📍 Recogida: ${order.origin}`,
-    `🎯 Destino: ${order.destination}`,
+    ...formatStopLines('📍 Recogida (ref. mapa)', order.origin, order.originExact),
+    ...formatStopLines('🎯 Destino (ref. mapa)', order.destination, order.destExact),
     '',
     'Andina Logistics',
   ].join('\n')

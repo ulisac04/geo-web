@@ -22,6 +22,7 @@ import { fetchCandidates, NEARBY_RADIUS_M, rankCandidates } from '../lib/fleet'
 import { formatPlaceHint, geocodeFirst, reverseGeocode } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
+import { formatDestLabel, formatOriginLabel } from '../lib/orderStops'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { isLiveServiceStatus } from '../lib/services'
 import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp, openWhatsAppPopup } from '../lib/whatsapp'
@@ -293,8 +294,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       const distanceM = Math.round(haversineMeters(order.originCoords, order.destCoords))
       const record = await addRecord({
         serviceTypeId: order.serviceTypeId,
-        origin: order.origin,
-        destination: order.destination,
+        origin: formatOriginLabel(order),
+        destination: formatDestLabel(order),
         originCoords: order.originCoords,
         destCoords: order.destCoords,
         clientName: order.clientName,

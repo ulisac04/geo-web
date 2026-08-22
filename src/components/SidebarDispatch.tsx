@@ -44,6 +44,8 @@ export default function SidebarDispatch() {
     Boolean(order.clientName.trim()) ||
     Boolean(order.clientPhone.trim()) ||
     Boolean(order.notes.trim()) ||
+    Boolean(order.originExact.trim()) ||
+    Boolean(order.destExact.trim()) ||
     Boolean(order.paymentMethod.trim()) ||
     Boolean(order.amount.trim()) ||
     Boolean(order.originCoords) ||
