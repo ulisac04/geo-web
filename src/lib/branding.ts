@@ -2,6 +2,7 @@ import { api, apiBaseUrl } from './api'
 
 export const DEFAULT_PRIMARY_COLOR = '#34d399'
 export const DEFAULT_ACCENT_COLOR = '#059669'
+export const PLATFORM_TITLE = 'Andina Dispatch · Despacho logístico'
 
 export interface PublicBranding {
   code: string
@@ -44,8 +45,10 @@ export function contrastOn(hex: string): string {
   return y > 0.55 ? '#07090d' : '#f8fafc'
 }
 
-export function applyBranding(branding: PublicBranding | null): void {
+export function applyBranding(branding: PublicBranding | null, title?: string | null): void {
   const root = document.documentElement
+  const name = branding?.name?.trim() || title?.trim()
+  document.title = name || PLATFORM_TITLE
   if (!branding) {
     root.style.removeProperty('--signal')
     root.style.removeProperty('--signal-dim')

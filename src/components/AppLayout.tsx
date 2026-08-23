@@ -10,7 +10,8 @@ import AppNav from './AppNav'
 
 export default function AppLayout() {
   useEffect(() => {
-    applyBranding(getSession()?.branding ?? null)
+    const session = getSession()
+    applyBranding(session?.branding ?? null, session?.company)
   }, [])
 
   return (

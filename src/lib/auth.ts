@@ -40,7 +40,7 @@ export async function login(email: string, password: string, remember = true): P
   }
   saveSession(session, remember)
   if (session.role === 'operator') {
-    applyBranding(session.branding ?? null)
+    applyBranding(session.branding ?? null, session.company)
   } else {
     applyBranding(null)
   }
