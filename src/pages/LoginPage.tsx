@@ -2,11 +2,12 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { RadioTower } from 'lucide-react'
 import LoginForm from '../components/LoginForm'
-import { isAuthenticated } from '../lib/auth'
+import { getSession, homePath, isAuthenticated } from '../lib/auth'
 
 export default function LoginPage() {
   if (isAuthenticated()) {
-    return <Navigate to="/dashboard" replace />
+    const session = getSession()
+    return <Navigate to={session ? homePath(session) : '/dashboard'} replace />
   }
 
   return (

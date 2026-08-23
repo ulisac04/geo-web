@@ -1,6 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import AdminLayout from './components/AdminLayout'
 import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminTenantDetailPage from './pages/AdminTenantDetailPage'
+import AdminTenantNewPage from './pages/AdminTenantNewPage'
+import AdminTenantsPage from './pages/AdminTenantsPage'
 import CitiesPage from './pages/CitiesPage'
 import CostsPage from './pages/CostsPage'
 import DashboardPage from './pages/DashboardPage'
@@ -9,6 +13,12 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LoginPage from './pages/LoginPage'
 import ServicesPage from './pages/ServicesPage'
 import SettingsPage from './pages/SettingsPage'
+import { getSession, homePath } from './lib/auth'
+
+function DefaultRedirect() {
+  const session = getSession()
+  return <Navigate to={session ? homePath(session) : '/login'} replace />
+}
 
 export default function App() {
   return (
@@ -18,7 +28,18 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route
           element={
-            <ProtectedRoute>
+            <ProtectedRoute role="platform_admin">
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/admin" element={<AdminTenantsPage />} />
+          <Route path="/admin/nuevo" element={<AdminTenantNewPage />} />
+          <Route path="/admin/:tenantId" element={<AdminTenantDetailPage />} />
+        </Route>
+        <Route
+          element={
+            <ProtectedRoute role="operator">
               <AppLayout />
             </ProtectedRoute>
           }
@@ -30,8 +51,8 @@ export default function App() {
           <Route path="/costos" element={<CostsPage />} />
           <Route path="/configuracion" element={<SettingsPage />} />
         </Route>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<DefaultRedirect />} />
+        <Route path="*" element={<DefaultRedirect />} />
       </Routes>
     </BrowserRouter>
   )

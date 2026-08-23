@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
-import { login } from '../lib/auth'
+import { login, homePath } from '../lib/auth'
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -23,8 +23,8 @@ export default function LoginForm() {
 
     setLoading(true)
     try {
-      await login(email, password, remember)
-      navigate('/dashboard', { replace: true })
+      const session = await login(email, password, remember)
+      navigate(homePath(session), { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión')
     } finally {
@@ -108,7 +108,7 @@ export default function LoginForm() {
       </button>
 
       <p className="text-center text-xs text-mist/80">
-        Demo: operador@andina.logistic / demo1234
+        Demo: operador@andina.logistic / demo1234 · Admin: admin@geo.local / admin1234
       </p>
     </form>
   )

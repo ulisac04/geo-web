@@ -147,6 +147,7 @@ export interface Session {
   company: string
   operator: string
   operatorEmail: string
+  role: 'operator' | 'platform_admin'
 }
 
 export interface LiveTrip {

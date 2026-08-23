@@ -10,6 +10,15 @@ interface LoginResponse {
   company: string
   operator: string
   operator_email: string
+  role?: string
+}
+
+export function homePath(session: Session): string {
+  return session.role === 'platform_admin' ? '/admin' : '/dashboard'
+}
+
+export function isPlatformAdmin(session = getSession()): boolean {
+  return session?.role === 'platform_admin'
 }
 
 export async function login(email: string, password: string, remember = true): Promise<Session> {
@@ -20,10 +29,11 @@ export async function login(email: string, password: string, remember = true): P
   })
   const session: Session = {
     token: data.token,
-    tenantId: data.tenant_id,
+    tenantId: data.tenant_id ?? '',
     company: data.company,
     operator: data.operator,
     operatorEmail: data.operator_email,
+    role: data.role === 'platform_admin' ? 'platform_admin' : 'operator',
   }
   saveSession(session, remember)
   return session

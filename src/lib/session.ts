@@ -10,17 +10,18 @@ function storage(persist: boolean): Storage {
 
 function readFrom(store: Storage): Session | null {
   const token = store.getItem(TOKEN_KEY)
-  const tenantId = store.getItem(TENANT_KEY)
   const raw = store.getItem(SESSION_KEY)
-  if (!token || !tenantId) return null
-  if (raw) {
-    try {
-      return JSON.parse(raw) as Session
-    } catch {
-      return null
+  if (!token || !raw) return null
+  try {
+    const parsed = JSON.parse(raw) as Session
+    if (!parsed.token) return null
+    return {
+      ...parsed,
+      role: parsed.role === 'platform_admin' ? 'platform_admin' : 'operator',
     }
+  } catch {
+    return null
   }
-  return null
 }
 
 export function getSession(): Session | null {
