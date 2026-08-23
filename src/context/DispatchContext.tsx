@@ -91,7 +91,7 @@ interface DispatchContextValue {
 const DispatchContext = createContext<DispatchContextValue | null>(null)
 
 export function DispatchProvider({ children }: { children: ReactNode }) {
-  const { city } = useSettings()
+  const { city, settings } = useSettings()
   const { drivers, refreshDrivers, setStatus } = useFleet()
   const { types, records, addRecord, updateRecord } = useServices()
   const fleet = useMemo(
@@ -403,8 +403,18 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
           })
           await refreshDrivers()
         }
-        const message = buildDispatchMessage(order, driver)
-        await copyAndOpenWhatsApp(buildWhatsAppUrl(order, driver), message, popup)
+        const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
+        const message = buildDispatchMessage(
+          order,
+          driver,
+          rates,
+          settings.whatsappDriverTemplate,
+        )
+        await copyAndOpenWhatsApp(
+          buildWhatsAppUrl(order, driver, rates, settings.whatsappDriverTemplate),
+          message,
+          popup,
+        )
         setCopied('driver')
         window.setTimeout(() => setCopied((current) => (current === 'driver' ? null : current)), 1800)
         setStep(4)
@@ -417,7 +427,15 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         )
       }
     },
-    [acceptedServiceId, order, refreshDrivers, updateRecord],
+    [
+      acceptedServiceId,
+      order,
+      refreshDrivers,
+      settings.usdToCop,
+      settings.usdToVes,
+      settings.whatsappDriverTemplate,
+      updateRecord,
+    ],
   )
 
   const patchTripStatus = useCallback(
@@ -611,21 +629,37 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const getFormattedMessage = useCallback(
     (target: 'driver' | 'client' = 'driver') => {
       if (!selectedDriver) return ''
+      const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
       return target === 'client'
-        ? buildClientMessage(order, selectedDriver)
-        : buildDispatchMessage(order, selectedDriver)
+        ? buildClientMessage(order, selectedDriver, settings.whatsappClientTemplate)
+        : buildDispatchMessage(order, selectedDriver, rates, settings.whatsappDriverTemplate)
     },
-    [order, selectedDriver],
+    [
+      order,
+      selectedDriver,
+      settings.usdToCop,
+      settings.usdToVes,
+      settings.whatsappClientTemplate,
+      settings.whatsappDriverTemplate,
+    ],
   )
 
   const getWhatsAppUrl = useCallback(
     (target: 'driver' | 'client' = 'driver') => {
       if (!selectedDriver) return null
+      const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
       return target === 'client'
-        ? buildClientWhatsAppUrl(order, selectedDriver)
-        : buildWhatsAppUrl(order, selectedDriver)
+        ? buildClientWhatsAppUrl(order, selectedDriver, settings.whatsappClientTemplate)
+        : buildWhatsAppUrl(order, selectedDriver, rates, settings.whatsappDriverTemplate)
     },
-    [order, selectedDriver],
+    [
+      order,
+      selectedDriver,
+      settings.usdToCop,
+      settings.usdToVes,
+      settings.whatsappClientTemplate,
+      settings.whatsappDriverTemplate,
+    ],
   )
 
   const copyMessage = useCallback(

@@ -8,6 +8,7 @@ import type {
   VehicleType,
 } from '../types'
 import { api } from './api'
+import { parseUsd } from './money'
 import { formatFare } from './costs'
 
 export const EMPTY_TYPE_DRAFT: ServiceTypeDraft = {
@@ -181,7 +182,7 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
       client_name: input.clientName,
       client_phone: input.clientPhone,
       payment_method: input.paymentMethod,
-      amount: input.amount.trim() || '0',
+      amount: parseUsd(input.amount)?.toFixed(2) ?? '0',
       distance_m: input.distanceM,
       notes: input.notes,
       city_id: input.cityId,

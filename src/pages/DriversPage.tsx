@@ -15,6 +15,16 @@ const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
   { value: 'offline', label: 'Fuera de servicio' },
 ]
 
+const STATUS_BUTTONS: { value: DriverStatus; label: string; short: string }[] = [
+  { value: 'available', label: 'Disponible', short: 'Disp.' },
+  { value: 'busy', label: 'Ocupado', short: 'Ocup.' },
+  { value: 'offline', label: 'Fuera de servicio', short: 'Fuera' },
+]
+
+function statusButtonClass(value: DriverStatus, active: boolean) {
+  return `status-toggle-btn status-toggle-btn--${value}${active ? ' is-active' : ''}`
+}
+
 export default function DriversPage() {
   const { city } = useSettings()
   const { drivers, addDriver, updateDriver, removeDriver, setStatus } = useFleet()
@@ -68,7 +78,8 @@ export default function DriversPage() {
   }
 
   function requestStatus(driver: Driver, status: DriverStatus) {
-    if (status === 'offline' && driver.status !== 'offline') {
+    if (status === driver.status) return
+    if (status === 'offline') {
       setPendingOffline(driver)
       return
     }
@@ -135,7 +146,7 @@ export default function DriversPage() {
       </div>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[860px] border-collapse text-left text-sm">
           <thead className="sticky top-0 bg-ink text-[11px] tracking-wide text-mist uppercase">
             <tr className="border-b border-line">
               <th className="py-2 pr-3 font-medium">Conductor</th>
@@ -178,15 +189,27 @@ export default function DriversPage() {
                 </td>
                 <td className="py-3 pr-3 text-mist">{driver.zone || '—'}</td>
                 <td className="py-3 pr-3">
-                  <select
-                    value={driver.status}
-                    onChange={(e) => requestStatus(driver, e.target.value as DriverStatus)}
-                    className="rounded-md border border-line bg-card px-2 py-1 text-xs text-snow"
+                  <div
+                    role="group"
+                    aria-label={`Estado de ${driver.name}`}
+                    className="status-toggle"
                   >
-                    <option value="available">Disponible</option>
-                    <option value="busy">Ocupado</option>
-                    <option value="offline">Fuera de servicio</option>
-                  </select>
+                    {STATUS_BUTTONS.map((item) => {
+                      const active = driver.status === item.value
+                      return (
+                        <button
+                          key={item.value}
+                          type="button"
+                          title={item.label}
+                          aria-pressed={active}
+                          onClick={() => requestStatus(driver, item.value)}
+                          className={statusButtonClass(item.value, active)}
+                        >
+                          {item.short}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </td>
                 <td className="py-3">
                   <div className="flex items-center gap-1">

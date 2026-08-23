@@ -44,7 +44,6 @@ export default function SidebarDispatch() {
     Boolean(order.notes.trim()) ||
     Boolean(order.originExact.trim()) ||
     Boolean(order.destExact.trim()) ||
-    Boolean(order.paymentMethod.trim()) ||
     Boolean(order.amount.trim()) ||
     Boolean(order.originCoords) ||
     Boolean(order.destCoords)
@@ -69,17 +68,17 @@ export default function SidebarDispatch() {
         </div>
 
         <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-full border border-line bg-ink px-3 py-1 text-xs">
-          <span className="inline-flex items-center gap-1.5 text-emerald-300">
+          <span className="inline-flex items-center gap-1.5 font-medium text-signal">
             <span className="size-1.5 rounded-full bg-signal" />
             {availableCount} Disponibles
           </span>
           <span className="text-line">|</span>
-          <span className="inline-flex items-center gap-1.5 text-amber-300">
+          <span className="inline-flex items-center gap-1.5 font-medium text-warn">
             <span className="size-1.5 rounded-full bg-warn" />
             {busyCount} Ocupados
           </span>
           <span className="text-line">|</span>
-          <span className="inline-flex items-center gap-1.5 text-rose-300">
+          <span className="inline-flex items-center gap-1.5 font-medium text-danger">
             <span className="size-1.5 rounded-full bg-danger" />
             {offlineCount} Fuera
           </span>

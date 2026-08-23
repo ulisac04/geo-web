@@ -250,3 +250,63 @@ html.light .driver-marker {
   background: color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
+.status-toggle {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: var(--card);
+}
+
+.status-toggle-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--mist);
+  background: transparent;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.status-toggle-btn + .status-toggle-btn {
+  border-left: 1px solid var(--line);
+}
+
+.status-toggle-btn:hover:not(.is-active) {
+  background: var(--elevated);
+  color: var(--snow);
+}
+
+.status-toggle-btn--available.is-active {
+  background: color-mix(in srgb, var(--signal) 20%, transparent);
+  color: var(--signal);
+}
+
+.status-toggle-btn--busy.is-active {
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  color: var(--warn);
+}
+
+.status-toggle-btn--offline.is-active {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: #fda4af;
+}
+
+html.light .status-toggle {
+  background: var(--elevated);
+}
+
+html.light .status-toggle-btn--available.is-active {
+  background: color-mix(in srgb, var(--signal) 22%, var(--card));
+  color: var(--signal);
+}
+
+html.light .status-toggle-btn--busy.is-active {
+  background: color-mix(in srgb, var(--warn) 24%, var(--card));
+  color: var(--warn);
+}
+
+html.light .status-toggle-btn--offline.is-active {
+  background: color-mix(in srgb, var(--danger) 18%, var(--card));
+  color: var(--danger);
+}
+

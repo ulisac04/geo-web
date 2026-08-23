@@ -68,6 +68,10 @@ export interface OrderDraft {
 export interface AppSettings {
   mapRefreshSeconds: MapRefreshSeconds
   cityId: CityId
+  usdToCop: number
+  usdToVes: number
+  whatsappDriverTemplate: string
+  whatsappClientTemplate: string
 }
 
 export interface ServiceType {

@@ -2,10 +2,11 @@ import { Check, Loader2 } from 'lucide-react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
+import { convertFromUsd } from '../lib/money'
 import PlaceSearchField from './PlaceSearchField'
 
 export default function ValidationStep() {
-  const { city } = useSettings()
+  const { city, settings } = useSettings()
   const {
     order,
     updateOrder,
@@ -121,23 +122,21 @@ export default function ValidationStep() {
           onChange={(value) => updateOrder({ clientPhone: value })}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Field
-          label="Método de pago"
-          value={order.paymentMethod}
-          onChange={(value) => updateOrder({ paymentMethod: value })}
-        />
-        <Field
-          label="Monto"
-          value={order.amount}
-          onChange={(value) => updateOrder({ amount: value })}
-        />
-      </div>
-      <Field
-        label="Notas"
-        value={order.notes}
-        onChange={(value) => updateOrder({ notes: value })}
+      <AmountFields
+        usd={order.amount}
+        usdToCop={settings.usdToCop}
+        usdToVes={settings.usdToVes}
+        onUsdChange={(value) => updateOrder({ amount: value })}
       />
+      <label className="block space-y-1">
+        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">Notas</span>
+        <textarea
+          value={order.notes}
+          rows={4}
+          onChange={(e) => updateOrder({ notes: e.target.value })}
+          className="w-full resize-y rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow placeholder:text-mist/40 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+        />
+      </label>
 
       {searchError ? (
         <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
@@ -154,6 +153,61 @@ export default function ValidationStep() {
         {searching ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
         {searching ? 'Creando servicio…' : 'Aceptar servicio'}
       </button>
+    </div>
+  )
+}
+
+function AmountFields({
+  usd,
+  usdToCop,
+  usdToVes,
+  onUsdChange,
+}: {
+  usd: string
+  usdToCop: number
+  usdToVes: number
+  onUsdChange: (value: string) => void
+}) {
+  const cop = convertFromUsd(usd, usdToCop)
+  const ves = convertFromUsd(usd, usdToVes)
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <label className="block space-y-1">
+        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+          🇺🇸 USD
+        </span>
+        <input
+          value={usd}
+          inputMode="decimal"
+          placeholder="0.00"
+          onChange={(e) => onUsdChange(e.target.value)}
+          className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow placeholder:text-mist/40 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+          🇨🇴 COP
+        </span>
+        <input
+          value={cop}
+          readOnly
+          tabIndex={-1}
+          placeholder="—"
+          className="w-full cursor-default rounded-md border border-line bg-ink/60 px-2.5 py-1.5 text-sm text-mist placeholder:text-mist/40 outline-none"
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+          🇻🇪 VES
+        </span>
+        <input
+          value={ves}
+          readOnly
+          tabIndex={-1}
+          placeholder="—"
+          className="w-full cursor-default rounded-md border border-line bg-ink/60 px-2.5 py-1.5 text-sm text-mist placeholder:text-mist/40 outline-none"
+        />
+      </label>
     </div>
   )
 }

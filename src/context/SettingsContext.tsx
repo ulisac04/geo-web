@@ -22,6 +22,10 @@ interface SettingsContextValue {
   city: City
   setMapRefreshSeconds: (seconds: MapRefreshSeconds) => Promise<void>
   setCityId: (cityId: CityId) => Promise<void>
+  setUsdToCop: (rate: number) => Promise<void>
+  setUsdToVes: (rate: number) => Promise<void>
+  setWhatsappDriverTemplate: (template: string) => Promise<void>
+  setWhatsappClientTemplate: (template: string) => Promise<void>
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null)
@@ -85,11 +89,97 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [apply],
   )
 
+  const setUsdToCop = useCallback(
+    async (rate: number) => {
+      generation.current += 1
+      setSettings((current) => {
+        const next = { ...current, usdToCop: rate }
+        cacheSettings(next)
+        return next
+      })
+      try {
+        apply(await patchSettings({ usdToCop: rate }))
+      } catch {
+        // Keep the local rate so the dispatch form still converts.
+      }
+    },
+    [apply],
+  )
+
+  const setUsdToVes = useCallback(
+    async (rate: number) => {
+      generation.current += 1
+      setSettings((current) => {
+        const next = { ...current, usdToVes: rate }
+        cacheSettings(next)
+        return next
+      })
+      try {
+        apply(await patchSettings({ usdToVes: rate }))
+      } catch {
+        // Keep the local rate so the dispatch form still converts.
+      }
+    },
+    [apply],
+  )
+
+  const setWhatsappDriverTemplate = useCallback(
+    async (template: string) => {
+      generation.current += 1
+      setSettings((current) => {
+        const next = { ...current, whatsappDriverTemplate: template }
+        cacheSettings(next)
+        return next
+      })
+      try {
+        apply(await patchSettings({ whatsappDriverTemplate: template }))
+      } catch {
+        // Keep the local template so dispatch still uses the edited copy.
+      }
+    },
+    [apply],
+  )
+
+  const setWhatsappClientTemplate = useCallback(
+    async (template: string) => {
+      generation.current += 1
+      setSettings((current) => {
+        const next = { ...current, whatsappClientTemplate: template }
+        cacheSettings(next)
+        return next
+      })
+      try {
+        apply(await patchSettings({ whatsappClientTemplate: template }))
+      } catch {
+        // Keep the local template so dispatch still uses the edited copy.
+      }
+    },
+    [apply],
+  )
+
   const city = useMemo(() => getCity(settings.cityId), [settings.cityId])
 
   const value = useMemo(
-    () => ({ settings, city, setMapRefreshSeconds, setCityId }),
-    [settings, city, setMapRefreshSeconds, setCityId],
+    () => ({
+      settings,
+      city,
+      setMapRefreshSeconds,
+      setCityId,
+      setUsdToCop,
+      setUsdToVes,
+      setWhatsappDriverTemplate,
+      setWhatsappClientTemplate,
+    }),
+    [
+      settings,
+      city,
+      setMapRefreshSeconds,
+      setCityId,
+      setUsdToCop,
+      setUsdToVes,
+      setWhatsappDriverTemplate,
+      setWhatsappClientTemplate,
+    ],
   )
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
