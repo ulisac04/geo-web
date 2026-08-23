@@ -130,14 +130,19 @@ export default function ServiceTypeForm({
               )
             })}
           </fieldset>
-          <label className="flex items-center gap-2 text-sm text-snow">
+          <label className="flex items-center gap-2 border-t border-line pt-3 text-sm text-snow">
             <input
               type="checkbox"
               checked={draft.active}
               onChange={(e) => setDraft((prev) => ({ ...prev, active: e.target.checked }))}
               className="size-4 rounded border-line"
             />
-            Activo
+            <span>
+              <span className="block text-[11px] font-medium tracking-wide text-mist uppercase">
+                Estado
+              </span>
+              Activo (disponible para nuevos servicios)
+            </span>
           </label>
 
           {error ? (
