@@ -1,5 +1,7 @@
 const MAX_SIZE = 480
 const QUALITY = 0.7
+const MAX_LOGO_BYTES = 512 * 1024
+const MAX_LOGO_EDGE = 1024
 
 export function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -27,6 +29,68 @@ export function compressImage(file: File): Promise<string> {
         }
         ctx.drawImage(img, 0, 0, width, height)
         resolve(canvas.toDataURL('image/jpeg', QUALITY))
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+/** Reduce a logo until it fits the API 512 KB limit. SVG is left as-is. */
+export async function prepareLogoFile(file: File): Promise<File> {
+  const type = file.type.toLowerCase()
+  if (type === 'image/svg+xml') {
+    if (file.size > MAX_LOGO_BYTES) {
+      throw new Error('El logo SVG debe pesar 512 KB o menos')
+    }
+    return file
+  }
+  if (!type.startsWith('image/')) {
+    throw new Error('El logo debe ser PNG, JPEG, WebP o SVG')
+  }
+  if (file.size <= MAX_LOGO_BYTES) return file
+  return compressLogoToJpeg(file, MAX_LOGO_EDGE, 0.82)
+}
+
+function compressLogoToJpeg(file: File, maxEdge: number, quality: number): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('No se pudo leer el logo'))
+    reader.onload = () => {
+      const img = new Image()
+      img.onerror = () => reject(new Error('No se pudo cargar el logo'))
+      img.onload = () => {
+        const scale = Math.min(1, maxEdge / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('No se pudo comprimir el logo'))
+          return
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('No se pudo comprimir el logo'))
+              return
+            }
+            if (blob.size > MAX_LOGO_BYTES) {
+              if (maxEdge > 480) {
+                void compressLogoToJpeg(file, 480, 0.7).then(resolve, reject)
+                return
+              }
+              reject(new Error('El logo debe pesar 512 KB o menos'))
+              return
+            }
+            resolve(
+              new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }),
+            )
+          },
+          'image/jpeg',
+          quality,
+        )
       }
       img.src = reader.result as string
     }

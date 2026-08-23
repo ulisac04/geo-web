@@ -260,7 +260,9 @@ export default function AdminTenantDetailPage() {
                       ? 'Logo actual de la empresa'
                       : 'Todavía no hay logo'}
                 </p>
-                <p className="text-xs text-mist">PNG, JPEG, WebP o SVG · máx. 512 KB</p>
+                <p className="text-xs text-mist">
+                  PNG, JPEG, WebP o SVG · máx. 512 KB (las imágenes grandes se reducen al subir)
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"

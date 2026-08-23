@@ -1,4 +1,5 @@
 import { api } from './api'
+import { prepareLogoFile } from './image'
 
 export interface AdminTenant {
   id: string
@@ -104,9 +105,9 @@ export function patchTenant(
   return api<AdminTenant>(`/api/v1/admin/tenants/${id}`, { method: 'PATCH', body })
 }
 
-export function uploadTenantLogo(id: string, file: File) {
+export async function uploadTenantLogo(id: string, file: File) {
   const body = new FormData()
-  body.append('logo', file)
+  body.append('logo', await prepareLogoFile(file))
   return api<AdminTenant>(`/api/v1/admin/tenants/${id}/logo`, { method: 'PUT', body })
 }
 
