@@ -141,6 +141,8 @@ export interface FareEstimate {
   appliedNightRules: string[]
 }
 
+import type { PublicBranding } from '../lib/branding'
+
 export interface Session {
   token: string
   tenantId: string
@@ -148,6 +150,7 @@ export interface Session {
   operator: string
   operatorEmail: string
   role: 'operator' | 'platform_admin'
+  branding?: PublicBranding | null
 }
 
 export interface LiveTrip {

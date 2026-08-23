@@ -1,11 +1,18 @@
+import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { CostsProvider } from '../context/CostsContext'
 import { FleetProvider } from '../context/FleetContext'
 import { ServicesProvider } from '../context/ServicesContext'
 import { SettingsProvider } from '../context/SettingsContext'
+import { getSession } from '../lib/auth'
+import { applyBranding } from '../lib/branding'
 import AppNav from './AppNav'
 
 export default function AppLayout() {
+  useEffect(() => {
+    applyBranding(getSession()?.branding ?? null)
+  }, [])
+
   return (
     <SettingsProvider>
       <ServicesProvider>

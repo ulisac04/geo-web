@@ -8,6 +8,11 @@ export interface AdminTenant {
   city_id: string
   driver_count: number
   created_at: string
+  primary_color: string
+  accent_color: string
+  subdomain: string | null
+  has_logo: boolean
+  logo_url: string | null
 }
 
 export interface AdminOperator {
@@ -33,6 +38,37 @@ export interface CreatedTenant {
   company_code: string
 }
 
+export interface TenantStats {
+  from: string
+  to: string
+  drivers: {
+    total: number
+    available: number
+    busy: number
+    offline: number
+  }
+  services: {
+    total: number
+    pending: number
+    assigned: number
+    en_route: number
+    in_progress: number
+    completed: number
+    cancelled: number
+    in_range: number
+  }
+  gemini: {
+    total: number
+    ok: number
+    errors: number
+    by_kind: {
+      extract: number
+      transcribe: number
+      ocr: number
+    }
+  }
+}
+
 export function listTenants() {
   return api<AdminTenant[]>('/api/v1/admin/tenants')
 }
@@ -48,12 +84,40 @@ export function createTenant(body: {
   operator_name: string
   operator_email: string
   operator_password: string
+  primary_color?: string
+  accent_color?: string
+  subdomain?: string
 }) {
   return api<CreatedTenant>('/api/v1/admin/tenants', { method: 'POST', body })
 }
 
-export function patchTenant(id: string, body: { status?: string }) {
+export function patchTenant(
+  id: string,
+  body: {
+    status?: string
+    name?: string
+    primary_color?: string
+    accent_color?: string
+    subdomain?: string
+  },
+) {
   return api<AdminTenant>(`/api/v1/admin/tenants/${id}`, { method: 'PATCH', body })
+}
+
+export function uploadTenantLogo(id: string, file: File) {
+  const body = new FormData()
+  body.append('logo', file)
+  return api<AdminTenant>(`/api/v1/admin/tenants/${id}/logo`, { method: 'PUT', body })
+}
+
+export function deleteTenantLogo(id: string) {
+  return api<AdminTenant>(`/api/v1/admin/tenants/${id}/logo`, { method: 'DELETE' })
+}
+
+export function getTenantStats(id: string, from: string, to: string) {
+  return api<TenantStats>(`/api/v1/admin/tenants/${id}/stats`, {
+    query: { from, to },
+  })
 }
 
 export function addOperator(

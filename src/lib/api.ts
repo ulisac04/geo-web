@@ -21,7 +21,7 @@ export function apiBaseUrl(): string {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
   body?: unknown
   auth?: boolean
   signal?: AbortSignal
@@ -46,7 +46,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   }
 
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (options.body !== undefined) {
+  const isForm = options.body instanceof FormData
+  if (options.body !== undefined && !isForm) {
     headers['Content-Type'] = 'application/json'
   }
   if (auth) {
@@ -60,7 +61,12 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   const response = await fetch(url.toString(), {
     method: options.method ?? 'GET',
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body:
+      options.body === undefined
+        ? undefined
+        : isForm
+          ? (options.body as FormData)
+          : JSON.stringify(options.body),
     signal: options.signal,
   })
 

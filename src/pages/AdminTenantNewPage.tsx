@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { createTenant } from '../lib/admin'
+import { createTenant, uploadTenantLogo } from '../lib/admin'
+import {
+  DEFAULT_ACCENT_COLOR,
+  DEFAULT_PRIMARY_COLOR,
+  appBaseHost,
+  contrastOn,
+} from '../lib/branding'
 import { CITIES } from '../lib/cities'
 import type { CityId } from '../types'
 
@@ -12,8 +18,13 @@ export default function AdminTenantNewPage() {
   const [operatorName, setOperatorName] = useState('')
   const [operatorEmail, setOperatorEmail] = useState('')
   const [operatorPassword, setOperatorPassword] = useState('')
+  const [primaryColor, setPrimaryColor] = useState(DEFAULT_PRIMARY_COLOR)
+  const [accentColor, setAccentColor] = useState(DEFAULT_ACCENT_COLOR)
+  const [subdomain, setSubdomain] = useState('')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const hostSuffix = appBaseHost() || 'tudominio.com'
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -27,7 +38,13 @@ export default function AdminTenantNewPage() {
         operator_name: operatorName,
         operator_email: operatorEmail,
         operator_password: operatorPassword,
+        primary_color: primaryColor,
+        accent_color: accentColor,
+        subdomain: subdomain.trim() || undefined,
       })
+      if (logoFile) {
+        await uploadTenantLogo(created.id, logoFile)
+      }
       navigate(`/admin/${created.id}`, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la empresa')
@@ -43,16 +60,11 @@ export default function AdminTenantNewPage() {
       </Link>
       <h1 className="mt-4 text-xl font-semibold text-snow">Nueva empresa</h1>
       <p className="mb-6 text-sm text-mist">
-        Crea el tenant y el primer operador. Ellos llenan la Agenda.
+        Crea el tenant, la marca y el primer operador. Ellos llenan la Agenda.
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="Nombre comercial">
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-          />
+          <input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
         </Field>
         <Field label="Código de empresa (app móvil)">
           <input
@@ -75,6 +87,53 @@ export default function AdminTenantNewPage() {
               </option>
             ))}
           </select>
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Color primario">
+            <input
+              type="color"
+              value={primaryColor}
+              onChange={(e) => setPrimaryColor(e.target.value)}
+              className="h-10 w-full cursor-pointer rounded-md border border-line bg-ink"
+            />
+          </Field>
+          <Field label="Color de acento">
+            <input
+              type="color"
+              value={accentColor}
+              onChange={(e) => setAccentColor(e.target.value)}
+              className="h-10 w-full cursor-pointer rounded-md border border-line bg-ink"
+            />
+          </Field>
+        </div>
+        <div className="rounded-lg border border-line bg-elevated/40 p-3">
+          <p className="mb-2 text-[11px] font-medium tracking-wide text-mist uppercase">Vista previa</p>
+          <button
+            type="button"
+            className="rounded-md px-3 py-2 text-sm font-semibold"
+            style={{ background: primaryColor, color: contrastOn(primaryColor) }}
+          >
+            Botón de {name || 'la empresa'}
+          </button>
+        </div>
+        <Field label="Logo (PNG, JPEG, WebP o SVG · máx. 512 KB)">
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-mist file:mr-3 file:rounded-md file:border-0 file:bg-signal file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-on-signal"
+          />
+        </Field>
+        <Field label="Subdominio (opcional)">
+          <div className="flex items-center gap-2">
+            <input
+              value={subdomain}
+              onChange={(e) => setSubdomain(e.target.value.toLowerCase())}
+              placeholder="norte"
+              className={inputClass}
+            />
+            <span className="shrink-0 text-sm text-mist">.{hostSuffix}</span>
+          </div>
         </Field>
         <Field label="Operador (nombre)">
           <input

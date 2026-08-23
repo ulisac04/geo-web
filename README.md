@@ -24,6 +24,16 @@ Abre [http://localhost:5173/](http://localhost:5173/).
 
 Vite hay que reiniciarlo si cambias el `.env`. Si tenías sesión mock antigua, cierra sesión y vuelve a entrar.
 
+## Marca por subdominio
+
+`VITE_APP_BASE_HOST` es el host canónico del SPA (sin slug). Si el hostname es `{slug}.{ese host}` — por ejemplo `norte.localhost` con `VITE_APP_BASE_HOST=localhost` — el login pide `GET /api/v1/public/branding?host=…` y pinta logo, nombre y colores de esa empresa.
+
+En producción, un wildcard `*.tudominio.com` debe servir **el mismo SPA**. El panel de plataforma (`/admin`) no hereda la paleta del tenant. En local puedes probar con `/etc/hosts`:
+
+```
+127.0.0.1 norte.localhost
+```
+
 ## Qué pega contra Geo
 
 Ya no hay flota/servicios/costos en `localStorage`. El poll del mapa **no** mueve puntos: lee `GET /api/v1/drivers`.
@@ -72,4 +82,8 @@ La API **no siembra conductores**. Crea fichas en Agenda. Para GPS en vivo y par
 npm run build    # build de producción
 npm run preview  # servir el build
 npm run lint     # oxlint
+```
+## Claves Demo
+```
+Demo operador (sin cambios): operador@andina.logistic / demo1234.
 ```

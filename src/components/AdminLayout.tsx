@@ -1,10 +1,16 @@
+import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Building2, LogOut, RadioTower } from 'lucide-react'
 import { getSession, logout } from '../lib/auth'
+import { applyBranding } from '../lib/branding'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
   const session = getSession()
+
+  useEffect(() => {
+    applyBranding(null)
+  }, [])
 
   function handleLogout() {
     logout()

@@ -1,5 +1,6 @@
 import type { Session } from '../types'
 import { api } from './api'
+import { applyBranding, type PublicBranding } from './branding'
 import { clearSession, getSession, isAuthenticated, saveSession } from './session'
 
 export { getSession, isAuthenticated }
@@ -11,6 +12,7 @@ interface LoginResponse {
   operator: string
   operator_email: string
   role?: string
+  branding?: PublicBranding | null
 }
 
 export function homePath(session: Session): string {
@@ -34,12 +36,19 @@ export async function login(email: string, password: string, remember = true): P
     operator: data.operator,
     operatorEmail: data.operator_email,
     role: data.role === 'platform_admin' ? 'platform_admin' : 'operator',
+    branding: data.role === 'platform_admin' ? null : (data.branding ?? null),
   }
   saveSession(session, remember)
+  if (session.role === 'operator') {
+    applyBranding(session.branding ?? null)
+  } else {
+    applyBranding(null)
+  }
   return session
 }
 
 export function logout(): void {
+  applyBranding(null)
   clearSession()
 }
 

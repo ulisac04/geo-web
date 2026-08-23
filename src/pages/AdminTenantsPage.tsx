@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { listTenants, type AdminTenant } from '../lib/admin'
+import { logoSrc } from '../lib/branding'
 import { getCity } from '../lib/cities'
 
 export default function AdminTenantsPage() {
@@ -55,27 +56,48 @@ export default function AdminTenantsPage() {
             </tr>
           </thead>
           <tbody>
-            {tenants.map((tenant) => (
-              <tr key={tenant.id} className="border-t border-line">
-                <td className="px-4 py-3">
-                  <Link to={`/admin/${tenant.id}`} className="font-medium text-signal hover:underline">
-                    {tenant.name}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 font-mono text-snow">{tenant.code}</td>
-                <td className="px-4 py-3 text-mist">{getCity(tenant.city_id).name}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={
-                      tenant.status === 'active' ? 'text-signal' : 'text-amber-300'
-                    }
-                  >
-                    {tenant.status === 'active' ? 'Activa' : 'Suspendida'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-snow">{tenant.driver_count}</td>
-              </tr>
-            ))}
+            {tenants.map((tenant) => {
+              const logo = logoSrc(tenant.logo_url)
+              return (
+                <tr key={tenant.id} className="border-t border-line">
+                  <td className="px-4 py-3">
+                    <Link
+                      to={`/admin/${tenant.id}`}
+                      className="flex items-center gap-3 font-medium text-signal hover:underline"
+                    >
+                      {logo ? (
+                        <img
+                          src={logo}
+                          alt=""
+                          className="size-8 rounded-md object-cover ring-1 ring-line"
+                        />
+                      ) : (
+                        <span
+                          className="grid size-8 place-items-center rounded-md text-xs font-bold"
+                          style={{
+                            background: tenant.primary_color || '#34d399',
+                            color: '#07090d',
+                          }}
+                        >
+                          {tenant.name.slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                      {tenant.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-snow">{tenant.code}</td>
+                  <td className="px-4 py-3 text-mist">{getCity(tenant.city_id).name}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={tenant.status === 'active' ? 'text-signal' : 'text-amber-300'}
+                    >
+                      {tenant.status === 'active' ? 'Activa' : 'Suspendida'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-snow">{tenant.driver_count}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         {!loading && tenants.length === 0 ? (
