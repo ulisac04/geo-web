@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import { MessageCircle, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Car, MessageCircle, Motorbike, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
 import { useFleet } from '../context/FleetContext'
 import { useSettings } from '../context/SettingsContext'
 import { formatVehicleLine, vehicleTypeLabel } from '../lib/vehicles'
-import type { Driver, DriverDraft, DriverStatus } from '../types'
+import type { Driver, DriverDraft, DriverStatus, VehicleFilter, VehicleType } from '../types'
 
 const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -21,6 +21,20 @@ const STATUS_BUTTONS: { value: DriverStatus; label: string; short: string }[] = 
   { value: 'offline', label: 'Fuera de servicio', short: 'Fuera' },
 ]
 
+const VEHICLE_FILTERS: {
+  value: VehicleType
+  label: string
+  icon: typeof Motorbike
+}[] = [
+  { value: 'motorcycle', label: 'Motos', icon: Motorbike },
+  { value: 'car', label: 'Carros', icon: Car },
+]
+
+function VehicleTypeIcon({ type, className }: { type: VehicleType; className?: string }) {
+  const Icon = type === 'motorcycle' ? Motorbike : Car
+  return <Icon className={className ?? 'size-4'} />
+}
+
 function statusButtonClass(value: DriverStatus, active: boolean) {
   return `status-toggle-btn status-toggle-btn--${value}${active ? ' is-active' : ''}`
 }
@@ -30,6 +44,7 @@ export default function DriversPage() {
   const { drivers, addDriver, updateDriver, removeDriver, setStatus } = useFleet()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | DriverStatus>('all')
+  const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('all')
   const [editing, setEditing] = useState<Driver | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
@@ -49,6 +64,7 @@ export default function DriversPage() {
     const q = query.trim().toLowerCase()
     return cityDrivers.filter((driver) => {
       const matchesFilter = filter === 'all' || driver.status === filter
+      const matchesVehicle = vehicleFilter === 'all' || driver.vehicleType === vehicleFilter
       const matchesQuery =
         !q ||
         driver.name.toLowerCase().includes(q) ||
@@ -58,9 +74,9 @@ export default function DriversPage() {
         vehicleTypeLabel(driver.vehicleType).toLowerCase().includes(q) ||
         driver.licensePlate.toLowerCase().includes(q) ||
         driver.zone.toLowerCase().includes(q)
-      return matchesFilter && matchesQuery
+      return matchesFilter && matchesVehicle && matchesQuery
     })
-  }, [cityDrivers, filter, query])
+  }, [cityDrivers, filter, query, vehicleFilter])
 
   function openCreate() {
     setEditing(null)
@@ -127,21 +143,46 @@ export default function DriversPage() {
             className="w-full rounded-lg border border-line bg-panel py-2 pr-3 pl-9 text-sm text-snow placeholder:text-mist/50 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
           />
         </div>
-        <div className="flex gap-1">
-          {FILTERS.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setFilter(item.value)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                filter === item.value
-                  ? 'bg-signal/15 text-signal'
-                  : 'text-mist hover:bg-elevated hover:text-snow'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1" role="group" aria-label="Estado">
+            {FILTERS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setFilter(item.value)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  filter === item.value
+                    ? 'bg-signal/15 text-signal'
+                    : 'text-mist hover:bg-elevated hover:text-snow'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <span className="hidden h-4 w-px bg-line sm:block" aria-hidden />
+          <div className="flex gap-1" role="group" aria-label="Tipo de vehículo">
+            {VEHICLE_FILTERS.map((item) => {
+              const active = vehicleFilter === item.value
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setVehicleFilter(active ? 'all' : item.value)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
+                    active
+                      ? 'bg-signal/15 text-signal'
+                      : 'text-mist hover:bg-elevated hover:text-snow'
+                  }`}
+                >
+                  <Icon className="size-3.5" />
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -172,6 +213,13 @@ export default function DriversPage() {
                 <td className="py-3 pr-3 text-mist">{driver.phone}</td>
                 <td className="py-3 pr-3">
                   <div className="flex items-center gap-2">
+                    <span
+                      className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-line bg-elevated text-signal"
+                      title={vehicleTypeLabel(driver.vehicleType)}
+                      aria-label={vehicleTypeLabel(driver.vehicleType)}
+                    >
+                      <VehicleTypeIcon type={driver.vehicleType} />
+                    </span>
                     {driver.vehiclePhoto ? (
                       <img
                         src={driver.vehiclePhoto}

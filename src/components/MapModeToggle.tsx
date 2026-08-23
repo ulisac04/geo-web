@@ -1,3 +1,4 @@
+import { Car, Motorbike } from 'lucide-react'
 import type { MapMode, VehicleFilter } from '../types'
 
 interface MapModeToggleProps {
@@ -76,10 +77,11 @@ export default function MapModeToggle({
             aria-label="Tipo de vehículo"
           >
             {([
-              { value: 'motorcycle' as const, label: 'Moto' },
-              { value: 'car' as const, label: 'Carro' },
+              { value: 'motorcycle' as const, label: 'Moto', icon: Motorbike },
+              { value: 'car' as const, label: 'Carro', icon: Car },
             ]).map((item) => {
               const active = vehicleFilter === item.value
+              const Icon = item.icon
               return (
                 <button
                   key={item.value}
@@ -88,8 +90,9 @@ export default function MapModeToggle({
                   onClick={() =>
                     onVehicleFilterChange?.(active ? 'all' : item.value)
                   }
-                  className={chipClass(active)}
+                  className={`inline-flex items-center gap-1.5 ${chipClass(active)}`}
                 >
+                  <Icon className="size-3.5" />
                   {item.label}
                 </button>
               )
