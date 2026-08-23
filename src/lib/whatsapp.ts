@@ -27,7 +27,7 @@ export const DEFAULT_DRIVER_TEMPLATE = [
   '{monto}',
   '📝 {notas}',
   '',
-  'Andina Logistics · Despacho',
+  'Tu Ruta · Despacho',
 ].join('\n')
 
 export const DEFAULT_CLIENT_TEMPLATE = [
@@ -40,7 +40,7 @@ export const DEFAULT_CLIENT_TEMPLATE = [
   '{recogida}',
   '{destino}',
   '',
-  'Andina Logistics',
+  'Tu Ruta',
 ].join('\n')
 
 export type TemplateVars = Record<string, string>
@@ -102,7 +102,7 @@ export function buildWhatsAppVars(
     destino: formatStopLines('🎯 Destino (ref. mapa)', order.destination, order.destExact).join('\n'),
     monto: formatDispatchAmount(order.amount, rates),
     notas: order.notes.trim(),
-    firma: 'Andina Logistics',
+    firma: 'Tu Ruta',
   }
 }
 

@@ -40,7 +40,7 @@ export default function AppNav() {
     <nav className="flex h-full w-[76px] shrink-0 flex-col items-center border-r border-line bg-panel py-4">
       <div
         className="grid size-10 place-items-center rounded-lg bg-signal/15 text-signal"
-        title={session?.company || 'Andina Dispatch'}
+        title={session?.company || 'Tu Ruta'}
       >
         <RadioTower className="size-5" />
       </div>

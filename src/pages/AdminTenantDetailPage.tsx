@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { ImagePlus } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import {
   addOperator,
@@ -27,6 +28,8 @@ export default function AdminTenantDetailPage() {
   const [days, setDays] = useState<7 | 30>(30)
   const [error, setError] = useState('')
   const [savingBrand, setSavingBrand] = useState(false)
+  const [logoBusy, setLogoBusy] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#34d399')
   const [accentColor, setAccentColor] = useState('#059669')
@@ -94,21 +97,30 @@ export default function AdminTenantDetailPage() {
 
   async function handleLogo(file: File | null) {
     if (!tenant || !file) return
+    setLogoBusy(true)
+    setError('')
     try {
       await uploadTenantLogo(tenant.id, file)
       await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir el logo')
+    } finally {
+      setLogoBusy(false)
+      if (logoInputRef.current) logoInputRef.current.value = ''
     }
   }
 
   async function handleRemoveLogo() {
     if (!tenant) return
+    setLogoBusy(true)
+    setError('')
     try {
       await deleteTenantLogo(tenant.id)
       await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo quitar el logo')
+    } finally {
+      setLogoBusy(false)
     }
   }
 
@@ -224,22 +236,60 @@ export default function AdminTenantDetailPage() {
               <span className="shrink-0 text-sm text-mist">.{hostSuffix}</span>
             </div>
           </label>
-          <div className="flex items-center gap-3 sm:col-span-2">
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              onChange={(e) => void handleLogo(e.target.files?.[0] ?? null)}
-              className="text-sm text-mist"
-            />
-            {tenant.has_logo ? (
+          <div className="space-y-2 sm:col-span-2">
+            <span className="text-[11px] font-medium tracking-wide text-mist uppercase">Logo</span>
+            <div className="flex flex-col gap-3 rounded-lg border border-line bg-elevated/30 p-3 sm:flex-row sm:items-center">
               <button
                 type="button"
-                onClick={() => void handleRemoveLogo()}
-                className="text-xs text-rose-300 hover:underline"
+                disabled={logoBusy}
+                onClick={() => logoInputRef.current?.click()}
+                className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-line bg-ink transition hover:border-signal/50 disabled:opacity-60"
+                aria-label={tenant.has_logo ? 'Cambiar logo' : 'Subir logo'}
               >
-                Quitar logo
+                {logo ? (
+                  <img src={logo} alt="" className="size-full object-cover" />
+                ) : (
+                  <ImagePlus className="size-7 text-mist" />
+                )}
               </button>
-            ) : null}
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-sm text-snow">
+                  {logoBusy
+                    ? 'Actualizando logo…'
+                    : tenant.has_logo
+                      ? 'Logo actual de la empresa'
+                      : 'Todavía no hay logo'}
+                </p>
+                <p className="text-xs text-mist">PNG, JPEG, WebP o SVG · máx. 512 KB</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={logoBusy}
+                    onClick={() => logoInputRef.current?.click()}
+                    className="rounded-md bg-signal px-3 py-2 text-sm font-semibold text-on-signal disabled:opacity-60"
+                  >
+                    {tenant.has_logo ? 'Cambiar logo' : 'Subir logo'}
+                  </button>
+                  {tenant.has_logo ? (
+                    <button
+                      type="button"
+                      disabled={logoBusy}
+                      onClick={() => void handleRemoveLogo()}
+                      className="rounded-md border border-line px-3 py-2 text-sm text-snow hover:bg-elevated disabled:opacity-60"
+                    >
+                      Quitar
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={(e) => void handleLogo(e.target.files?.[0] ?? null)}
+              />
+            </div>
           </div>
           <button
             type="submit"

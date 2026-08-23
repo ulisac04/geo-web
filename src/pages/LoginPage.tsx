@@ -51,37 +51,60 @@ export function AuthShell({
   }, [])
 
   const logo = logoSrc(branding?.logo_url)
-  const company = branding?.name ?? 'Andina Dispatch'
+  const company = branding?.name ?? 'Tu Ruta'
 
   return (
     <div className="grid min-h-full bg-ink lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="relative hidden overflow-hidden border-r border-line lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(52,211,153,0.12),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(251,191,36,0.08),transparent_35%)]" />
+      <section className="relative hidden overflow-hidden border-r border-black/20 lg:flex lg:flex-col lg:p-12">
+        <div
+          className="absolute inset-0 bg-cover"
+          style={{
+            backgroundImage: "url('/login-hero.jpg')",
+            backgroundPosition: '78% 42%',
+          }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(7,9,13,0.78) 0%, rgba(7,9,13,0.42) 38%, rgba(7,9,13,0.12) 68%, rgba(7,9,13,0.04) 100%)',
+          }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(7,9,13,0.38) 0%, transparent 30%, transparent 58%, rgba(7,9,13,0.5) 100%)',
+          }}
+          aria-hidden
+        />
         <div className="relative flex items-center gap-3">
           {logo ? (
-            <img src={logo} alt="" className="size-10 rounded-lg object-cover ring-1 ring-line" />
+            <img src={logo} alt="" className="size-10 rounded-lg object-cover ring-1 ring-white/15" />
           ) : (
-            <div className="grid size-10 place-items-center rounded-lg bg-signal/15 text-signal">
+            <div className="grid size-10 place-items-center rounded-lg bg-emerald-400/20 text-emerald-300 ring-1 ring-white/10">
               <RadioTower className="size-5" />
             </div>
           )}
           <div>
-            <p className="text-sm font-semibold text-snow">{company}</p>
-            <p className="text-xs text-mist">
+            <p className="text-sm font-semibold text-white">{company}</p>
+            <p className="text-xs text-white/65">
               {branding ? 'Operación de flota' : 'Human-in-the-Loop · B2B'}
             </p>
           </div>
         </div>
-        <div className="relative max-w-md space-y-4">
-          <h1 className="text-3xl font-semibold tracking-tight text-snow">
+        <div className="relative mt-24 max-w-md space-y-4">
+          <h1 className="text-3xl font-semibold tracking-tight text-white drop-shadow-sm">
             Despacho logístico asistido, sin perder el control humano.
           </h1>
-          <p className="text-sm leading-relaxed text-mist">
+          <p className="text-sm leading-relaxed text-white/80">
             Extrae pedidos desde WhatsApp, valida datos, elige al conductor más
             cercano y confirma el envío — todo en un solo panel de monitoreo.
           </p>
         </div>
-        <p className="relative text-xs text-mist/70">Caracas · Flota en vivo · Google Maps</p>
+        <p className="relative mt-auto text-xs text-white/55">Caracas · Flota en vivo · Google Maps</p>
       </section>
 
       <section className="flex items-center justify-center px-6 py-12">

@@ -10,7 +10,7 @@ import {
 
 export type Theme = 'dark' | 'light'
 
-const STORAGE_KEY = 'andina-theme'
+const STORAGE_KEY = 'tu-ruta-theme'
 
 interface ThemeContextValue {
   theme: Theme

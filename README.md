@@ -1,4 +1,4 @@
-# Andina Dispatch
+# Tu Ruta
 
 SPA de despacho logístico (React + Vite + TypeScript). Habla con Geo en `/api/v1` con **JWT**.
 

@@ -2,7 +2,7 @@ import { api, apiBaseUrl } from './api'
 
 export const DEFAULT_PRIMARY_COLOR = '#34d399'
 export const DEFAULT_ACCENT_COLOR = '#059669'
-export const PLATFORM_TITLE = 'Andina Dispatch · Despacho logístico'
+export const PLATFORM_TITLE = 'Tu Ruta · Despacho logístico'
 
 export interface PublicBranding {
   code: string

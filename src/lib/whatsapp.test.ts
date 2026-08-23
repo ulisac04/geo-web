@@ -77,7 +77,7 @@ describe('buildDispatchMessage', () => {
     expect(message).toContain('Punto exacto: Torre A')
     expect(message).toContain('👤 Cliente: María González')
     expect(message).toContain('📝 Llamar al llegar')
-    expect(message).toContain('Andina Logistics · Despacho')
+    expect(message).toContain('Tu Ruta · Despacho')
   })
 
   it('omite monto y notas vacíos', () => {
@@ -98,6 +98,6 @@ describe('buildClientMessage', () => {
     expect(message).toContain('Hola María González, tu servicio fue asignado.')
     expect(message).toContain('🚗 Conductor: Juan Pérez')
     expect(message).toContain('Moto · Yamaha NMAX · AB123CD')
-    expect(message).toContain('Andina Logistics')
+    expect(message).toContain('Tu Ruta')
   })
 })

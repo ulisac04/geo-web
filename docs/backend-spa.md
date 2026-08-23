@@ -1,6 +1,6 @@
 # geo-web → backend: endpoints que necesita la SPA
 
-Contrato para que **Andina Dispatch** (geo-web) deje `localStorage` / JWT mock y hable solo con Geo.
+Contrato para que **Tu Ruta** (geo-web) deje `localStorage` / JWT mock y hable solo con Geo.
 
 Hoy casi todo vive en el browser (`geo_jwt`, `geo_fleet_v2`, `geo_service_types_v1`, `geo_service_records_v1`, `geo_cost_rules_v1`, `geo_settings_v1`). El único call real es `POST /v1/parser/extract` (API key).
 
@@ -8,7 +8,7 @@ Superficie pedida: `/api/v1` **+** `Authorization: Bearer <JWT>` (`tenant_id` en
 No mezclar `X-API-Key` en la SPA salvo que el parser no tenga alias Bearer.
 
 Base: `http://127.0.0.1:8080`. IDs UUID. JSON snake_case. Timestamps ISO-8601 UTC. Coords `[lng, lat]`.  
-Errores Andina: `{ "error": { "code", "message", "details" } }`.
+Errores Tu Ruta: `{ "error": { "code", "message", "details" } }`.
 
 Ciudades que usa la UI: `caracas` | `san_cristobal` | `cucuta` | `bogota`.
 
@@ -176,7 +176,7 @@ Mientras tanto la SPA puede seguir en `POST /v1/parser/extract` + `X-API-Key`.
 {
   "token": "<jwt>",
   "tenant_id": "tenant_andina_001",
-  "company": "Andina Logistics",
+  "company": "Tu Ruta",
   "operator": "Carlos Méndez",
   "operator_email": "operador@andina.logistic"
 }
