@@ -21,7 +21,7 @@ import { useSettings } from './SettingsContext'
 
 interface FleetContextValue {
   drivers: Driver[]
-  refreshDrivers: () => Promise<void>
+  refreshDrivers: () => Promise<Driver[]>
   addDriver: (draft: DriverDraft) => Promise<void>
   updateDriver: (id: string, draft: DriverDraft) => Promise<void>
   removeDriver: (id: string) => Promise<void>
@@ -37,7 +37,9 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const [drivers, setDrivers] = useState<Driver[]>([])
 
   const refreshDrivers = useCallback(async () => {
-    setDrivers(await fetchDrivers())
+    const next = await fetchDrivers()
+    setDrivers(next)
+    return next
   }, [])
 
   useEffect(() => {

@@ -74,6 +74,7 @@ interface DispatchContextValue {
   completeTrip: (serviceId: string) => Promise<void>
   cancelTrip: (serviceId: string) => Promise<void>
   beginReassign: (serviceId: string) => Promise<void>
+  refreshCandidates: () => Promise<void>
   actingTripId: string | null
   takeOffline: (driverId: string) => void
   pendingOffline: { id: string; name: string } | null
@@ -474,7 +475,12 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   )
 
   const loadCandidatesFor = useCallback(
-    async (pickup: [number, number], dropoff: [number, number] | null, serviceTypeId: string) => {
+    async (
+      pickup: [number, number],
+      dropoff: [number, number] | null,
+      serviceTypeId: string,
+      fleetNow?: Driver[],
+    ) => {
       let ranked: Driver[] = []
       try {
         ranked = await fetchCandidates({
@@ -490,12 +496,41 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         }
       }
       if (ranked.length === 0) {
-        ranked = closestAssignable(fleet, pickup)
+        ranked = closestAssignable(fleetNow ?? fleet, pickup)
       }
       setCandidates(ranked)
     },
     [city.id, fleet],
   )
+
+  const refreshCandidates = useCallback(async () => {
+    if (!order.originCoords) return
+    setSearching(true)
+    setSearchError(null)
+    try {
+      const latest = await refreshDrivers()
+      await loadCandidatesFor(
+        order.originCoords,
+        order.destCoords,
+        order.serviceTypeId,
+        latest,
+      )
+    } catch (error) {
+      setSearchError(
+        error instanceof ApiError || error instanceof Error
+          ? error.message
+          : 'No se pudieron recargar los conductores',
+      )
+    } finally {
+      setSearching(false)
+    }
+  }, [
+    loadCandidatesFor,
+    order.destCoords,
+    order.originCoords,
+    order.serviceTypeId,
+    refreshDrivers,
+  ])
 
   const beginReassign = useCallback(
     async (serviceId: string) => {
@@ -689,6 +724,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       completeTrip,
       cancelTrip,
       beginReassign,
+      refreshCandidates,
       actingTripId,
       takeOffline,
       pendingOffline,
@@ -741,6 +777,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       completeTrip,
       cancelTrip,
       beginReassign,
+      refreshCandidates,
       actingTripId,
       takeOffline,
       pendingOffline,
