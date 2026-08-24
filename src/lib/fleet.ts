@@ -1,5 +1,6 @@
 import type { CityId, Driver, DriverDraft, DriverStatus, VehicleType } from '../types'
 import { api } from './api'
+import { getCity } from './cities'
 import { etaFromMeters, haversineMeters } from './geo'
 
 export const NEARBY_RADIUS_M = 1500
@@ -110,6 +111,15 @@ export async function patchDriverStatus(id: string, status: DriverStatus): Promi
   const updated = await api<ApiDriver>(`/api/v1/drivers/${id}`, {
     method: 'PATCH',
     body: { status },
+  })
+  return fromApi(updated)
+}
+
+export async function patchDriverCity(id: string, cityId: CityId): Promise<Driver> {
+  const [lng, lat] = getCity(cityId).center
+  const updated = await api<ApiDriver>(`/api/v1/drivers/${id}`, {
+    method: 'PATCH',
+    body: { city_id: cityId, lng, lat },
   })
   return fromApi(updated)
 }

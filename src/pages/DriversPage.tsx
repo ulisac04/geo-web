@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Car, MessageCircle, Motorbike, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Car, MapPinned, MessageCircle, Motorbike, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
 import { useFleet } from '../context/FleetContext'
 import { useSettings } from '../context/SettingsContext'
+import { CITIES } from '../lib/cities'
 import { formatVehicleLine, vehicleTypeLabel } from '../lib/vehicles'
-import type { Driver, DriverDraft, DriverStatus, VehicleFilter, VehicleType } from '../types'
+import type { CityId, Driver, DriverDraft, DriverStatus, VehicleFilter, VehicleType } from '../types'
 
 const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -41,7 +42,7 @@ function statusButtonClass(value: DriverStatus, active: boolean) {
 
 export default function DriversPage() {
   const { city } = useSettings()
-  const { drivers, addDriver, updateDriver, removeDriver, setStatus } = useFleet()
+  const { drivers, addDriver, updateDriver, removeDriver, setStatus, moveDriverCity } = useFleet()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | DriverStatus>('all')
   const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('all')
@@ -50,6 +51,10 @@ export default function DriversPage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [pendingOffline, setPendingOffline] = useState<Driver | null>(null)
   const [takingOffline, setTakingOffline] = useState(false)
+  const [moving, setMoving] = useState<Driver | null>(null)
+  const [targetCityId, setTargetCityId] = useState<CityId | ''>('')
+  const [movingBusy, setMovingBusy] = useState(false)
+  const [moveError, setMoveError] = useState('')
 
   const cityDrivers = useMemo(
     () => drivers.filter((driver) => driver.cityId === city.id),
@@ -112,6 +117,27 @@ export default function DriversPage() {
     }
   }
 
+  function openMove(driver: Driver) {
+    const next = CITIES.find((item) => item.id !== driver.cityId)
+    setMoving(driver)
+    setTargetCityId(next?.id ?? '')
+    setMoveError('')
+  }
+
+  async function confirmMove() {
+    if (!moving || !targetCityId || targetCityId === moving.cityId) return
+    setMovingBusy(true)
+    setMoveError('')
+    try {
+      await moveDriverCity(moving.id, targetCityId)
+      setMoving(null)
+    } catch (err) {
+      setMoveError(err instanceof Error ? err.message : 'No se pudo mover el conductor')
+    } finally {
+      setMovingBusy(false)
+    }
+  }
+
   return (
     <div className="flex h-full flex-col bg-ink">
       <header className="flex items-center justify-between border-b border-line px-6 py-4">
@@ -138,7 +164,7 @@ export default function DriversPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre, teléfono, placa, zona o vehículo…"
+            placeholder="Buscar por nombre, teléfono, placa o vehículo…"
             className="w-full rounded-lg border border-line bg-panel py-2 pr-3 pl-9 text-sm text-snow placeholder:text-mist/50 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
           />
         </div>
@@ -269,6 +295,14 @@ export default function DriversPage() {
                     </a>
                     <button
                       type="button"
+                      onClick={() => openMove(driver)}
+                      className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
+                      title="Mover de ciudad"
+                    >
+                      <MapPinned className="size-4" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => openEdit(driver)}
                       className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
                       title="Editar"
@@ -335,6 +369,70 @@ export default function DriversPage() {
         }}
         onConfirm={confirmTakeOffline}
       />
+      {moving ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          onClick={() => {
+            if (!movingBusy) setMoving(null)
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="move-city-title"
+            className="w-full max-w-md rounded-2xl border border-line bg-panel p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="move-city-title" className="text-base font-semibold text-snow">
+              Mover de ciudad
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-mist">
+              {moving.name} está en {CITIES.find((item) => item.id === moving.cityId)?.name}. Elige
+              la ciudad destino. Si no tiene GPS en vivo, el mapa lo colocará en el centro de esa
+              ciudad.
+            </p>
+            <label className="mt-4 block space-y-1">
+              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+                Ciudad destino
+              </span>
+              <select
+                value={targetCityId}
+                onChange={(e) => setTargetCityId(e.target.value as CityId)}
+                className="w-full rounded-md border border-line bg-ink px-2.5 py-2 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+              >
+                {CITIES.filter((item) => item.id !== moving.cityId).map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} · {item.country}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {moveError ? (
+              <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
+                {moveError}
+              </p>
+            ) : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={movingBusy}
+                onClick={() => setMoving(null)}
+                className="rounded-lg border border-line bg-card px-3 py-2 text-sm text-snow hover:border-mist/50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={movingBusy || !targetCityId}
+                onClick={() => void confirmMove()}
+                className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-50"
+              >
+                {movingBusy ? 'Moviendo…' : 'Mover'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
