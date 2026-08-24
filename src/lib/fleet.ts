@@ -140,6 +140,7 @@ export interface ApiCandidate {
   vehicle: string
   license_plate: string
   driver_photo: string
+  completed_today?: number
 }
 
 interface CandidatesResponse {
@@ -164,6 +165,7 @@ export function candidateToDriver(card: ApiCandidate, cityId: CityId): Driver {
     battery: 0,
     distanceM,
     etaMin: Math.max(1, Math.round(card.eta_seconds / 60)),
+    completedToday: card.completed_today ?? 0,
     notes: '',
     cityId,
   }

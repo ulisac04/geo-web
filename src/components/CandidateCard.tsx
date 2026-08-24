@@ -1,4 +1,4 @@
-import { Clock, MapPin, UserCheck } from 'lucide-react'
+import { CheckCircle2, Clock, MapPin, UserCheck } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
 import TakeOfflineButton from './TakeOfflineButton'
 import type { Driver } from '../types'
@@ -44,6 +44,11 @@ export default function CandidateCard({
             {driver.licensePlate ? (
               <p className="font-mono text-[11px] tracking-wide text-snow">{driver.licensePlate}</p>
             ) : null}
+            <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-mist">
+              <CheckCircle2 className="size-3 text-signal" />
+              {driver.completedToday ?? 0}{' '}
+              {(driver.completedToday ?? 0) === 1 ? 'servicio' : 'servicios'} hoy
+            </p>
           </div>
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] text-mist">

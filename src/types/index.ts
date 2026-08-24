@@ -31,6 +31,7 @@ export interface Driver {
   battery: number
   distanceM: number
   etaMin: number
+  completedToday?: number
   notes: string
   cityId: CityId
 }
