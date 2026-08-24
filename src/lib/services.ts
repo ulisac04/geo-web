@@ -49,7 +49,7 @@ export function isLiveServiceStatus(status: ServiceStatus): boolean {
 }
 
 export function isPickupLeg(status: ServiceStatus): boolean {
-  return status === 'assigned' || status === 'en_route'
+  return status === 'assigned'
 }
 
 interface ApiServiceType {

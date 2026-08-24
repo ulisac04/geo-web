@@ -12,7 +12,6 @@ export default function LiveTripsList() {
     focusTrip,
     takeOffline,
     confirmOffer,
-    markInProgress,
     completeTrip,
     cancelTrip,
     beginReassign,
@@ -37,11 +36,7 @@ export default function LiveTripsList() {
         const meters = target ? haversineMeters(driver.coords, target) : 0
         const highlighted = focusedTripId === record.id
         const acting = actingTripId === record.id
-        const badge = waiting
-          ? 'Esperando respuesta'
-          : pickup
-            ? 'Va a buscar'
-            : 'Va a dejar'
+        const badge = waiting ? 'Esperando respuesta' : 'En curso'
 
         return (
           <article
@@ -65,9 +60,7 @@ export default function LiveTripsList() {
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                   waiting
                     ? 'bg-amber-400/15 text-amber-300'
-                    : pickup
-                      ? 'bg-warn/15 text-amber-300'
-                      : 'bg-signal/15 text-signal'
+                    : 'bg-signal/15 text-signal'
                 }`}
               >
                 <Navigation className="size-3" />
@@ -110,15 +103,7 @@ export default function LiveTripsList() {
                   />
                 </>
               ) : null}
-              {record.status === 'en_route' ? (
-                <TripAction
-                  disabled={acting}
-                  onClick={() => void markInProgress(record.id)}
-                  label="En viaje"
-                  primary
-                />
-              ) : null}
-              {record.status === 'in_progress' ? (
+              {record.status === 'en_route' || record.status === 'in_progress' ? (
                 <TripAction
                   disabled={acting}
                   onClick={() => void completeTrip(record.id)}

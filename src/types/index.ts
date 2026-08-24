@@ -5,6 +5,7 @@ export type ServiceStatus =
   | 'pending'
   | 'assigned'
   | 'en_route'
+  /** Reserved for v2 pickup/dropoff; operator v1 skips this (`en_route` → `completed`). */
   | 'in_progress'
   | 'completed'
   | 'cancelled'

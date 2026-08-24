@@ -71,7 +71,6 @@ interface DispatchContextValue {
   clearPin: (pin: PinFocus) => void
   assignDriver: (driver: Driver) => Promise<void>
   confirmOffer: (serviceId?: string) => Promise<void>
-  markInProgress: (serviceId: string) => Promise<void>
   completeTrip: (serviceId: string) => Promise<void>
   cancelTrip: (serviceId: string) => Promise<void>
   beginReassign: (serviceId: string) => Promise<void>
@@ -444,21 +443,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     [acceptedServiceId, patchTripStatus],
   )
 
-  const markInProgress = useCallback(
-    async (serviceId: string) => {
-      try {
-        await patchTripStatus(serviceId, 'in_progress')
-      } catch (error) {
-        setSearchError(
-          error instanceof ApiError || error instanceof Error
-            ? error.message
-            : 'No se pudo marcar en viaje',
-        )
-      }
-    },
-    [patchTripStatus],
-  )
-
   const completeTrip = useCallback(
     async (serviceId: string) => {
       try {
@@ -702,7 +686,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       clearPin,
       assignDriver,
       confirmOffer,
-      markInProgress,
       completeTrip,
       cancelTrip,
       beginReassign,
@@ -755,7 +738,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       clearPin,
       assignDriver,
       confirmOffer,
-      markInProgress,
       completeTrip,
       cancelTrip,
       beginReassign,
