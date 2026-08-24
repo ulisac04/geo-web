@@ -124,6 +124,18 @@ export async function patchDriverCity(id: string, cityId: CityId): Promise<Drive
   return fromApi(updated)
 }
 
+export async function patchDriverLocation(
+  id: string,
+  lng: number,
+  lat: number,
+): Promise<Driver> {
+  const updated = await api<ApiDriver>(`/api/v1/drivers/${id}`, {
+    method: 'PATCH',
+    body: { lng, lat },
+  })
+  return fromApi(updated)
+}
+
 export async function deleteDriver(id: string): Promise<void> {
   await api<void>(`/api/v1/drivers/${id}`, { method: 'DELETE' })
 }

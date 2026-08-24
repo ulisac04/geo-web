@@ -13,6 +13,7 @@ import {
   deleteDriver,
   fetchDrivers,
   patchDriverCity,
+  patchDriverLocation,
   patchDriverStatus,
   updateDriver as patchDriver,
 } from '../lib/fleet'
@@ -26,6 +27,7 @@ interface FleetContextValue {
   removeDriver: (id: string) => Promise<void>
   setStatus: (id: string, status: DriverStatus) => Promise<void>
   moveDriverCity: (id: string, cityId: CityId) => Promise<void>
+  setDriverLocation: (id: string, coords: [number, number]) => Promise<void>
 }
 
 const FleetContext = createContext<FleetContextValue | null>(null)
@@ -79,6 +81,11 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
   }, [])
 
+  const setDriverLocation = useCallback(async (id: string, coords: [number, number]) => {
+    const updated = await patchDriverLocation(id, coords[0], coords[1])
+    setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
+  }, [])
+
   const value = useMemo(
     () => ({
       drivers,
@@ -88,8 +95,18 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       removeDriver,
       setStatus,
       moveDriverCity,
+      setDriverLocation,
     }),
-    [drivers, refreshDrivers, addDriver, updateDriver, removeDriver, setStatus, moveDriverCity],
+    [
+      drivers,
+      refreshDrivers,
+      addDriver,
+      updateDriver,
+      removeDriver,
+      setStatus,
+      moveDriverCity,
+      setDriverLocation,
+    ],
   )
 
   return <FleetContext.Provider value={value}>{children}</FleetContext.Provider>

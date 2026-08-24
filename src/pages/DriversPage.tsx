@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Car, MapPinned, MessageCircle, Motorbike, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Car, MapPin, MapPinned, MessageCircle, Motorbike, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
+import PlaceDriverMap from '../components/PlaceDriverMap'
 import { useFleet } from '../context/FleetContext'
 import { useSettings } from '../context/SettingsContext'
 import { CITIES } from '../lib/cities'
@@ -42,7 +43,15 @@ function statusButtonClass(value: DriverStatus, active: boolean) {
 
 export default function DriversPage() {
   const { city } = useSettings()
-  const { drivers, addDriver, updateDriver, removeDriver, setStatus, moveDriverCity } = useFleet()
+  const {
+    drivers,
+    addDriver,
+    updateDriver,
+    removeDriver,
+    setStatus,
+    moveDriverCity,
+    setDriverLocation,
+  } = useFleet()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | DriverStatus>('all')
   const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('all')
@@ -55,6 +64,10 @@ export default function DriversPage() {
   const [targetCityId, setTargetCityId] = useState<CityId | ''>('')
   const [movingBusy, setMovingBusy] = useState(false)
   const [moveError, setMoveError] = useState('')
+  const [placing, setPlacing] = useState<Driver | null>(null)
+  const [placeCoords, setPlaceCoords] = useState<[number, number] | null>(null)
+  const [placingBusy, setPlacingBusy] = useState(false)
+  const [placeError, setPlaceError] = useState('')
 
   const cityDrivers = useMemo(
     () => drivers.filter((driver) => driver.cityId === city.id),
@@ -135,6 +148,34 @@ export default function DriversPage() {
       setMoveError(err instanceof Error ? err.message : 'No se pudo mover el conductor')
     } finally {
       setMovingBusy(false)
+    }
+  }
+
+  function openPlace(driver: Driver) {
+    setPlacing(driver)
+    setPlaceCoords(driver.coords)
+    setPlaceError('')
+  }
+
+  function closePlace() {
+    if (placingBusy) return
+    setPlacing(null)
+    setPlaceCoords(null)
+    setPlaceError('')
+  }
+
+  async function confirmPlace() {
+    if (!placing || !placeCoords) return
+    setPlacingBusy(true)
+    setPlaceError('')
+    try {
+      await setDriverLocation(placing.id, placeCoords)
+      setPlacing(null)
+      setPlaceCoords(null)
+    } catch (err) {
+      setPlaceError(err instanceof Error ? err.message : 'No se pudo guardar la ubicación')
+    } finally {
+      setPlacingBusy(false)
     }
   }
 
@@ -295,6 +336,14 @@ export default function DriversPage() {
                     </a>
                     <button
                       type="button"
+                      onClick={() => openPlace(driver)}
+                      className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
+                      title="Colocar en el mapa"
+                    >
+                      <MapPin className="size-4" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => openMove(driver)}
                       className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
                       title="Mover de ciudad"
@@ -428,6 +477,59 @@ export default function DriversPage() {
                 className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-50"
               >
                 {movingBusy ? 'Moviendo…' : 'Mover'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {placing && placeCoords ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          onClick={closePlace}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="place-driver-title"
+            className="w-full max-w-3xl rounded-2xl border border-line bg-panel p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="place-driver-title" className="text-base font-semibold text-snow">
+              Colocar en el mapa
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-mist">
+              Haz clic en el mapa o arrastra el pin para colocar a{' '}
+              <span className="font-semibold text-snow">{placing.name}</span>.
+            </p>
+            <div className="mt-4 overflow-hidden rounded-xl border border-line">
+              <PlaceDriverMap
+                key={placing.id}
+                driver={placing}
+                coords={placeCoords}
+                onChange={setPlaceCoords}
+              />
+            </div>
+            {placeError ? (
+              <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
+                {placeError}
+              </p>
+            ) : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={placingBusy}
+                onClick={closePlace}
+                className="rounded-lg border border-line bg-card px-3 py-2 text-sm text-snow hover:border-mist/50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={placingBusy}
+                onClick={() => void confirmPlace()}
+                className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-50"
+              >
+                {placingBusy ? 'Guardando…' : 'Guardar'}
               </button>
             </div>
           </div>
