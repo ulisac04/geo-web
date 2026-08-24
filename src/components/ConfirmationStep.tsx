@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Clock, Copy, MessageCircle, Plus, Send, User } from 'lucide-react'
+import { CheckCircle2, Clock, Copy, Plus, Send, User } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { formatVehicleLine } from '../lib/vehicles'
@@ -17,7 +17,7 @@ export default function ConfirmationStep() {
     selectedDriver,
     order,
     copied,
-    copyMessage,
+    copyDriverFicha,
     sendWhatsApp,
     getFormattedMessage,
     resetOrder,
@@ -32,6 +32,7 @@ export default function ConfirmationStep() {
   const waiting = !status || status === 'assigned'
   const [offeredAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
+  const [fichaError, setFichaError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!waiting) return
@@ -46,6 +47,7 @@ export default function ConfirmationStep() {
   const rejected = status === 'pending'
   const closed = status === 'completed' || status === 'cancelled'
   const acting = actingTripId === acceptedServiceId
+  const hasFicha = Boolean(selectedDriver.fichaPhoto.trim())
 
   const title = rejected
     ? `${selectedDriver.name} no tomó el servicio`
@@ -138,18 +140,33 @@ export default function ConfirmationStep() {
         {copied === 'client' ? 'Copiado · WhatsApp cliente' : 'WhatsApp cliente'}
       </button>
 
+      {fichaError ? (
+        <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
+          {fichaError}
+        </p>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => void copyMessage('driver')}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-card py-2 text-sm text-snow hover:border-mist/50"
+          disabled={!hasFicha}
+          title={
+            hasFicha
+              ? 'Copia la ficha del conductor al portapapeles'
+              : 'Este conductor no tiene ficha. Cárgala en Agenda.'
+          }
+          onClick={() => {
+            setFichaError(null)
+            void copyDriverFicha().catch((error: unknown) => {
+              setFichaError(
+                error instanceof Error ? error.message : 'No se pudo copiar la ficha',
+              )
+            })
+          }}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-card py-2 text-sm text-snow hover:border-mist/50 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {copied === 'driver' ? (
-            <MessageCircle className="size-4 text-signal" />
-          ) : (
-            <Copy className="size-4" />
-          )}
-          {copied === 'driver' ? 'Copiado' : 'Copiar conductor'}
+          <Copy className={`size-4 ${copied === 'ficha' ? 'text-signal' : ''}`} />
+          {copied === 'ficha' ? 'Ficha copiada' : 'Copiar conductor'}
         </button>
         <button
           type="button"

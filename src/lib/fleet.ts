@@ -42,6 +42,19 @@ interface FleetResponse {
   items: ApiDriver[]
 }
 
+export function withFleetProfile(driver: Driver, fleet: Driver[]): Driver {
+  const full = fleet.find((item) => item.id === driver.id)
+  if (!full) return driver
+  return {
+    ...driver,
+    fichaPhoto: full.fichaPhoto || driver.fichaPhoto,
+    vehiclePhoto: full.vehiclePhoto || driver.vehiclePhoto,
+    driverPhoto: driver.driverPhoto || full.driverPhoto,
+    notes: full.notes || driver.notes,
+    phone: driver.phone || full.phone,
+  }
+}
+
 function fromApi(driver: ApiDriver, extra?: { distanceM?: number; etaMin?: number }): Driver {
   const coords = Array.isArray(driver.coords) ? driver.coords : [driver.lng, driver.lat]
   return {

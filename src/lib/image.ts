@@ -97,3 +97,35 @@ function compressLogoToJpeg(file: File, maxEdge: number, quality: number): Promi
     reader.readAsDataURL(file)
   })
 }
+
+export function imageSrcToPngBlob(src: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    if (!src.startsWith('data:')) img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth || img.width
+      canvas.height = img.naturalHeight || img.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('No se pudo copiar la ficha'))
+        return
+      }
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => {
+        if (!blob) reject(new Error('No se pudo copiar la ficha'))
+        else resolve(blob)
+      }, 'image/png')
+    }
+    img.onerror = () => reject(new Error('No se pudo cargar la ficha'))
+    img.src = src
+  })
+}
+
+export async function copyImageToClipboard(src: string): Promise<void> {
+  const png = await imageSrcToPngBlob(src)
+  if (typeof ClipboardItem === 'undefined') {
+    throw new Error('Este navegador no permite copiar imágenes')
+  }
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+}
