@@ -235,6 +235,9 @@ html.light .driver-marker {
 }
 
 .driver-popup-offline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-top: 6px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);

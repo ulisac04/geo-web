@@ -1,4 +1,4 @@
-import { PowerOff } from 'lucide-react'
+import { X } from 'lucide-react'
 
 interface TakeOfflineButtonProps {
   driverName: string
@@ -11,22 +11,23 @@ export default function TakeOfflineButton({
   onClick,
   compact = false,
 }: TakeOfflineButtonProps) {
+  const label = `Sacar a ${driverName} de servicio`
   return (
     <button
       type="button"
-      title={`Sacar a ${driverName} del mapa`}
+      title={label}
       onClick={(event) => {
         event.stopPropagation()
         void onClick()
       }}
       className={
         compact
-          ? 'rounded-md px-2 py-1 text-[11px] font-medium text-rose-300 hover:bg-danger/15'
+          ? 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-rose-300 hover:bg-danger/15'
           : 'inline-flex items-center gap-1.5 rounded-md border border-danger/40 bg-danger/10 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-danger/20'
       }
     >
-      {compact ? null : <PowerOff className="size-3.5" />}
-      Fuera de servicio
+      <X className="size-3.5 shrink-0 text-red-500" />
+      {label}
     </button>
   )
 }

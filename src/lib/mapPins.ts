@@ -101,7 +101,11 @@ export function createDriverPopup(driver: Driver, onTakeOffline: () => void): HT
     const button = document.createElement('button')
     button.type = 'button'
     button.className = 'driver-popup-offline'
-    button.textContent = 'Fuera de servicio'
+    button.innerHTML =
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+    const action = document.createElement('span')
+    action.textContent = `Sacar a ${driver.name} de servicio`
+    button.append(action)
     button.addEventListener('click', (event) => {
       event.stopPropagation()
       onTakeOffline()
