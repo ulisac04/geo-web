@@ -18,6 +18,30 @@ export const EMPTY_TYPE_DRAFT: ServiceTypeDraft = {
   allowedVehicleTypes: [...ALL_VEHICLE_TYPES],
 }
 
+const PREFERRED_SERVICE_TYPE = 'traslado'
+
+function isPreferredServiceType(name: string): boolean {
+  return name.trim().toLowerCase() === PREFERRED_SERVICE_TYPE
+}
+
+export function defaultServiceTypeId(
+  types: Pick<ServiceType, 'id' | 'name' | 'active'>[],
+): string {
+  const active = types.filter((item) => item.active)
+  const pool = active.length > 0 ? active : types
+  const preferred = pool.find((item) => isPreferredServiceType(item.name))
+  return preferred?.id ?? pool[0]?.id ?? ''
+}
+
+export function sortServiceTypeOptions<T extends { name: string }>(types: T[]): T[] {
+  return [...types].sort((a, b) => {
+    const aPref = isPreferredServiceType(a.name) ? 0 : 1
+    const bPref = isPreferredServiceType(b.name) ? 0 : 1
+    if (aPref !== bPref) return aPref - bPref
+    return a.name.localeCompare(b.name, 'es')
+  })
+}
+
 export const LIVE_SERVICE_STATUSES: ServiceStatus[] = ['assigned', 'en_route', 'in_progress']
 
 export function isLiveServiceStatus(status: ServiceStatus): boolean {

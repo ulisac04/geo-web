@@ -3,6 +3,7 @@ import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
 import { convertFromUsd } from '../lib/money'
+import { sortServiceTypeOptions } from '../lib/services'
 import PlaceSearchField from './PlaceSearchField'
 
 export default function ValidationStep() {
@@ -19,12 +20,13 @@ export default function ValidationStep() {
   const { types } = useServices()
 
   const activeTypes = types.filter((item) => item.active)
-  const typeOptions =
+  const typeOptions = sortServiceTypeOptions(
     order.serviceTypeId && !activeTypes.some((item) => item.id === order.serviceTypeId)
       ? [...activeTypes, types.find((item) => item.id === order.serviceTypeId)].filter(
           (item): item is NonNullable<typeof item> => Boolean(item),
         )
-      : activeTypes
+      : activeTypes,
+  )
 
   const ready =
     Boolean(order.originCoords) &&
@@ -41,22 +43,37 @@ export default function ValidationStep() {
       </p>
 
       {typeOptions.length > 0 ? (
-        <label className="block space-y-1">
+        <div className="space-y-1">
           <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
             Tipo de servicio
           </span>
-          <select
-            value={order.serviceTypeId}
-            onChange={(e) => updateOrder({ serviceTypeId: e.target.value })}
-            className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+          <div
+            role="group"
+            aria-label="Tipo de servicio"
+            className="flex w-full overflow-hidden rounded-lg border border-line bg-ink"
           >
-            {typeOptions.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            {typeOptions.map((item, index) => {
+              const active = order.serviceTypeId === item.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => updateOrder({ serviceTypeId: item.id })}
+                  className={`flex-1 px-3 py-1.5 text-xs font-semibold transition ${
+                    index > 0 ? 'border-l border-line' : ''
+                  } ${
+                    active
+                      ? 'bg-signal/15 text-signal'
+                      : 'text-mist hover:bg-elevated hover:text-snow'
+                  }`}
+                >
+                  {item.name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       ) : null}
 
       <PlaceSearchField

@@ -24,7 +24,7 @@ import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
 import { formatDestLabel, formatOriginLabel } from '../lib/orderStops'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
-import { isLiveServiceStatus } from '../lib/services'
+import { defaultServiceTypeId, isLiveServiceStatus } from '../lib/services'
 import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp, openWhatsAppPopup } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
@@ -126,13 +126,13 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const offlineCount = fleet.filter((d) => d.status === 'offline').length
 
   useEffect(() => {
-    const first = types.find((item) => item.active) ?? types[0]
-    if (!first) return
+    const preferred = defaultServiceTypeId(types)
+    if (!preferred) return
     setOrder((prev) => {
       if (prev.serviceTypeId && types.some((item) => item.id === prev.serviceTypeId)) {
         return prev
       }
-      return { ...prev, serviceTypeId: first.id }
+      return { ...prev, serviceTypeId: preferred }
     })
   }, [types])
 
@@ -611,9 +611,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   }, [pendingOffline, setStatus])
 
   const resetOrder = useCallback(() => {
-    const first = types.find((item) => item.active) ?? types[0]
     setStep(1)
-    setOrder({ ...EMPTY_ORDER, serviceTypeId: first?.id ?? '' })
+    setOrder({ ...EMPTY_ORDER, serviceTypeId: defaultServiceTypeId(types) })
     setCandidates([])
     setHoveredDriverId(null)
     setFocusedDriverId(null)
