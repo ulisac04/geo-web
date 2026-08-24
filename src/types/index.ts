@@ -25,12 +25,12 @@ export interface Driver {
   licensePlate: string
   driverPhoto: string
   vehiclePhoto: string
+  fichaPhoto: string
   status: DriverStatus
   coords: [number, number]
   battery: number
   distanceM: number
   etaMin: number
-  zone: string
   notes: string
   cityId: CityId
 }
@@ -43,8 +43,8 @@ export interface DriverDraft {
   licensePlate: string
   driverPhoto: string
   vehiclePhoto: string
+  fichaPhoto: string
   status: DriverStatus
-  zone: string
   notes: string
 }
 

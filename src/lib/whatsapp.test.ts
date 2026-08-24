@@ -34,12 +34,12 @@ const driver: Driver = {
   licensePlate: 'AB123CD',
   driverPhoto: '',
   vehiclePhoto: '',
+  fichaPhoto: '',
   status: 'available',
   coords: [0, 0],
   battery: 100,
   distanceM: 0,
   etaMin: 0,
-  zone: '',
   notes: '',
   cityId: 'caracas',
 }

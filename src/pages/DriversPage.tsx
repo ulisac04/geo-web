@@ -72,8 +72,7 @@ export default function DriversPage() {
         driver.vehicle.toLowerCase().includes(q) ||
         driver.vehicleType.includes(q) ||
         vehicleTypeLabel(driver.vehicleType).toLowerCase().includes(q) ||
-        driver.licensePlate.toLowerCase().includes(q) ||
-        driver.zone.toLowerCase().includes(q)
+        driver.licensePlate.toLowerCase().includes(q)
       return matchesFilter && matchesVehicle && matchesQuery
     })
   }, [cityDrivers, filter, query, vehicleFilter])
@@ -193,7 +192,6 @@ export default function DriversPage() {
               <th className="py-2 pr-3 font-medium">Conductor</th>
               <th className="py-2 pr-3 font-medium">Teléfono</th>
               <th className="py-2 pr-3 font-medium">Vehículo</th>
-              <th className="py-2 pr-3 font-medium">Zona</th>
               <th className="py-2 pr-3 font-medium">Estado</th>
               <th className="py-2 font-medium">Acciones</th>
             </tr>
@@ -235,7 +233,6 @@ export default function DriversPage() {
                     </div>
                   </div>
                 </td>
-                <td className="py-3 pr-3 text-mist">{driver.zone || '—'}</td>
                 <td className="py-3 pr-3">
                   <div
                     role="group"

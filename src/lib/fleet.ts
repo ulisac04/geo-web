@@ -12,8 +12,8 @@ export const EMPTY_DRAFT: DriverDraft = {
   licensePlate: '',
   driverPhoto: '',
   vehiclePhoto: '',
+  fichaPhoto: '',
   status: 'available',
-  zone: '',
   notes: '',
 }
 
@@ -26,8 +26,8 @@ interface ApiDriver {
   license_plate: string
   driver_photo: string
   vehicle_photo: string
+  ficha_photo: string
   status: DriverStatus
-  zone: string
   notes: string
   city_id: CityId
   lng: number
@@ -52,12 +52,12 @@ function fromApi(driver: ApiDriver, extra?: { distanceM?: number; etaMin?: numbe
     licensePlate: driver.license_plate,
     driverPhoto: driver.driver_photo ?? '',
     vehiclePhoto: driver.vehicle_photo ?? '',
+    fichaPhoto: driver.ficha_photo ?? '',
     status: driver.status,
     coords: [coords[0], coords[1]],
     battery: driver.battery ?? 0,
     distanceM: extra?.distanceM ?? 0,
     etaMin: extra?.etaMin ?? 0,
-    zone: driver.zone ?? '',
     notes: driver.notes ?? '',
     cityId: driver.city_id,
   }
@@ -72,8 +72,8 @@ function draftBody(draft: DriverDraft, cityId?: CityId) {
     license_plate: draft.licensePlate.trim().toUpperCase(),
     driver_photo: draft.driverPhoto,
     vehicle_photo: draft.vehiclePhoto,
+    ficha_photo: draft.fichaPhoto,
     status: draft.status,
-    zone: draft.zone.trim(),
     notes: draft.notes.trim(),
     city_id: cityId,
   }
@@ -148,12 +148,12 @@ export function candidateToDriver(card: ApiCandidate, cityId: CityId): Driver {
     licensePlate: card.license_plate,
     driverPhoto: card.driver_photo ?? '',
     vehiclePhoto: '',
+    fichaPhoto: '',
     status: card.status,
     coords: card.coords,
     battery: 0,
     distanceM,
     etaMin: Math.max(1, Math.round(card.eta_seconds / 60)),
-    zone: '',
     notes: '',
     cityId,
   }

@@ -4,7 +4,6 @@ import PhotoUploadField from './PhotoUploadField'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
 import { EMPTY_DRAFT } from '../lib/fleet'
 import { VEHICLE_TYPE_OPTIONS } from '../lib/vehicles'
-import { useSettings } from '../context/SettingsContext'
 
 interface DriverFormProps {
   open: boolean
@@ -20,7 +19,6 @@ const STATUSES: { value: DriverStatus; label: string }[] = [
 ]
 
 export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFormProps) {
-  const { city } = useSettings()
   const [draft, setDraft] = useState<DriverDraft>(EMPTY_DRAFT)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -38,8 +36,8 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             licensePlate: driver.licensePlate,
             driverPhoto: driver.driverPhoto,
             vehiclePhoto: driver.vehiclePhoto,
+            fichaPhoto: driver.fichaPhoto,
             status: driver.status,
-            zone: driver.zone,
             notes: driver.notes,
           }
         : EMPTY_DRAFT,
@@ -130,7 +128,7 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
               placeholder="AB123CD"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <PhotoUploadField
               label="Foto del conductor"
               value={draft.driverPhoto}
@@ -141,43 +139,30 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
               value={draft.vehiclePhoto}
               onChange={(value) => setDraft((prev) => ({ ...prev, vehiclePhoto: value }))}
             />
+            <PhotoUploadField
+              label="Ficha (WhatsApp)"
+              value={draft.fichaPhoto}
+              onChange={(value) => setDraft((prev) => ({ ...prev, fichaPhoto: value }))}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block space-y-1">
-              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
-                Zona
-              </span>
-              <input
-                list="zones"
-                value={draft.zone}
-                onChange={(e) => setDraft((prev) => ({ ...prev, zone: e.target.value }))}
-                className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
-              />
-              <datalist id="zones">
-                {city.zones.map((zone) => (
-                  <option key={zone} value={zone} />
-                ))}
-              </datalist>
-            </label>
-            <label className="block space-y-1">
-              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
-                Estado
-              </span>
-              <select
-                value={draft.status}
-                onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, status: e.target.value as DriverStatus }))
-                }
-                className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
-              >
-                {STATUSES.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <label className="block space-y-1">
+            <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+              Estado
+            </span>
+            <select
+              value={draft.status}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, status: e.target.value as DriverStatus }))
+              }
+              className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+            >
+              {STATUSES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="block space-y-1">
             <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
               Notas
