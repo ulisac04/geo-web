@@ -15,7 +15,6 @@ interface PlaceSearchFieldProps {
   hasCoords: boolean
   hint?: string
   placeholder?: string
-  accent?: 'origin' | 'dest'
   children?: ReactNode
   onActivate: () => void
   onQueryChange: (value: string) => void
@@ -29,7 +28,6 @@ export default function PlaceSearchField({
   hasCoords,
   hint,
   placeholder,
-  accent = 'origin',
   children,
   onActivate,
   onQueryChange,
@@ -166,17 +164,11 @@ export default function PlaceSearchField({
         <div
           className={`mt-1 flex items-center gap-2 rounded-md border bg-ink px-2.5 py-1.5 ${
             active
-              ? accent === 'dest'
-                ? 'border-red-500/60 ring-1 ring-red-500/30'
-                : 'border-[#198754]/60 ring-1 ring-[#198754]/30'
+              ? 'border-signal/50 ring-1 ring-signal/30'
               : 'border-line'
           }`}
         >
-          <MapPin
-            className={`size-3.5 shrink-0 ${
-              hasCoords ? (accent === 'dest' ? 'text-red-500' : 'text-[#198754]') : 'text-mist'
-            }`}
-          />
+          <MapPin className="size-3.5 shrink-0 text-mist" />
           <input
             value={value}
             placeholder={placeholder}
