@@ -25,7 +25,7 @@ import { EMPTY_ORDER } from '../lib/mock-data'
 import { formatDestLabel, formatOriginLabel } from '../lib/orderStops'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { defaultServiceTypeId, isLiveServiceStatus } from '../lib/services'
-import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp, openWhatsAppPopup } from '../lib/whatsapp'
+import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
 import { useSettings } from './SettingsContext'
@@ -392,7 +392,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const assignDriver = useCallback(
     async (driver: Driver) => {
-      const popup = openWhatsAppPopup()
       setSelectedDriver(driver)
       setFocusedDriverId(driver.id)
       setHoveredDriverId(driver.id)
@@ -403,23 +402,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
           })
           await refreshDrivers()
         }
-        const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
-        const message = buildDispatchMessage(
-          order,
-          driver,
-          rates,
-          settings.whatsappDriverTemplate,
-        )
-        await copyAndOpenWhatsApp(
-          buildWhatsAppUrl(order, driver, rates, settings.whatsappDriverTemplate),
-          message,
-          popup,
-        )
-        setCopied('driver')
-        window.setTimeout(() => setCopied((current) => (current === 'driver' ? null : current)), 1800)
         setStep(4)
       } catch (error) {
-        popup?.close()
         setSearchError(
           error instanceof ApiError || error instanceof Error
             ? error.message
@@ -427,15 +411,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         )
       }
     },
-    [
-      acceptedServiceId,
-      order,
-      refreshDrivers,
-      settings.usdToCop,
-      settings.usdToVes,
-      settings.whatsappDriverTemplate,
-      updateRecord,
-    ],
+    [acceptedServiceId, refreshDrivers, updateRecord],
   )
 
   const patchTripStatus = useCallback(

@@ -1,7 +1,16 @@
-import { CheckCircle2, Copy, MessageCircle, Plus, Send, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CheckCircle2, Clock, Copy, MessageCircle, Plus, Send, User } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { formatVehicleLine } from '../lib/vehicles'
+
+function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const minutes = Math.floor(total / 60)
+  const seconds = total % 60
+  if (minutes === 0) return `${seconds} s`
+  return `${minutes} min ${seconds.toString().padStart(2, '0')} s`
+}
 
 export default function ConfirmationStep() {
   const {
@@ -19,15 +28,25 @@ export default function ConfirmationStep() {
     actingTripId,
   } = useDispatchFlow()
 
+  const status = offeredRecord?.status
+  const waiting = !status || status === 'assigned'
+  const [offeredAt] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!waiting) return
+    const id = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [waiting])
+
   if (!selectedDriver) return null
 
   const canMessageClient = order.clientPhone.replace(/\D/g, '').length > 0
-  const status = offeredRecord?.status
-  const waiting = !status || status === 'assigned'
   const taken = status === 'en_route' || status === 'in_progress'
   const rejected = status === 'pending'
   const closed = status === 'completed' || status === 'cancelled'
   const acting = actingTripId === acceptedServiceId
+
   const title = rejected
     ? `${selectedDriver.name} no tomó el servicio`
     : taken
@@ -62,6 +81,12 @@ export default function ConfirmationStep() {
             {subtitle}
             {selectedDriver.licensePlate ? ` · ${selectedDriver.licensePlate}` : ''}
           </p>
+          {waiting ? (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium tabular-nums text-amber-200">
+              <Clock className="size-3.5" />
+              {formatElapsed(now - offeredAt)}
+            </p>
+          ) : null}
         </div>
       </div>
 

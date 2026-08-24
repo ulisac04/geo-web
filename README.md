@@ -60,14 +60,14 @@ Wizard: crear `pending` → ofrecer candidato (`assigned`) → el chofer acepta 
 Al pulsar **Ofrecer**:
 
 1. `PATCH` del servicio (Geo deja `assigned`, marca al chofer `busy` y manda **push FCM** a **geo-mobile** si hay token).
-2. Se copia el mensaje de despacho al portapapeles.
-3. Se abre WhatsApp del **conductor** (`wa.me`) con ese texto.
+2. Pasa al paso 4. **No** abre WhatsApp.
 
 Paso 4 (oferta):
 
+- Conteo de minutos y segundos desde que se ofreció.
 - **Confirmar que lo tomó** — `assigned` → `en_route` si el chofer no pulsó Aceptar.
 - **Reasignar** — otro candidato mientras siga en oferta (o si rechazó).
-- **WhatsApp conductor** — vuelve a copiar y abrir el chat del chofer.
+- **WhatsApp conductor** — copia y abre el chat del chofer (solo si lo pulsas).
 - **WhatsApp cliente** — copia un mensaje con conductor / teléfono / vehículo / placa y abre el chat del cliente. Deshabilitado si no hay teléfono.
 
 El API **no** envía WhatsApp (no hay Cloud API). Sin Firebase en Geo, el `PATCH` igual ofrece; solo falta el push.
