@@ -7,6 +7,7 @@ interface MapModeToggleProps {
   fullWidth?: boolean
   fleetLabel?: string
   liveLabel?: string
+  liveCount?: number
   noneLabel?: string
   showNone?: boolean
   vehicleFilter?: VehicleFilter
@@ -29,6 +30,7 @@ export default function MapModeToggle({
   fullWidth,
   fleetLabel = 'Flota',
   liveLabel = 'En curso',
+  liveCount,
   noneLabel = 'Ninguno',
   showNone,
   vehicleFilter = 'all',
@@ -54,16 +56,33 @@ export default function MapModeToggle({
       >
         {options.map((item) => {
           const active = mode === item.value
+          const showCount = item.value === 'live' && liveCount != null
           return (
             <button
               key={item.value}
               type="button"
               role="tab"
               aria-selected={active}
+              aria-label={
+                showCount
+                  ? `${item.label}: ${liveCount}`
+                  : item.label
+              }
               onClick={() => onChange(item.value)}
-              className={chipClass(active, fullWidth && !showVehicle)}
+              className={`inline-flex items-center justify-center gap-1.5 ${chipClass(active, fullWidth && !showVehicle)}`}
             >
               {item.label}
+              {showCount ? (
+                <span
+                  className={`inline-grid h-4 min-w-4 place-items-center rounded-full px-0.5 text-[10px] font-bold ${
+                    active
+                      ? 'bg-signal text-on-signal'
+                      : 'bg-elevated text-mist'
+                  }`}
+                >
+                  {liveCount}
+                </span>
+              ) : null}
             </button>
           )
         })}

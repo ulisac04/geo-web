@@ -112,6 +112,7 @@ export default function MapViewer(props: MapViewerProps) {
           mode={props.mode}
           onChange={props.onModeChange}
           showNone
+          liveCount={props.liveTrips.length}
           vehicleFilter={vehicleFilter}
           onVehicleFilterChange={setVehicleFilter}
         />

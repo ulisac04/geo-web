@@ -91,6 +91,7 @@ export default function SidebarDispatch() {
             fullWidth
             fleetLabel="Nuevo"
             liveLabel="En curso"
+            liveCount={liveTrips.length}
           />
         </div>
       </header>
