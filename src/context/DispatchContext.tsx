@@ -37,6 +37,8 @@ import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
 import { useSettings } from './SettingsContext'
 
+type CopiedFeedback = 'driver' | 'client' | 'driver-text' | 'client-text' | 'ficha' | null
+
 interface DispatchContextValue {
   step: DispatchStep
   order: OrderDraft
@@ -51,7 +53,7 @@ interface DispatchContextValue {
   extractError: string | null
   searching: boolean
   searchError: string | null
-  copied: 'driver' | 'client' | 'ficha' | null
+  copied: CopiedFeedback
   availableCount: number
   busyCount: number
   offlineCount: number
@@ -117,7 +119,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [extractError, setExtractError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
-  const [copied, setCopied] = useState<'driver' | 'client' | 'ficha' | null>(null)
+  const [copied, setCopied] = useState<CopiedFeedback>(null)
   const [activePin, setActivePin] = useState<PinFocus>('origin')
   const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
   const [mapMode, setMapMode] = useState<MapMode>('fleet')
@@ -690,8 +692,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       const message = getFormattedMessage(target)
       if (!message) return
       await navigator.clipboard.writeText(message)
-      setCopied(target)
-      window.setTimeout(() => setCopied((current) => (current === target ? null : current)), 1800)
+      const flag = target === 'client' ? 'client-text' : 'driver-text'
+      setCopied(flag)
+      window.setTimeout(() => setCopied((current) => (current === flag ? null : current)), 1800)
     },
     [getFormattedMessage],
   )

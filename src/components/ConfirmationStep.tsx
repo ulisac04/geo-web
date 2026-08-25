@@ -18,6 +18,7 @@ export default function ConfirmationStep() {
     order,
     copied,
     copyDriverFicha,
+    copyMessage,
     sendWhatsApp,
     getFormattedMessage,
     resetOrder,
@@ -121,24 +122,57 @@ export default function ConfirmationStep() {
         {getFormattedMessage('driver')}
       </pre>
 
-      <button
-        type="button"
-        onClick={() => void sendWhatsApp('driver')}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500"
-      >
-        <Send className="size-4" />
-        {copied === 'driver' ? 'Copiado · WhatsApp conductor' : 'WhatsApp conductor'}
-      </button>
-
-      <button
-        type="button"
-        disabled={!canMessageClient}
-        onClick={() => void sendWhatsApp('client')}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-700/70 bg-emerald-950/40 py-2.5 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <User className="size-4" />
-        {copied === 'client' ? 'Copiado · WhatsApp cliente' : 'WhatsApp cliente'}
-      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => void sendWhatsApp('driver')}
+          className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500"
+        >
+          <Send className="size-4 shrink-0" />
+          {copied === 'driver' ? 'Copiado · WhatsApp' : 'WhatsApp conductor'}
+        </button>
+        <button
+          type="button"
+          title="Copia el mensaje del conductor sin abrir WhatsApp"
+          onClick={() => {
+            setFichaError(null)
+            void copyMessage('driver').catch((error: unknown) => {
+              setFichaError(
+                error instanceof Error ? error.message : 'No se pudo copiar el mensaje',
+              )
+            })
+          }}
+          className="flex items-center justify-center gap-2 rounded-lg border border-line bg-card py-2.5 text-sm font-semibold text-snow transition hover:border-mist/50"
+        >
+          <Copy className={`size-4 shrink-0 ${copied === 'driver-text' ? 'text-signal' : ''}`} />
+          {copied === 'driver-text' ? 'Mensaje copiado' : 'Solo copiar'}
+        </button>
+        <button
+          type="button"
+          disabled={!canMessageClient}
+          onClick={() => void sendWhatsApp('client')}
+          className="flex items-center justify-center gap-2 rounded-lg border border-emerald-700/70 bg-emerald-950/40 py-2.5 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <User className="size-4 shrink-0" />
+          {copied === 'client' ? 'Copiado · WhatsApp' : 'WhatsApp cliente'}
+        </button>
+        <button
+          type="button"
+          title="Copia el mensaje del cliente sin abrir WhatsApp"
+          onClick={() => {
+            setFichaError(null)
+            void copyMessage('client').catch((error: unknown) => {
+              setFichaError(
+                error instanceof Error ? error.message : 'No se pudo copiar el mensaje',
+              )
+            })
+          }}
+          className="flex items-center justify-center gap-2 rounded-lg border border-line bg-card py-2.5 text-sm font-semibold text-snow transition hover:border-mist/50"
+        >
+          <Copy className={`size-4 shrink-0 ${copied === 'client-text' ? 'text-signal' : ''}`} />
+          {copied === 'client-text' ? 'Mensaje copiado' : 'Solo copiar'}
+        </button>
+      </div>
 
       {fichaError ? (
         <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
