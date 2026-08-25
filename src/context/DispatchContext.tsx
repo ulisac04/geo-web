@@ -470,6 +470,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       setSelectedDriver(withFleetProfile(driver, fleet))
       setFocusedDriverId(driver.id)
       setHoveredDriverId(driver.id)
+      setSearchError(null)
       try {
         if (acceptedServiceId) {
           await updateRecord(acceptedServiceId, {
@@ -479,11 +480,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         }
         setStep(4)
       } catch (error) {
-        setSearchError(
-          error instanceof ApiError || error instanceof Error
-            ? error.message
-            : 'No se pudo ofrecer el servicio',
-        )
+        setSelectedDriver(null)
+        setSearchError(offerDriverConflictMessage(error))
+        void refreshDrivers()
       }
     },
     [acceptedServiceId, fleet, refreshDrivers, updateRecord],
@@ -995,4 +994,23 @@ export function useDispatchFlow(): DispatchContextValue {
     throw new Error('useDispatchFlow debe usarse dentro de DispatchProvider')
   }
   return ctx
+}
+
+function offerDriverConflictMessage(error: unknown): string {
+  if (error instanceof ApiError && error.status === 409) {
+    if (/ya tiene un servicio asignado/i.test(error.message)) {
+      return error.message
+    }
+    if (/fuera de servicio|out of service/i.test(error.message)) {
+      return 'Este conductor está fuera de servicio. Elige otro.'
+    }
+    if (/not available|already/i.test(error.message)) {
+      return 'Este conductor ya tiene un servicio asignado. Elige otro conductor.'
+    }
+    return error.message
+  }
+  if (error instanceof ApiError || error instanceof Error) {
+    return error.message
+  }
+  return 'No se pudo ofrecer el servicio'
 }
