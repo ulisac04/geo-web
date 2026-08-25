@@ -30,7 +30,7 @@ interface ServicesContextValue {
   addRecord: (input: CreateServiceInput) => Promise<ServiceRecord>
   updateRecord: (
     id: string,
-    patch: { driverId?: string; status?: ServiceStatus },
+    patch: { driverId?: string; status?: ServiceStatus; scheduledAt?: string },
   ) => Promise<ServiceRecord>
 }
 
@@ -86,7 +86,7 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateRecord = useCallback(
-    async (id: string, patch: { driverId?: string; status?: ServiceStatus }) => {
+    async (id: string, patch: { driverId?: string; status?: ServiceStatus; scheduledAt?: string }) => {
       const updated = await patchService(id, patch)
       setRecords((current) => current.map((record) => (record.id === id ? updated : record)))
       return updated

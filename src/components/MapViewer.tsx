@@ -44,6 +44,8 @@ interface MapViewerProps {
   liveTrips: LiveTrip[]
   focusedTripId: string | null
   center: [number, number]
+  showScheduled?: boolean
+  scheduledCount?: number
   onModeChange: (mode: MapMode) => void
   onFocusDriver: (id: string | null) => void
   onFocusTrip: (id: string | null) => void
@@ -121,6 +123,8 @@ export default function MapViewer(props: MapViewerProps) {
           onChange={props.onModeChange}
           showNone
           liveCount={props.liveTrips.length}
+          showScheduled={props.showScheduled}
+          scheduledCount={props.scheduledCount}
           vehicleFilter={vehicleFilter}
           onVehicleFilterChange={setVehicleFilter}
         />
@@ -172,6 +176,11 @@ export default function MapViewer(props: MapViewerProps) {
               </p>
               <p>Ámbar: va a buscar · Verde: va a dejar</p>
               <p className="mt-1">Click en un viaje o chofer para enfocar la ruta.</p>
+            </>
+          ) : props.mode === 'scheduled' ? (
+            <>
+              <p className="font-medium text-snow">Servicios agendados</p>
+              <p>La flota se muestra para despachar cuando llegue el momento.</p>
             </>
           ) : (
             <>
@@ -296,7 +305,7 @@ function MapViewerController({
     pinInfoRef.current = new google.maps.InfoWindow({ pixelOffset: new google.maps.Size(0, -28) })
 
     const clickListener = map.addListener('click', (event: google.maps.MapMouseEvent) => {
-      if (modeRef.current === 'live') return
+      if (modeRef.current === 'live' || modeRef.current === 'scheduled') return
       const target = event.domEvent?.target
       if (target instanceof Element && target.closest('.driver-pin, .order-pin')) return
       if (!event.latLng) return

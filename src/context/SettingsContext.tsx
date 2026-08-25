@@ -15,6 +15,7 @@ import {
   fetchSettings,
   loadCachedSettings,
   patchSettings,
+  type ReminderMinutes,
 } from '../lib/settings'
 
 interface SettingsContextValue {
@@ -26,6 +27,8 @@ interface SettingsContextValue {
   setUsdToVes: (rate: number) => Promise<void>
   setWhatsappDriverTemplate: (template: string) => Promise<void>
   setWhatsappClientTemplate: (template: string) => Promise<void>
+  setSchedulingEnabled: (enabled: boolean) => Promise<void>
+  setSchedulingReminderMinutes: (minutes: ReminderMinutes) => Promise<void>
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null)
@@ -157,6 +160,40 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [apply],
   )
 
+  const setSchedulingEnabled = useCallback(
+    async (enabled: boolean) => {
+      generation.current += 1
+      setSettings((current) => {
+        const next = { ...current, schedulingEnabled: enabled }
+        cacheSettings(next)
+        return next
+      })
+      try {
+        apply(await patchSettings({ schedulingEnabled: enabled }))
+      } catch {
+        // Keep the local flag so the dispatch tabs still follow the operator.
+      }
+    },
+    [apply],
+  )
+
+  const setSchedulingReminderMinutes = useCallback(
+    async (minutes: ReminderMinutes) => {
+      generation.current += 1
+      setSettings((current) => {
+        const next = { ...current, schedulingReminderMinutes: minutes }
+        cacheSettings(next)
+        return next
+      })
+      try {
+        apply(await patchSettings({ schedulingReminderMinutes: minutes }))
+      } catch {
+        // Keep the local lead time so reminders still follow the operator.
+      }
+    },
+    [apply],
+  )
+
   const city = useMemo(() => getCity(settings.cityId), [settings.cityId])
 
   const value = useMemo(
@@ -169,6 +206,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setUsdToVes,
       setWhatsappDriverTemplate,
       setWhatsappClientTemplate,
+      setSchedulingEnabled,
+      setSchedulingReminderMinutes,
     }),
     [
       settings,
@@ -179,6 +218,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setUsdToVes,
       setWhatsappDriverTemplate,
       setWhatsappClientTemplate,
+      setSchedulingEnabled,
+      setSchedulingReminderMinutes,
     ],
   )
 

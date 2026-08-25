@@ -8,6 +8,9 @@ interface MapModeToggleProps {
   fleetLabel?: string
   liveLabel?: string
   liveCount?: number
+  scheduledLabel?: string
+  scheduledCount?: number
+  showScheduled?: boolean
   noneLabel?: string
   showNone?: boolean
   vehicleFilter?: VehicleFilter
@@ -31,6 +34,9 @@ export default function MapModeToggle({
   fleetLabel = 'Flota',
   liveLabel = 'En curso',
   liveCount,
+  scheduledLabel = 'Agendados',
+  scheduledCount,
+  showScheduled,
   noneLabel = 'Ninguno',
   showNone,
   vehicleFilter = 'all',
@@ -38,6 +44,7 @@ export default function MapModeToggle({
 }: MapModeToggleProps) {
   const options: { value: MapMode; label: string }[] = [
     { value: 'fleet', label: fleetLabel },
+    ...(showScheduled ? [{ value: 'scheduled' as const, label: scheduledLabel }] : []),
     { value: 'live', label: liveLabel },
     ...(showNone ? [{ value: 'none' as const, label: noneLabel }] : []),
   ]
@@ -56,7 +63,10 @@ export default function MapModeToggle({
       >
         {options.map((item) => {
           const active = mode === item.value
-          const showCount = item.value === 'live' && liveCount != null
+          const showCount =
+            (item.value === 'live' && liveCount != null) ||
+            (item.value === 'scheduled' && scheduledCount != null)
+          const count = item.value === 'scheduled' ? scheduledCount : liveCount
           return (
             <button
               key={item.value}
@@ -64,9 +74,7 @@ export default function MapModeToggle({
               role="tab"
               aria-selected={active}
               aria-label={
-                showCount
-                  ? `${item.label}: ${liveCount}`
-                  : item.label
+                showCount && count != null ? `${item.label}: ${count}` : item.label
               }
               onClick={() => onChange(item.value)}
               className={`inline-flex items-center justify-center gap-1.5 ${chipClass(active, fullWidth && !showVehicle)}`}
@@ -80,7 +88,7 @@ export default function MapModeToggle({
                       : 'bg-elevated text-mist'
                   }`}
                 >
-                  {liveCount}
+                  {count}
                 </span>
               ) : null}
             </button>

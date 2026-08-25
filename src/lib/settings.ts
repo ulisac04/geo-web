@@ -5,6 +5,8 @@ import { DEFAULT_CITY_ID, isCityId } from './cities'
 const SETTINGS_KEY = 'geo_settings_v1'
 
 export const MAP_REFRESH_OPTIONS: MapRefreshSeconds[] = [5, 10, 15, 30, 60]
+export const REMINDER_MINUTE_OPTIONS = [5, 10, 15, 30, 60, 120] as const
+export type ReminderMinutes = (typeof REMINDER_MINUTE_OPTIONS)[number]
 
 export const DEFAULT_SETTINGS: AppSettings = {
   mapRefreshSeconds: 15,
@@ -13,6 +15,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   usdToVes: 0,
   whatsappDriverTemplate: '',
   whatsappClientTemplate: '',
+  schedulingEnabled: false,
+  schedulingReminderMinutes: 15,
 }
 
 interface ApiSettings {
@@ -22,6 +26,8 @@ interface ApiSettings {
   usd_to_ves?: number
   whatsapp_driver_template?: string
   whatsapp_client_template?: string
+  scheduling_enabled?: boolean
+  scheduling_reminder_minutes?: number
 }
 
 function isRefreshSeconds(value: unknown): value is MapRefreshSeconds {
@@ -34,6 +40,10 @@ function isNonNegativeRate(value: unknown): value is number {
 
 function isTemplate(value: unknown): value is string {
   return typeof value === 'string' && value.length <= 4000
+}
+
+function isReminderMinutes(value: unknown): value is ReminderMinutes {
+  return REMINDER_MINUTE_OPTIONS.includes(value as ReminderMinutes)
 }
 
 function readCached(): AppSettings | null {
@@ -54,6 +64,13 @@ function readCached(): AppSettings | null {
       whatsappClientTemplate: isTemplate(parsed.whatsappClientTemplate)
         ? parsed.whatsappClientTemplate
         : DEFAULT_SETTINGS.whatsappClientTemplate,
+      schedulingEnabled:
+        typeof parsed.schedulingEnabled === 'boolean'
+          ? parsed.schedulingEnabled
+          : DEFAULT_SETTINGS.schedulingEnabled,
+      schedulingReminderMinutes: isReminderMinutes(parsed.schedulingReminderMinutes)
+        ? parsed.schedulingReminderMinutes
+        : DEFAULT_SETTINGS.schedulingReminderMinutes,
     }
   } catch {
     return null
@@ -82,6 +99,13 @@ function fromApi(data: ApiSettings, fallback: AppSettings = DEFAULT_SETTINGS): A
     whatsappClientTemplate: isTemplate(data.whatsapp_client_template)
       ? data.whatsapp_client_template
       : fallback.whatsappClientTemplate,
+    schedulingEnabled:
+      typeof data.scheduling_enabled === 'boolean'
+        ? data.scheduling_enabled
+        : fallback.schedulingEnabled,
+    schedulingReminderMinutes: isReminderMinutes(data.scheduling_reminder_minutes)
+      ? data.scheduling_reminder_minutes
+      : fallback.schedulingReminderMinutes,
   }
 }
 
@@ -96,8 +120,10 @@ export async function patchSettings(patch: {
   usdToVes?: number
   whatsappDriverTemplate?: string
   whatsappClientTemplate?: string
+  schedulingEnabled?: boolean
+  schedulingReminderMinutes?: ReminderMinutes
 }): Promise<AppSettings> {
-  const body: Record<string, string | number> = {}
+  const body: Record<string, string | number | boolean> = {}
   if (patch.mapRefreshSeconds !== undefined) {
     body.map_refresh_seconds = patch.mapRefreshSeconds
   }
@@ -116,6 +142,12 @@ export async function patchSettings(patch: {
   if (patch.whatsappClientTemplate !== undefined) {
     body.whatsapp_client_template = patch.whatsappClientTemplate
   }
+  if (patch.schedulingEnabled !== undefined) {
+    body.scheduling_enabled = patch.schedulingEnabled
+  }
+  if (patch.schedulingReminderMinutes !== undefined) {
+    body.scheduling_reminder_minutes = patch.schedulingReminderMinutes
+  }
   const cached = loadCachedSettings()
   const fallback: AppSettings = {
     mapRefreshSeconds: patch.mapRefreshSeconds ?? cached.mapRefreshSeconds,
@@ -124,6 +156,8 @@ export async function patchSettings(patch: {
     usdToVes: patch.usdToVes ?? cached.usdToVes,
     whatsappDriverTemplate: patch.whatsappDriverTemplate ?? cached.whatsappDriverTemplate,
     whatsappClientTemplate: patch.whatsappClientTemplate ?? cached.whatsappClientTemplate,
+    schedulingEnabled: patch.schedulingEnabled ?? cached.schedulingEnabled,
+    schedulingReminderMinutes: patch.schedulingReminderMinutes ?? cached.schedulingReminderMinutes,
   }
   return fromApi(
     await api<ApiSettings>('/api/v1/settings', {

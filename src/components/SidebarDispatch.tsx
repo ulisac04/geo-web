@@ -9,6 +9,7 @@ import ConfirmDialog from './ConfirmDialog'
 import LiveTripsList from './LiveTripsList'
 import MapModeToggle from './MapModeToggle'
 import OrderInputStep from './OrderInputStep'
+import ScheduledTripsList from './ScheduledTripsList'
 import ValidationStep from './ValidationStep'
 
 const STEPS: { id: DispatchStep; label: string }[] = [
@@ -31,6 +32,10 @@ export default function SidebarDispatch() {
     mapMode,
     setMapMode,
     liveTrips,
+    scheduledRecords,
+    showScheduledTab,
+    reminderDue,
+    focusScheduled,
     resetOrder,
   } = useDispatchFlow()
 
@@ -92,11 +97,45 @@ export default function SidebarDispatch() {
             fleetLabel="Nuevo"
             liveLabel="En curso"
             liveCount={liveTrips.length}
+            showScheduled={showScheduledTab}
+            scheduledCount={scheduledRecords.length}
           />
         </div>
+        {reminderDue.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => {
+              setMapMode('scheduled')
+              focusScheduled(reminderDue[0].id)
+            }}
+            className="mt-3 w-full rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-left text-xs font-medium text-amber-200"
+          >
+            {reminderDue.length === 1
+              ? '1 servicio agendado está por comenzar'
+              : `${reminderDue.length} servicios agendados están por comenzar`}
+          </button>
+        ) : null}
       </header>
 
-      {mapMode !== 'live' ? (
+      {mapMode === 'live' ? (
+        <div className="border-b border-line px-4 py-3">
+          <p className="text-xs font-medium text-snow">Servicios en curso</p>
+          <p className="text-[11px] text-mist">
+            {liveTrips.length === 1
+              ? '1 viaje activo en la ciudad'
+              : `${liveTrips.length} viajes activos en la ciudad`}
+          </p>
+        </div>
+      ) : mapMode === 'scheduled' ? (
+        <div className="border-b border-line px-4 py-3">
+          <p className="text-xs font-medium text-snow">Servicios agendados</p>
+          <p className="text-[11px] text-mist">
+            {scheduledRecords.length === 1
+              ? '1 pedido esperando despacho'
+              : `${scheduledRecords.length} pedidos esperando despacho`}
+          </p>
+        </div>
+      ) : (
         <div className="border-b border-line px-4 py-3">
           <ol className="flex items-center justify-between">
             {STEPS.map((item, index) => {
@@ -137,20 +176,13 @@ export default function SidebarDispatch() {
             Empezar de cero
           </button>
         </div>
-      ) : (
-        <div className="border-b border-line px-4 py-3">
-          <p className="text-xs font-medium text-snow">Servicios en curso</p>
-          <p className="text-[11px] text-mist">
-            {liveTrips.length === 1
-              ? '1 viaje activo en la ciudad'
-              : `${liveTrips.length} viajes activos en la ciudad`}
-          </p>
-        </div>
       )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {mapMode === 'live' ? (
           <LiveTripsList />
+        ) : mapMode === 'scheduled' ? (
+          <ScheduledTripsList />
         ) : (
           <>
             {step === 1 ? <OrderInputStep /> : null}

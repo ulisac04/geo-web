@@ -15,6 +15,7 @@ import type {
   MapMode,
   OrderDraft,
   PinFocus,
+  ServiceRecord,
   ServiceStatus,
 } from '../types'
 import { ApiError, isAbortError } from '../lib/api'
@@ -31,7 +32,8 @@ import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
 import { formatDestLabel, formatOriginLabel } from '../lib/orderStops'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
-import { defaultServiceTypeId, isLiveServiceStatus } from '../lib/services'
+import { defaultServiceTypeId, isLiveServiceStatus, isScheduledPending } from '../lib/services'
+import { FOCUS_SCHEDULED_EVENT, playReminderTone, recordsDueForReminder, showScheduleNotification, takeUnnotified } from '../lib/scheduleReminders'
 import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, clientTrackingUrl, copyAndOpenWhatsApp } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
@@ -61,10 +63,15 @@ interface DispatchContextValue {
   mapMode: MapMode
   focusedTripId: string | null
   liveTrips: LiveTrip[]
+  scheduledRecords: ServiceRecord[]
+  showScheduledTab: boolean
+  reminderDue: ServiceRecord[]
+  focusedScheduledId: string | null
   offeredRecord: LiveTrip['record'] | null
   acceptedServiceId: string | null
   setMapMode: (mode: MapMode) => void
   focusTrip: (id: string | null) => void
+  focusScheduled: (id: string | null) => void
   setRawText: (value: string) => void
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
@@ -72,6 +79,9 @@ interface DispatchContextValue {
   cancelExtract: () => void
   continueManually: () => void
   acceptService: () => Promise<void>
+  scheduleService: (scheduledAt: string) => Promise<void>
+  beginDispatchScheduled: (serviceId: string) => Promise<void>
+  rescheduleService: (serviceId: string, scheduledAt: string) => Promise<void>
   hoverDriver: (id: string | null) => void
   focusDriver: (id: string | null) => void
   setPinFromMap: (coords: [number, number]) => void
@@ -124,6 +134,8 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
   const [mapMode, setMapMode] = useState<MapMode>('fleet')
   const [focusedTripId, setFocusedTripId] = useState<string | null>(null)
+  const [focusedScheduledId, setFocusedScheduledId] = useState<string | null>(null)
+  const [nowTick, setNowTick] = useState(() => Date.now())
   const [pendingOffline, setPendingOffline] = useState<{ id: string; name: string } | null>(
     null,
   )
@@ -146,6 +158,11 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     })
   }, [types])
 
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 15_000)
+    return () => window.clearInterval(id)
+  }, [])
+
   const liveTrips = useMemo<LiveTrip[]>(() => {
     return records.flatMap((record) => {
       if (record.cityId !== city.id || !isLiveServiceStatus(record.status) || !record.driverId) {
@@ -155,6 +172,50 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       return driver ? [{ record, driver }] : []
     })
   }, [city.id, fleet, records])
+
+  const scheduledRecords = useMemo<ServiceRecord[]>(() => {
+    return records
+      .filter((record) => record.cityId === city.id && isScheduledPending(record))
+      .sort((a, b) => {
+        const aAt = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0
+        const bAt = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0
+        return aAt - bAt
+      })
+  }, [city.id, records])
+
+  const showScheduledTab =
+    settings.schedulingEnabled || scheduledRecords.length > 0
+
+  const reminderDue = useMemo(
+    () => recordsDueForReminder(scheduledRecords, settings.schedulingReminderMinutes, nowTick),
+    [nowTick, scheduledRecords, settings.schedulingReminderMinutes],
+  )
+
+  useEffect(() => {
+    if (!showScheduledTab && mapMode === 'scheduled') {
+      setMapMode('fleet')
+    }
+  }, [mapMode, showScheduledTab])
+
+  useEffect(() => {
+    const fresh = takeUnnotified(reminderDue)
+    if (fresh.length === 0) return
+    playReminderTone()
+    for (const record of fresh) {
+      showScheduleNotification(record)
+    }
+  }, [reminderDue])
+
+  useEffect(() => {
+    const onFocus = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail
+      if (!id) return
+      setFocusedScheduledId(id)
+      setMapMode('scheduled')
+    }
+    window.addEventListener(FOCUS_SCHEDULED_EVENT, onFocus)
+    return () => window.removeEventListener(FOCUS_SCHEDULED_EVENT, onFocus)
+  }, [])
 
   const offeredRecord = useMemo(
     () => records.find((record) => record.id === acceptedServiceId) ?? null,
@@ -273,6 +334,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const focusDriver = useCallback((id: string | null) => {
     setFocusedDriverId(id)
     if (id) setMapMode('fleet')
+  }, [])
+
+  const focusScheduled = useCallback((id: string | null) => {
+    setFocusedScheduledId(id)
   }, [])
 
   const focusTrip = useCallback(
@@ -630,6 +695,74 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setAcceptedServiceId(null)
   }, [types])
 
+  const scheduleService = useCallback(
+    async (scheduledAt: string) => {
+      if (!order.originCoords || !order.destCoords) return
+      if (!order.clientName.trim() || !order.clientPhone.trim()) return
+      if (!order.serviceTypeId) return
+
+      setSearching(true)
+      setSearchError(null)
+      try {
+        const distanceM = Math.round(haversineMeters(order.originCoords, order.destCoords))
+        const record = await addRecord({
+          serviceTypeId: order.serviceTypeId,
+          origin: formatOriginLabel(order),
+          destination: formatDestLabel(order),
+          originCoords: order.originCoords,
+          destCoords: order.destCoords,
+          clientName: order.clientName,
+          clientPhone: order.clientPhone,
+          paymentMethod: order.paymentMethod,
+          amount: order.amount,
+          distanceM,
+          notes: order.notes,
+          cityId: city.id,
+          scheduledAt,
+        })
+        resetOrder()
+        setFocusedScheduledId(record.id)
+        setMapMode('scheduled')
+      } catch (error) {
+        setSearchError(
+          error instanceof ApiError || error instanceof Error
+            ? error.message
+            : 'No se pudo agendar el servicio',
+        )
+      } finally {
+        setSearching(false)
+      }
+    },
+    [addRecord, city.id, order, resetOrder],
+  )
+
+  const beginDispatchScheduled = useCallback(
+    async (serviceId: string) => {
+      setMapMode('fleet')
+      setFocusedScheduledId(serviceId)
+      await beginReassign(serviceId)
+    },
+    [beginReassign],
+  )
+
+  const rescheduleService = useCallback(
+    async (serviceId: string, scheduledAt: string) => {
+      setActingTripId(serviceId)
+      try {
+        await updateRecord(serviceId, { scheduledAt })
+      } catch (error) {
+        setSearchError(
+          error instanceof ApiError || error instanceof Error
+            ? error.message
+            : 'No se pudo cambiar la hora',
+        )
+      } finally {
+        setActingTripId(null)
+      }
+    },
+    [updateRecord],
+  )
+
   const getFormattedMessage = useCallback(
     (target: 'driver' | 'client' = 'driver') => {
       if (!selectedDriver) return ''
@@ -745,10 +878,15 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       mapMode,
       focusedTripId,
       liveTrips,
+      scheduledRecords,
+      showScheduledTab,
+      reminderDue,
+      focusedScheduledId,
       offeredRecord,
       acceptedServiceId,
       setMapMode,
       focusTrip,
+      focusScheduled,
       setRawText,
       setActivePin,
       updateOrder,
@@ -756,6 +894,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       cancelExtract,
       continueManually,
       acceptService,
+      scheduleService,
+      beginDispatchScheduled,
+      rescheduleService,
       hoverDriver: setHoveredDriverId,
       focusDriver,
       setPinFromMap,
@@ -803,14 +944,22 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       mapMode,
       focusedTripId,
       liveTrips,
+      scheduledRecords,
+      showScheduledTab,
+      reminderDue,
+      focusedScheduledId,
       offeredRecord,
       acceptedServiceId,
       focusTrip,
+      focusScheduled,
       updateOrder,
       extractWithAI,
       cancelExtract,
       continueManually,
       acceptService,
+      scheduleService,
+      beginDispatchScheduled,
+      rescheduleService,
       focusDriver,
       setPinFromMap,
       moveOrigin,

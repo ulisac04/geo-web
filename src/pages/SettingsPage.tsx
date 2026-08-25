@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { CITIES } from '../lib/cities'
 import { parseUsd } from '../lib/money'
-import { MAP_REFRESH_OPTIONS } from '../lib/settings'
+import { MAP_REFRESH_OPTIONS, REMINDER_MINUTE_OPTIONS, type ReminderMinutes } from '../lib/settings'
 import {
   DEFAULT_CLIENT_TEMPLATE,
   DEFAULT_DRIVER_TEMPLATE,
@@ -23,6 +23,8 @@ export default function SettingsPage() {
     setUsdToVes,
     setWhatsappDriverTemplate,
     setWhatsappClientTemplate,
+    setSchedulingEnabled,
+    setSchedulingReminderMinutes,
   } = useSettings()
   const [copDraft, setCopDraft] = useState(rateDraft(settings.usdToCop))
   const [vesDraft, setVesDraft] = useState(rateDraft(settings.usdToVes))
@@ -139,6 +141,43 @@ export default function SettingsPage() {
               </label>
             </div>
           </section>
+
+          <section className="rounded-xl border border-line bg-panel p-5">
+            <h2 className="text-sm font-semibold text-snow">Agendar servicios</h2>
+            <p className="mt-1 text-xs text-mist">
+              Permite guardar pedidos con fecha y hora. El chofer se elige cuando llega el momento.
+              El recordatorio suena en este navegador si el dashboard está abierto.
+            </p>
+            <label className="mt-4 flex items-center justify-between gap-3">
+              <span className="text-sm text-snow">Activar agendado</span>
+              <input
+                type="checkbox"
+                checked={settings.schedulingEnabled}
+                onChange={(e) => void setSchedulingEnabled(e.target.checked)}
+                className="size-4 accent-emerald-400"
+              />
+            </label>
+            <label className="mt-4 block space-y-1">
+              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+                Avisar con anticipación
+              </span>
+              <select
+                value={settings.schedulingReminderMinutes}
+                disabled={!settings.schedulingEnabled}
+                onChange={(e) =>
+                  void setSchedulingReminderMinutes(Number(e.target.value) as ReminderMinutes)
+                }
+                className="w-full rounded-md border border-line bg-ink px-2.5 py-2 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none disabled:opacity-50"
+              >
+                {REMINDER_MINUTE_OPTIONS.map((minutes) => (
+                  <option key={minutes} value={minutes}>
+                    {minutes} minutos antes
+                  </option>
+                ))}
+              </select>
+            </label>
+            <NotificationPermissionButton enabled={settings.schedulingEnabled} />
+          </section>
         </div>
 
         <section className="min-w-0 rounded-xl border border-line bg-panel p-5">
@@ -180,6 +219,34 @@ export default function SettingsPage() {
         </section>
       </div>
     </div>
+  )
+}
+
+function NotificationPermissionButton({ enabled }: { enabled: boolean }) {
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() =>
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+  )
+
+  if (!enabled || permission === 'unsupported') return null
+
+  if (permission === 'granted') {
+    return (
+      <p className="mt-3 text-[11px] text-signal">Notificaciones del navegador activadas.</p>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void Notification.requestPermission().then((next) => setPermission(next))
+      }}
+      className="mt-4 w-full rounded-lg border border-line bg-ink px-3 py-2 text-xs font-medium text-snow hover:border-signal/40"
+    >
+      {permission === 'denied'
+        ? 'Notificaciones bloqueadas en el navegador'
+        : 'Permitir notificaciones del navegador'}
+    </button>
   )
 }
 

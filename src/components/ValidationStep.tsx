@@ -1,8 +1,10 @@
 import { Check, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
 import { convertFromUsd } from '../lib/money'
+import { defaultScheduleLocal, fromDatetimeLocal } from '../lib/schedule'
 import { sortServiceTypeOptions } from '../lib/services'
 import PlaceSearchField from './PlaceSearchField'
 
@@ -12,12 +14,15 @@ export default function ValidationStep() {
     order,
     updateOrder,
     acceptService,
+    scheduleService,
     searching,
     searchError,
     activePin,
     setActivePin,
   } = useDispatchFlow()
   const { types } = useServices()
+  const [scheduleLater, setScheduleLater] = useState(false)
+  const [scheduledLocal, setScheduledLocal] = useState(() => defaultScheduleLocal())
 
   const activeTypes = types.filter((item) => item.active)
   const typeOptions = sortServiceTypeOptions(
@@ -35,6 +40,9 @@ export default function ValidationStep() {
     Boolean(order.destination.trim()) &&
     Boolean(order.clientName.trim()) &&
     Boolean(order.clientPhone.trim())
+  const scheduledIso = fromDatetimeLocal(scheduledLocal)
+  const scheduleReady =
+    ready && Boolean(scheduledIso) && new Date(scheduledIso as string).getTime() > Date.now()
 
   return (
     <div className="space-y-3">
@@ -153,6 +161,33 @@ export default function ValidationStep() {
         />
       </label>
 
+      {settings.schedulingEnabled ? (
+        <div className="space-y-2 rounded-lg border border-line bg-ink px-3 py-3">
+          <label className="flex items-center justify-between gap-3 text-sm text-snow">
+            Agendar para más tarde
+            <input
+              type="checkbox"
+              checked={scheduleLater}
+              onChange={(e) => setScheduleLater(e.target.checked)}
+              className="size-4 accent-emerald-400"
+            />
+          </label>
+          {scheduleLater ? (
+            <label className="block space-y-1">
+              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+                Fecha y hora
+              </span>
+              <input
+                type="datetime-local"
+                value={scheduledLocal}
+                onChange={(e) => setScheduledLocal(e.target.value)}
+                className="w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+              />
+            </label>
+          ) : null}
+        </div>
+      ) : null}
+
       {searchError ? (
         <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
           {searchError}
@@ -161,12 +196,27 @@ export default function ValidationStep() {
 
       <button
         type="button"
-        disabled={!ready || searching}
-        onClick={() => void acceptService()}
+        disabled={
+          searching ||
+          (scheduleLater && settings.schedulingEnabled ? !scheduleReady : !ready)
+        }
+        onClick={() => {
+          if (scheduleLater && settings.schedulingEnabled && scheduledIso) {
+            void scheduleService(scheduledIso)
+            return
+          }
+          void acceptService()
+        }}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-2.5 text-sm font-semibold text-on-signal transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {searching ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-        {searching ? 'Creando servicio…' : 'Aceptar servicio'}
+        {searching
+          ? scheduleLater
+            ? 'Agendando…'
+            : 'Creando servicio…'
+          : scheduleLater && settings.schedulingEnabled
+            ? 'Agendar servicio'
+            : 'Aceptar servicio'}
       </button>
     </div>
   )

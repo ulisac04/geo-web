@@ -9,7 +9,7 @@ export type ServiceStatus =
   | 'in_progress'
   | 'completed'
   | 'cancelled'
-export type MapMode = 'fleet' | 'live' | 'none'
+export type MapMode = 'fleet' | 'live' | 'scheduled' | 'none'
 export type PinFocus = 'origin' | 'dest'
 export type CostRuleType = 'distance' | 'night'
 export type SurchargeType = 'fixed' | 'percent'
@@ -74,6 +74,8 @@ export interface AppSettings {
   usdToVes: number
   whatsappDriverTemplate: string
   whatsappClientTemplate: string
+  schedulingEnabled: boolean
+  schedulingReminderMinutes: number
 }
 
 export interface ServiceType {
@@ -110,6 +112,7 @@ export interface ServiceRecord {
   status: ServiceStatus
   cityId: CityId
   shareToken: string | null
+  scheduledAt: string | null
 }
 
 export interface CostRule {

@@ -48,6 +48,13 @@ export function isLiveServiceStatus(status: ServiceStatus): boolean {
   return LIVE_SERVICE_STATUSES.includes(status)
 }
 
+export function isScheduledPending(record: {
+  status: ServiceStatus
+  scheduledAt: string | null
+}): boolean {
+  return record.status === 'pending' && Boolean(record.scheduledAt)
+}
+
 export function isPickupLeg(status: ServiceStatus): boolean {
   return status === 'assigned'
 }
@@ -86,6 +93,7 @@ interface ApiServiceRecord {
   status: ServiceStatus
   created_at: string
   share_token?: string | null
+  scheduled_at?: string | null
 }
 
 interface RecordsResponse {
@@ -128,6 +136,7 @@ function fromRecord(item: ApiServiceRecord): ServiceRecord {
     status: item.status,
     cityId: item.city_id,
     shareToken: item.share_token ?? null,
+    scheduledAt: item.scheduled_at ?? null,
   }
 }
 
@@ -192,6 +201,7 @@ export interface CreateServiceInput {
   distanceM: number
   notes: string
   cityId: CityId
+  scheduledAt?: string | null
 }
 
 export async function createService(input: CreateServiceInput): Promise<ServiceRecord> {
@@ -212,6 +222,7 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
       distance_m: input.distanceM,
       notes: input.notes,
       city_id: input.cityId,
+      scheduled_at: input.scheduledAt || undefined,
     },
   })
   return fromRecord(created)
@@ -219,13 +230,14 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
 
 export async function patchService(
   id: string,
-  patch: { driverId?: string; status?: ServiceStatus },
+  patch: { driverId?: string; status?: ServiceStatus; scheduledAt?: string },
 ): Promise<ServiceRecord> {
   const updated = await api<ApiServiceRecord>(`/api/v1/services/${id}`, {
     method: 'PATCH',
     body: {
       driver_id: patch.driverId,
       status: patch.status,
+      scheduled_at: patch.scheduledAt,
     },
   })
   return fromRecord(updated)

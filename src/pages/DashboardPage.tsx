@@ -27,6 +27,8 @@ function DashboardLayout() {
     liveTrips,
     focusedTripId,
     setMapMode,
+    showScheduledTab,
+    scheduledRecords,
     focusDriver,
     focusTrip,
     takeOffline,
@@ -71,6 +73,8 @@ function DashboardLayout() {
             liveTrips={liveTrips}
             focusedTripId={focusedTripId}
             center={city.center}
+            showScheduled={showScheduledTab}
+            scheduledCount={scheduledRecords.length}
             onModeChange={setMapMode}
             onFocusDriver={focusDriver}
             onFocusTrip={focusTrip}
