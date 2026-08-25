@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import GoogleMapFrame from './GoogleMapFrame'
 import MapModeToggle from './MapModeToggle'
@@ -19,11 +20,16 @@ import {
   createDriverPinElement,
   createDriverPopup,
   createOrderPinElement,
+  DRIVER_PIN_SIZE_MAX,
+  DRIVER_PIN_SIZE_MIN,
+  DRIVER_PIN_SIZE_STEP,
   markerLngLat,
   ORDER_PIN_DEST,
   ORDER_PIN_ORIGIN,
+  readStoredDriverPinSize,
   removeMarker,
   setMarkerLngLat,
+  storeDriverPinSize,
   togglePinActive,
 } from '../lib/mapPins'
 
@@ -54,6 +60,7 @@ export default function MapViewer(props: MapViewerProps) {
   const routeMapped = Boolean(props.order.originCoords && props.order.destCoords)
   const [nearestOnly, setNearestOnly] = useState(false)
   const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('all')
+  const [driverPinSize, setDriverPinSize] = useState(readStoredDriverPinSize)
   const canFilterNearest = props.mode === 'fleet' && routeMapped
 
   useEffect(() => {
@@ -102,6 +109,7 @@ export default function MapViewer(props: MapViewerProps) {
             drivers={mapDrivers}
             liveTrips={typedLiveTrips}
             nearestOnly={nearestOnly}
+            driverPinSize={driverPinSize}
           />
         </GoogleMapFrame>
       ) : (
@@ -116,6 +124,45 @@ export default function MapViewer(props: MapViewerProps) {
           vehicleFilter={vehicleFilter}
           onVehicleFilterChange={setVehicleFilter}
         />
+        {props.mode !== 'none' ? (
+          <div
+            className="inline-flex w-fit items-center gap-1 rounded-lg border border-line bg-panel/90 p-0.5 backdrop-blur"
+            role="group"
+            aria-label="Tamaño de iconos de choferes"
+          >
+            <button
+              type="button"
+              aria-label="Reducir iconos"
+              disabled={driverPinSize <= DRIVER_PIN_SIZE_MIN}
+              onClick={() =>
+                setDriverPinSize((current) => {
+                  const next = Math.max(DRIVER_PIN_SIZE_MIN, current - DRIVER_PIN_SIZE_STEP)
+                  storeDriverPinSize(next)
+                  return next
+                })
+              }
+              className="grid size-7 place-items-center rounded-md text-mist transition hover:bg-elevated hover:text-snow disabled:opacity-40"
+            >
+              <Minus className="size-3.5" />
+            </button>
+            <span className="min-w-12 px-1 text-center text-xs font-semibold text-snow">Iconos</span>
+            <button
+              type="button"
+              aria-label="Agrandar iconos"
+              disabled={driverPinSize >= DRIVER_PIN_SIZE_MAX}
+              onClick={() =>
+                setDriverPinSize((current) => {
+                  const next = Math.min(DRIVER_PIN_SIZE_MAX, current + DRIVER_PIN_SIZE_STEP)
+                  storeDriverPinSize(next)
+                  return next
+                })
+              }
+              className="grid size-7 place-items-center rounded-md text-mist transition hover:bg-elevated hover:text-snow disabled:opacity-40"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+        ) : null}
         <div className="pointer-events-none rounded-lg border border-line bg-panel/90 px-3 py-2 text-xs text-mist backdrop-blur">
           {props.mode === 'live' ? (
             <>
@@ -177,6 +224,7 @@ function MapViewerController({
   focusedTripId,
   center,
   nearestOnly,
+  driverPinSize,
   onFocusDriver,
   onFocusTrip,
   onSetPin,
@@ -184,7 +232,7 @@ function MapViewerController({
   onMoveDest,
   onClearPin,
   onTakeOffline,
-}: MapViewerProps & { nearestOnly: boolean }) {
+}: MapViewerProps & { nearestOnly: boolean; driverPinSize: number }) {
   const map = useMap('dispatch-map')
   const markerLib = useMapsLibrary('marker')
   const driverMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
@@ -296,7 +344,7 @@ function MapViewerController({
     for (const driver of drivers) {
       const focused = focusedDriverId === driver.id || selectedDriver?.id === driver.id
       const hovered = hoveredDriverId === driver.id && !focused
-      const el = createDriverPinElement(driver, { hovered, focused })
+      const el = createDriverPinElement(driver, { hovered, focused, size: driverPinSize })
       const marker = createAdvancedMarker({
         map,
         coords: driver.coords,
@@ -318,7 +366,7 @@ function MapViewerController({
       })
       driverMarkersRef.current.push(marker)
     }
-  }, [drivers, hoveredDriverId, focusedDriverId, selectedDriver, map, markerLib])
+  }, [drivers, driverPinSize, hoveredDriverId, focusedDriverId, selectedDriver, map, markerLib])
 
   useEffect(() => {
     if (!map || !markerLib) return

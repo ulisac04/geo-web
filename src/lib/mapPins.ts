@@ -4,6 +4,33 @@ import { fromLatLng, toLatLng } from './mapsConfig'
 export const ORDER_PIN_ORIGIN = '#198754'
 export const ORDER_PIN_DEST = '#ef4444'
 
+export const DRIVER_PIN_SIZE_MIN = 14
+export const DRIVER_PIN_SIZE_MAX = 38
+export const DRIVER_PIN_SIZE_STEP = 4
+export const DRIVER_PIN_SIZE_DEFAULT = 22
+const DRIVER_PIN_SIZE_KEY = 'geo.driverPinSize'
+
+export function readStoredDriverPinSize(): number {
+  try {
+    const n = Number(localStorage.getItem(DRIVER_PIN_SIZE_KEY))
+    if (!Number.isFinite(n)) return DRIVER_PIN_SIZE_DEFAULT
+    const snapped =
+      DRIVER_PIN_SIZE_MIN +
+      Math.round((n - DRIVER_PIN_SIZE_MIN) / DRIVER_PIN_SIZE_STEP) * DRIVER_PIN_SIZE_STEP
+    return Math.min(DRIVER_PIN_SIZE_MAX, Math.max(DRIVER_PIN_SIZE_MIN, snapped))
+  } catch {
+    return DRIVER_PIN_SIZE_DEFAULT
+  }
+}
+
+export function storeDriverPinSize(size: number) {
+  try {
+    localStorage.setItem(DRIVER_PIN_SIZE_KEY, String(size))
+  } catch {
+    /* quota / private mode */
+  }
+}
+
 export function removeMarker(marker: google.maps.marker.AdvancedMarkerElement | null) {
   if (!marker) return
   marker.map = null
@@ -40,11 +67,16 @@ export function createOrderPinElement(color: string, draggable: boolean): HTMLDi
 
 export function createDriverPinElement(
   driver: Driver,
-  { hovered = false, focused = false }: { hovered?: boolean; focused?: boolean } = {},
+  {
+    hovered = false,
+    focused = false,
+    size = DRIVER_PIN_SIZE_DEFAULT,
+  }: { hovered?: boolean; focused?: boolean; size?: number } = {},
 ): HTMLDivElement {
   const pin = document.createElement('div')
   const accent = focused ? ' focused' : hovered ? ' highlighted' : ''
   pin.className = `driver-pin ${driver.status}${accent}`
+  pin.style.setProperty('--driver-pin-size', `${size}px`)
 
   const label = document.createElement('div')
   label.className = 'driver-marker-label'
@@ -148,7 +180,7 @@ function createVehicleIconElement(vehicleType: VehicleType): HTMLSpanElement {
   icon.setAttribute('aria-hidden', 'true')
   icon.innerHTML =
     vehicleType === 'motorcycle'
-      ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h3"/></svg>`
-      : `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h3"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`
   return icon
 }

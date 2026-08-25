@@ -71,9 +71,10 @@ body {
 }
 
 .driver-pin {
+  --driver-pin-size: 22px;
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: var(--driver-pin-size);
+  height: var(--driver-pin-size);
   cursor: pointer;
 }
 
@@ -82,8 +83,8 @@ body {
 }
 
 .driver-pin.highlighted .driver-marker {
-  transform: scale(1.28);
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.35);
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.35);
 }
 
 .driver-pin.focused {
@@ -91,21 +92,21 @@ body {
 }
 
 .driver-pin.focused .driver-marker {
-  transform: scale(1.45);
-  border-width: 3px;
+  transform: scale(1.28);
+  border-width: 2px;
   box-shadow:
-    0 0 0 5px rgba(52, 211, 153, 0.5),
-    0 0 0 8px rgba(251, 191, 36, 0.35);
+    0 0 0 3px rgba(52, 211, 153, 0.5),
+    0 0 0 5px rgba(251, 191, 36, 0.35);
 }
 
 .driver-marker {
-  width: 34px;
-  height: 34px;
+  width: var(--driver-pin-size);
+  height: var(--driver-pin-size);
   overflow: hidden;
   border-radius: 999px;
   display: grid;
   place-items: center;
-  border: 2px solid var(--on-signal);
+  border: 1.5px solid var(--on-signal);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
@@ -180,6 +181,12 @@ html.light .driver-marker {
   display: grid;
   place-items: center;
   color: var(--on-signal);
+}
+
+.driver-marker-icon svg {
+  display: block;
+  width: calc(var(--driver-pin-size) * 0.58);
+  height: calc(var(--driver-pin-size) * 0.58);
 }
 
 .order-pin {
