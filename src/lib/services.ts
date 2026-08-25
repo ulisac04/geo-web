@@ -85,6 +85,7 @@ interface ApiServiceRecord {
   city_id: CityId
   status: ServiceStatus
   created_at: string
+  share_token?: string | null
 }
 
 interface RecordsResponse {
@@ -126,6 +127,7 @@ function fromRecord(item: ApiServiceRecord): ServiceRecord {
     createdAt: item.created_at,
     status: item.status,
     cityId: item.city_id,
+    shareToken: item.share_token ?? null,
   }
 }
 

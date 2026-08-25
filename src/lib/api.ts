@@ -77,7 +77,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (!response.ok) {
     if (response.status === 401 && auth) {
       clearSession()
-      if (window.location.pathname !== '/login') {
+      const path = window.location.pathname
+      if (path !== '/login' && !path.startsWith('/s/')) {
         window.location.assign('/login')
       }
     }

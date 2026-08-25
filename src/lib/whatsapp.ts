@@ -15,6 +15,7 @@ export const WHATSAPP_TOKENS = [
   { token: '{monto}', label: 'Monto' },
   { token: '{notas}', label: 'Notas' },
   { token: '{firma}', label: 'Firma' },
+  { token: '{seguimiento}', label: 'Link seguimiento' },
 ] as const
 
 export const DEFAULT_DRIVER_TEMPLATE = [
@@ -39,6 +40,8 @@ export const DEFAULT_CLIENT_TEMPLATE = [
   '',
   '{recogida}',
   '{destino}',
+  '',
+  'Seguí al conductor: {seguimiento}',
   '',
   'Tu Ruta',
 ].join('\n')
@@ -86,10 +89,20 @@ function vehicleLabel(driver: Driver): string {
   return plate ? `${vehicle} · ${plate}` : vehicle
 }
 
+export function clientTrackingUrl(
+  shareToken: string | null | undefined,
+  origin = typeof window !== 'undefined' ? window.location.origin : '',
+): string {
+  const token = shareToken?.trim()
+  if (!token) return ''
+  return `${origin.replace(/\/$/, '')}/s/${token}`
+}
+
 export function buildWhatsAppVars(
   order: OrderDraft,
   driver: Driver,
   rates?: { usdToCop: number; usdToVes: number },
+  extras?: { seguimiento?: string },
 ): TemplateVars {
   return {
     conductor: driver.name.trim(),
@@ -103,6 +116,7 @@ export function buildWhatsAppVars(
     monto: formatDispatchAmount(order.amount, rates),
     notas: order.notes.trim(),
     firma: 'Tu Ruta',
+    seguimiento: extras?.seguimiento?.trim() ?? '',
   }
 }
 
@@ -122,10 +136,11 @@ export function buildClientMessage(
   order: OrderDraft,
   driver: Driver,
   template?: string,
+  seguimiento?: string,
 ): string {
   return renderTemplate(
     resolveWhatsAppTemplate(template, DEFAULT_CLIENT_TEMPLATE),
-    buildWhatsAppVars(order, driver),
+    buildWhatsAppVars(order, driver, undefined, { seguimiento }),
   )
 }
 
@@ -150,8 +165,12 @@ export function buildClientWhatsAppUrl(
   order: OrderDraft,
   driver: Driver,
   template?: string,
+  seguimiento?: string,
 ): string {
-  return buildWhatsAppUrlForPhone(order.clientPhone, buildClientMessage(order, driver, template))
+  return buildWhatsAppUrlForPhone(
+    order.clientPhone,
+    buildClientMessage(order, driver, template, seguimiento),
+  )
 }
 
 export function openWhatsAppPopup(): Window | null {

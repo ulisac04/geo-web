@@ -109,6 +109,7 @@ export interface ServiceRecord {
   createdAt: string
   status: ServiceStatus
   cityId: CityId
+  shareToken: string | null
 }
 
 export interface CostRule {

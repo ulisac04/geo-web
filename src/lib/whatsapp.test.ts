@@ -4,6 +4,7 @@ import {
   DEFAULT_DRIVER_TEMPLATE,
   buildClientMessage,
   buildDispatchMessage,
+  clientTrackingUrl,
   renderTemplate,
   resolveWhatsAppTemplate,
 } from './whatsapp'
@@ -99,5 +100,17 @@ describe('buildClientMessage', () => {
     expect(message).toContain('🚗 Conductor: Juan Pérez')
     expect(message).toContain('Moto · Yamaha NMAX · AB123CD')
     expect(message).toContain('Tu Ruta')
+  })
+
+  it('omite el link de seguimiento si no hay token', () => {
+    const message = buildClientMessage(order, driver)
+    expect(message).not.toContain('Seguí al conductor')
+  })
+
+  it('incluye el link de seguimiento cuando hay token', () => {
+    const link = clientTrackingUrl('abc-123', 'https://norte.localhost')
+    const message = buildClientMessage(order, driver, undefined, link)
+    expect(link).toBe('https://norte.localhost/s/abc-123')
+    expect(message).toContain('Seguí al conductor: https://norte.localhost/s/abc-123')
   })
 })

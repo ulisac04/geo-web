@@ -166,7 +166,14 @@ export default function SettingsPage() {
               title="Al cliente"
               stored={settings.whatsappClientTemplate}
               fallback={DEFAULT_CLIENT_TEMPLATE}
-              preview={(template) => buildClientMessage(PREVIEW_ORDER, PREVIEW_DRIVER, template)}
+              preview={(template) =>
+                buildClientMessage(
+                  PREVIEW_ORDER,
+                  PREVIEW_DRIVER,
+                  template,
+                  'https://tu-ruta.app/s/demo',
+                )
+              }
               onSave={setWhatsappClientTemplate}
             />
           </div>

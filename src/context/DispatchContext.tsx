@@ -32,7 +32,7 @@ import { EMPTY_ORDER } from '../lib/mock-data'
 import { formatDestLabel, formatOriginLabel } from '../lib/orderStops'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { defaultServiceTypeId, isLiveServiceStatus } from '../lib/services'
-import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, copyAndOpenWhatsApp } from '../lib/whatsapp'
+import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, clientTrackingUrl, copyAndOpenWhatsApp } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
 import { useSettings } from './SettingsContext'
@@ -632,11 +632,13 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     (target: 'driver' | 'client' = 'driver') => {
       if (!selectedDriver) return ''
       const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
+      const seguimiento = clientTrackingUrl(offeredRecord?.shareToken)
       return target === 'client'
-        ? buildClientMessage(order, selectedDriver, settings.whatsappClientTemplate)
+        ? buildClientMessage(order, selectedDriver, settings.whatsappClientTemplate, seguimiento)
         : buildDispatchMessage(order, selectedDriver, rates, settings.whatsappDriverTemplate)
     },
     [
+      offeredRecord?.shareToken,
       order,
       selectedDriver,
       settings.usdToCop,
@@ -650,11 +652,18 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     (target: 'driver' | 'client' = 'driver') => {
       if (!selectedDriver) return null
       const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
+      const seguimiento = clientTrackingUrl(offeredRecord?.shareToken)
       return target === 'client'
-        ? buildClientWhatsAppUrl(order, selectedDriver, settings.whatsappClientTemplate)
+        ? buildClientWhatsAppUrl(
+            order,
+            selectedDriver,
+            settings.whatsappClientTemplate,
+            seguimiento,
+          )
         : buildWhatsAppUrl(order, selectedDriver, rates, settings.whatsappDriverTemplate)
     },
     [
+      offeredRecord?.shareToken,
       order,
       selectedDriver,
       settings.usdToCop,

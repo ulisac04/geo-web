@@ -13,6 +13,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LoginPage from './pages/LoginPage'
 import ServicesPage from './pages/ServicesPage'
 import SettingsPage from './pages/SettingsPage'
+import TrackServicePage from './pages/TrackServicePage'
 import { getSession, homePath } from './lib/auth'
 
 function DefaultRedirect() {
@@ -24,6 +25,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/s/:token" element={<TrackServicePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route
