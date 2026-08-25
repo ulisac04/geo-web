@@ -6,10 +6,12 @@ import {
   deleteTenantLogo,
   getTenant,
   getTenantStats,
+  listTenantSettlements,
   patchTenant,
   resetOperatorPassword,
   uploadTenantLogo,
   type AdminTenantDetail,
+  type ServiceSettlement,
   type TenantStats,
 } from '../lib/admin'
 import { appBaseHost, contrastOn, logoSrc } from '../lib/branding'
@@ -25,6 +27,7 @@ export default function AdminTenantDetailPage() {
   const { tenantId = '' } = useParams()
   const [tenant, setTenant] = useState<AdminTenantDetail | null>(null)
   const [stats, setStats] = useState<TenantStats | null>(null)
+  const [settlements, setSettlements] = useState<ServiceSettlement[]>([])
   const [days, setDays] = useState<7 | 30>(30)
   const [error, setError] = useState('')
   const [savingBrand, setSavingBrand] = useState(false)
@@ -46,6 +49,7 @@ export default function AdminTenantDetailPage() {
     setPrimaryColor(detail.primary_color)
     setAccentColor(detail.accent_color)
     setSubdomain(detail.subdomain ?? '')
+    setSettlements(await listTenantSettlements(tenantId))
   }
 
   useEffect(() => {
@@ -175,7 +179,10 @@ export default function AdminTenantDetailPage() {
             <h1 className="text-xl font-semibold text-snow">{tenant.name}</h1>
             <p className="text-sm text-mist">
               Código app: <span className="font-mono text-snow">{tenant.code}</span> ·{' '}
-              {getCity(tenant.city_id).name} · {tenant.driver_count} conductores
+              {getCity(tenant.city_id).name} · {tenant.driver_count} conductores · límite{' '}
+              <span className={tenant.service_limit < 0 ? 'text-rose-300' : 'text-snow'}>
+                {tenant.service_limit}
+              </span>
             </p>
           </div>
         </div>
@@ -350,6 +357,38 @@ export default function AdminTenantDetailPage() {
           </div>
         ) : (
           <p className="text-sm text-mist">Cargando estadísticas…</p>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-line p-4">
+        <h2 className="mb-3 text-sm font-semibold text-snow">Liquidaciones</h2>
+        {settlements.length === 0 ? (
+          <p className="text-sm text-mist">Todavía no hay liquidaciones para esta empresa.</p>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-mist">
+              <tr>
+                <th className="pb-2">Fecha</th>
+                <th className="pb-2">Saldo archivado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {settlements.map((row) => (
+                <tr key={row.id} className="border-t border-line">
+                  <td className="py-2 text-mist">
+                    {new Date(row.settled_at).toLocaleString('es')}
+                  </td>
+                  <td
+                    className={`py-2 tabular-nums ${
+                      row.balance < 0 ? 'text-rose-300' : 'text-snow'
+                    }`}
+                  >
+                    {row.balance}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </section>
 

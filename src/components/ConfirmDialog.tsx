@@ -7,6 +7,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string
   cancelLabel?: string
   busy?: boolean
+  busyLabel?: string
   onCancel: () => void
   onConfirm: () => void | Promise<void>
 }
@@ -18,6 +19,7 @@ export default function ConfirmDialog({
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   busy = false,
+  busyLabel = 'Sacando…',
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -56,7 +58,7 @@ export default function ConfirmDialog({
             onClick={() => void onConfirm()}
             className="rounded-lg bg-danger px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500 disabled:opacity-50"
           >
-            {busy ? 'Sacando…' : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>

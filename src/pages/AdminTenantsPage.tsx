@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
-import { listTenants, type AdminTenant } from '../lib/admin'
+import { Minus, Plus } from 'lucide-react'
+import ConfirmDialog from '../components/ConfirmDialog'
+import {
+  adjustTenantServiceLimit,
+  listTenants,
+  patchTenant,
+  settleTenantServiceLimit,
+  type AdminTenant,
+} from '../lib/admin'
 import { logoSrc } from '../lib/branding'
 import { getCity } from '../lib/cities'
 
@@ -9,12 +16,18 @@ export default function AdminTenantsPage() {
   const [tenants, setTenants] = useState<AdminTenant[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [busyId, setBusyId] = useState('')
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [settleTarget, setSettleTarget] = useState<AdminTenant | null>(null)
 
   useEffect(() => {
     let cancelled = false
     listTenants()
       .then((rows) => {
-        if (!cancelled) setTenants(rows)
+        if (!cancelled) {
+          setTenants(rows)
+          setDrafts(Object.fromEntries(rows.map((row) => [row.id, String(row.service_limit)])))
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'No se pudo cargar')
@@ -27,8 +40,34 @@ export default function AdminTenantsPage() {
     }
   }, [])
 
+  function replaceTenant(updated: AdminTenant) {
+    setTenants((rows) => rows.map((row) => (row.id === updated.id ? updated : row)))
+    setDrafts((current) => ({ ...current, [updated.id]: String(updated.service_limit) }))
+  }
+
+  async function runAction(id: string, action: () => Promise<AdminTenant>) {
+    setBusyId(id)
+    setError('')
+    try {
+      replaceTenant(await action())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar el límite')
+    } finally {
+      setBusyId('')
+    }
+  }
+
+  async function commitDraft(tenant: AdminTenant) {
+    const parsed = Number.parseInt(drafts[tenant.id] ?? '', 10)
+    if (Number.isNaN(parsed) || parsed === tenant.service_limit) {
+      setDrafts((current) => ({ ...current, [tenant.id]: String(tenant.service_limit) }))
+      return
+    }
+    await runAction(tenant.id, () => patchTenant(tenant.id, { service_limit: parsed }))
+  }
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-snow">Empresas</h1>
@@ -44,7 +83,7 @@ export default function AdminTenantsPage() {
       </div>
       {error ? <p className="mb-4 text-sm text-rose-300">{error}</p> : null}
       {loading ? <p className="text-sm text-mist">Cargando…</p> : null}
-      <div className="overflow-hidden rounded-xl border border-line">
+      <div className="overflow-x-auto rounded-xl border border-line">
         <table className="w-full text-left text-sm">
           <thead className="bg-elevated text-xs uppercase tracking-wide text-mist">
             <tr>
@@ -53,11 +92,14 @@ export default function AdminTenantsPage() {
               <th className="px-4 py-3">Ciudad</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3">Conductores</th>
+              <th className="px-4 py-3">Límite</th>
             </tr>
           </thead>
           <tbody>
             {tenants.map((tenant) => {
               const logo = logoSrc(tenant.logo_url)
+              const busy = busyId === tenant.id
+              const negative = tenant.service_limit < 0
               return (
                 <tr key={tenant.id} className="border-t border-line">
                   <td className="px-4 py-3">
@@ -95,6 +137,64 @@ export default function AdminTenantsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-snow">{tenant.driver_count}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label="Disminuir límite"
+                        onClick={() =>
+                          void runAction(tenant.id, () =>
+                            adjustTenantServiceLimit(tenant.id, -1),
+                          )
+                        }
+                        className="grid size-7 place-items-center rounded-md border border-line text-snow hover:bg-elevated disabled:opacity-50"
+                      >
+                        <Minus className="size-3.5" />
+                      </button>
+                      <input
+                        type="number"
+                        disabled={busy}
+                        value={drafts[tenant.id] ?? String(tenant.service_limit)}
+                        onChange={(event) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [tenant.id]: event.target.value,
+                          }))
+                        }
+                        onBlur={() => void commitDraft(tenant)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.currentTarget.blur()
+                          }
+                        }}
+                        className={`w-16 rounded-md border border-line bg-ink px-1.5 py-1 text-center text-sm tabular-nums focus:border-signal/50 focus:outline-none disabled:opacity-50 ${
+                          negative ? 'text-rose-300' : 'text-snow'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label="Aumentar límite"
+                        onClick={() =>
+                          void runAction(tenant.id, () =>
+                            adjustTenantServiceLimit(tenant.id, 1),
+                          )
+                        }
+                        className="grid size-7 place-items-center rounded-md border border-line text-snow hover:bg-elevated disabled:opacity-50"
+                      >
+                        <Plus className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy || tenant.service_limit === 0}
+                        onClick={() => setSettleTarget(tenant)}
+                        className="rounded-md border border-line px-2 py-1 text-xs text-snow hover:bg-elevated disabled:opacity-40"
+                      >
+                        Liquidar
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               )
             })}
@@ -104,6 +204,34 @@ export default function AdminTenantsPage() {
           <p className="px-4 py-6 text-sm text-mist">No hay empresas todavía.</p>
         ) : null}
       </div>
+      <ConfirmDialog
+        open={settleTarget !== null}
+        title="Liquidar límite"
+        description={
+          settleTarget
+            ? `Se guardará el saldo actual (${settleTarget.service_limit}) en el historial y quedará en 0.`
+            : null
+        }
+        confirmLabel="Liquidar"
+        busyLabel="Liquidando…"
+        busy={Boolean(settleTarget && busyId === settleTarget.id)}
+        onCancel={() => {
+          if (!busyId) setSettleTarget(null)
+        }}
+        onConfirm={async () => {
+          if (!settleTarget) return
+          setBusyId(settleTarget.id)
+          setError('')
+          try {
+            replaceTenant(await settleTenantServiceLimit(settleTarget.id))
+            setSettleTarget(null)
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'No se pudo liquidar')
+          } finally {
+            setBusyId('')
+          }
+        }}
+      />
     </div>
   )
 }

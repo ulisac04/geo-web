@@ -8,6 +8,7 @@ export interface AdminTenant {
   status: string
   city_id: string
   driver_count: number
+  service_limit: number
   created_at: string
   primary_color: string
   accent_color: string
@@ -37,6 +38,14 @@ export interface CreatedTenant {
   operator_email: string
   operator_password: string
   company_code: string
+}
+
+export interface ServiceSettlement {
+  id: string
+  tenant_id: string
+  balance: number
+  settled_at: string
+  note: string | null
 }
 
 export interface TenantStats {
@@ -100,9 +109,28 @@ export function patchTenant(
     primary_color?: string
     accent_color?: string
     subdomain?: string
+    service_limit?: number
   },
 ) {
   return api<AdminTenant>(`/api/v1/admin/tenants/${id}`, { method: 'PATCH', body })
+}
+
+export function adjustTenantServiceLimit(id: string, delta: number) {
+  return api<AdminTenant>(`/api/v1/admin/tenants/${id}/service-limit/adjust`, {
+    method: 'POST',
+    body: { delta },
+  })
+}
+
+export function settleTenantServiceLimit(id: string, note?: string) {
+  return api<AdminTenant>(`/api/v1/admin/tenants/${id}/service-limit/settle`, {
+    method: 'POST',
+    body: { note },
+  })
+}
+
+export function listTenantSettlements(id: string) {
+  return api<ServiceSettlement[]>(`/api/v1/admin/tenants/${id}/service-limit/settlements`)
 }
 
 export async function uploadTenantLogo(id: string, file: File) {
