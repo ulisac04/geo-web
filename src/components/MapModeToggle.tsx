@@ -15,6 +15,8 @@ interface MapModeToggleProps {
   showNone?: boolean
   vehicleFilter?: VehicleFilter
   onVehicleFilterChange?: (filter: VehicleFilter) => void
+  embedded?: boolean
+  compactVehicles?: boolean
 }
 
 function chipClass(active: boolean, fullWidth?: boolean) {
@@ -41,6 +43,8 @@ export default function MapModeToggle({
   showNone,
   vehicleFilter = 'all',
   onVehicleFilterChange,
+  embedded,
+  compactVehicles,
 }: MapModeToggleProps) {
   const options: { value: MapMode; label: string }[] = [
     { value: 'fleet', label: fleetLabel },
@@ -52,9 +56,9 @@ export default function MapModeToggle({
 
   return (
     <div
-      className={`inline-flex items-stretch rounded-lg border border-line bg-ink p-0.5 ${
-        fullWidth ? 'w-full' : ''
-      }`}
+      className={`inline-flex items-stretch ${
+        embedded ? '' : 'rounded-lg border border-line bg-ink p-0.5'
+      } ${fullWidth ? 'w-full' : ''}`}
     >
       <div
         className={`inline-flex ${fullWidth && !showVehicle ? 'w-full' : ''}`}
@@ -114,13 +118,15 @@ export default function MapModeToggle({
                   key={item.value}
                   type="button"
                   aria-pressed={active}
+                  aria-label={item.label}
+                  title={item.label}
                   onClick={() =>
                     onVehicleFilterChange?.(active ? 'all' : item.value)
                   }
-                  className={`inline-flex items-center gap-1.5 ${chipClass(active)}`}
+                  className={`inline-flex items-center ${compactVehicles ? 'px-2' : 'gap-1.5'} ${chipClass(active)}`}
                 >
                   <Icon className="size-3.5" />
-                  {item.label}
+                  {compactVehicles ? null : item.label}
                 </button>
               )
             })}

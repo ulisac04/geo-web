@@ -4,7 +4,6 @@ import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import GoogleMapFrame from './GoogleMapFrame'
 import MapModeToggle from './MapModeToggle'
 import type { Driver, LiveTrip, MapMode, OrderDraft, PinFocus, VehicleFilter } from '../types'
-import { vehicleTypeLabel } from '../lib/vehicles'
 import { rankNearestToOrigin } from '../lib/fleet'
 import { isPickupLeg } from '../lib/services'
 import { fetchDrivingRoute } from '../lib/routing'
@@ -57,6 +56,20 @@ interface MapViewerProps {
 }
 
 const NEAREST_LIMIT = 5
+
+function mapToolbarHint(mode: MapMode, activePin: PinFocus): string {
+  if (mode === 'live') {
+    return 'Ámbar: va a buscar · Verde: va a dejar. Click en un viaje o chofer para enfocar la ruta.'
+  }
+  if (mode === 'scheduled') {
+    return 'La flota se muestra para despachar cuando llegue el momento.'
+  }
+  if (mode === 'none') {
+    return 'Solo puntos de la orden. Click coloca A o B; si ambos están, se confirma el cambio.'
+  }
+  const point = activePin === 'origin' ? 'A' : 'B'
+  return `Click coloca el punto ${point}. Si A y B ya están, se confirma el cambio. Arrastra para ajustar.`
+}
 
 export default function MapViewer(props: MapViewerProps) {
   const routeMapped = Boolean(props.order.originCoords && props.order.destCoords)
@@ -117,106 +130,83 @@ export default function MapViewer(props: MapViewerProps) {
       ) : (
         <GoogleMapFrame id="dispatch-map" center={props.center} className="h-full w-full" />
       )}
-      <div className="absolute top-4 left-4 flex flex-col gap-2">
-        <MapModeToggle
-          mode={props.mode}
-          onChange={props.onModeChange}
-          showNone
-          liveCount={props.liveTrips.length}
-          showScheduled={props.showScheduled}
-          scheduledCount={props.scheduledCount}
-          vehicleFilter={vehicleFilter}
-          onVehicleFilterChange={setVehicleFilter}
-        />
-        {props.mode !== 'none' ? (
-          <div
-            className="inline-flex w-fit items-center gap-1 rounded-lg border border-line bg-panel/90 p-0.5 backdrop-blur"
-            role="group"
-            aria-label="Tamaño de iconos de choferes"
-          >
-            <button
-              type="button"
-              aria-label="Reducir iconos"
-              disabled={driverPinSize <= DRIVER_PIN_SIZE_MIN}
-              onClick={() =>
-                setDriverPinSize((current) => {
-                  const next = Math.max(DRIVER_PIN_SIZE_MIN, current - DRIVER_PIN_SIZE_STEP)
-                  storeDriverPinSize(next)
-                  return next
-                })
-              }
-              className="grid size-7 place-items-center rounded-md text-mist transition hover:bg-elevated hover:text-snow disabled:opacity-40"
-            >
-              <Minus className="size-3.5" />
-            </button>
-            <span className="min-w-12 px-1 text-center text-xs font-semibold text-snow">Iconos</span>
-            <button
-              type="button"
-              aria-label="Agrandar iconos"
-              disabled={driverPinSize >= DRIVER_PIN_SIZE_MAX}
-              onClick={() =>
-                setDriverPinSize((current) => {
-                  const next = Math.min(DRIVER_PIN_SIZE_MAX, current + DRIVER_PIN_SIZE_STEP)
-                  storeDriverPinSize(next)
-                  return next
-                })
-              }
-              className="grid size-7 place-items-center rounded-md text-mist transition hover:bg-elevated hover:text-snow disabled:opacity-40"
-            >
-              <Plus className="size-3.5" />
-            </button>
-          </div>
-        ) : null}
-        <div className="pointer-events-none rounded-lg border border-line bg-panel/90 px-3 py-2 text-xs text-mist backdrop-blur">
-          {props.mode === 'live' ? (
+      <div className="absolute top-4 left-4 max-w-[calc(100%-2rem)]">
+        <div
+          className="inline-flex flex-wrap items-center rounded-lg border border-line bg-panel/90 p-0.5 backdrop-blur"
+          title={mapToolbarHint(props.mode, props.activePin)}
+        >
+          <MapModeToggle
+            mode={props.mode}
+            onChange={props.onModeChange}
+            showNone
+            liveCount={props.liveTrips.length}
+            showScheduled={props.showScheduled}
+            scheduledCount={props.scheduledCount}
+            vehicleFilter={vehicleFilter}
+            onVehicleFilterChange={setVehicleFilter}
+            embedded
+            compactVehicles
+          />
+          {props.mode !== 'none' ? (
             <>
-              <p className="font-medium text-snow">
-                Servicios en curso
-                {vehicleFilter === 'all' ? '' : ` · ${vehicleTypeLabel(vehicleFilter)}`}
-              </p>
-              <p>Ámbar: va a buscar · Verde: va a dejar</p>
-              <p className="mt-1">Click en un viaje o chofer para enfocar la ruta.</p>
+              <span className="mx-1 my-1 h-5 w-px shrink-0 bg-line" aria-hidden />
+              <div
+                className="inline-flex items-center"
+                role="group"
+                aria-label="Tamaño de iconos de choferes"
+              >
+                <button
+                  type="button"
+                  aria-label="Reducir iconos"
+                  title="Reducir iconos"
+                  disabled={driverPinSize <= DRIVER_PIN_SIZE_MIN}
+                  onClick={() =>
+                    setDriverPinSize((current) => {
+                      const next = Math.max(DRIVER_PIN_SIZE_MIN, current - DRIVER_PIN_SIZE_STEP)
+                      storeDriverPinSize(next)
+                      return next
+                    })
+                  }
+                  className="grid size-7 place-items-center rounded-md text-mist transition hover:bg-elevated hover:text-snow disabled:opacity-40"
+                >
+                  <Minus className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Agrandar iconos"
+                  title="Agrandar iconos"
+                  disabled={driverPinSize >= DRIVER_PIN_SIZE_MAX}
+                  onClick={() =>
+                    setDriverPinSize((current) => {
+                      const next = Math.min(DRIVER_PIN_SIZE_MAX, current + DRIVER_PIN_SIZE_STEP)
+                      storeDriverPinSize(next)
+                      return next
+                    })
+                  }
+                  className="grid size-7 place-items-center rounded-md text-mist transition hover:bg-elevated hover:text-snow disabled:opacity-40"
+                >
+                  <Plus className="size-3.5" />
+                </button>
+              </div>
             </>
-          ) : props.mode === 'scheduled' ? (
+          ) : null}
+          {canFilterNearest ? (
             <>
-              <p className="font-medium text-snow">Servicios agendados</p>
-              <p>La flota se muestra para despachar cuando llegue el momento.</p>
+              <span className="mx-1 my-1 h-5 w-px shrink-0 bg-line" aria-hidden />
+              <button
+                type="button"
+                onClick={() => setNearestOnly((current) => !current)}
+                className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
+                  nearestOnly
+                    ? 'bg-signal/15 text-signal'
+                    : 'text-mist hover:bg-elevated hover:text-snow'
+                }`}
+              >
+                {nearestOnly ? 'Toda la flota' : '5 cercanos'}
+              </button>
             </>
-          ) : (
-            <>
-              <p className="font-medium text-snow">Ruta A → B</p>
-              <p>
-                {props.mode === 'none'
-                  ? 'Solo puntos de la orden. Flota y viajes ocultos.'
-                  : nearestOnly
-                    ? `Solo los ${NEAREST_LIMIT} choferes más cercanos al punto A (disponibles u ocupados).`
-                    : vehicleFilter === 'all'
-                      ? 'Verde: recogida · Rojo: entrega · Ámbar: chofer'
-                      : `Solo ${vehicleTypeLabel(vehicleFilter).toLowerCase()}. Verde: recogida · Rojo: entrega · Ámbar: chofer`}
-              </p>
-              <p className="mt-1">
-                Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Si A y B ya
-                están, te pedimos confirmar el cambio. Arrastra para ajustar. Clic derecho en un
-                pin para quitarlo.
-              </p>
-            </>
-          )}
+          ) : null}
         </div>
-        {canFilterNearest ? (
-          <button
-            type="button"
-            onClick={() => setNearestOnly((current) => !current)}
-            className={`w-fit rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-              nearestOnly
-                ? 'border-signal/50 bg-signal/15 text-signal'
-                : 'border-line bg-panel/90 text-snow backdrop-blur hover:border-mist/40 hover:text-snow'
-            }`}
-          >
-            {nearestOnly
-              ? 'Ver toda la flota'
-              : `5 más cercanos al punto A`}
-          </button>
-        ) : null}
       </div>
     </section>
   )
