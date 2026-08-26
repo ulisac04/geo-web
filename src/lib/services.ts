@@ -10,6 +10,7 @@ import type {
 import { api } from './api'
 import { parseUsd } from './money'
 import { formatFare } from './costs'
+import { toWhatsAppDigits } from './phone'
 
 export const EMPTY_TYPE_DRAFT: ServiceTypeDraft = {
   name: '',
@@ -216,7 +217,7 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
       dest_lng: input.destCoords?.[0],
       dest_lat: input.destCoords?.[1],
       client_name: input.clientName,
-      client_phone: input.clientPhone,
+      client_phone: toWhatsAppDigits(input.clientPhone),
       payment_method: input.paymentMethod,
       amount: parseUsd(input.amount)?.toFixed(2) ?? '0',
       distance_m: input.distanceM,

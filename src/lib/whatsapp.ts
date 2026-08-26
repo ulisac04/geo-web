@@ -2,6 +2,7 @@ import type { Driver, OrderDraft } from '../types'
 import { formatDispatchAmount } from './money'
 import { formatStopLines } from './orderStops'
 import { formatVehicleLine } from './vehicles'
+import { toWhatsAppDigits } from './phone'
 
 export const WHATSAPP_TOKENS = [
   { token: '{conductor}', label: 'Conductor' },
@@ -145,7 +146,7 @@ export function buildClientMessage(
 }
 
 export function buildWhatsAppUrlForPhone(phone: string, text: string): string {
-  const digits = phone.replace(/\D/g, '')
+  const digits = toWhatsAppDigits(phone)
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
 }
 

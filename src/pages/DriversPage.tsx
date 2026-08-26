@@ -7,6 +7,7 @@ import PlaceDriverMap from '../components/PlaceDriverMap'
 import { useFleet } from '../context/FleetContext'
 import { useSettings } from '../context/SettingsContext'
 import { CITIES } from '../lib/cities'
+import { toWhatsAppDigits } from '../lib/phone'
 import { formatVehicleLine, vehicleTypeLabel } from '../lib/vehicles'
 import type { CityId, Driver, DriverDraft, DriverStatus, VehicleFilter, VehicleType } from '../types'
 
@@ -326,7 +327,7 @@ export default function DriversPage() {
                 <td className="py-3">
                   <div className="flex items-center gap-1">
                     <a
-                      href={`https://wa.me/${driver.phone.replace(/\D/g, '')}`}
+                      href={`https://wa.me/${toWhatsAppDigits(driver.phone)}`}
                       target="_blank"
                       rel="noreferrer"
                       className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-signal"

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
+import PhoneField from './PhoneField'
 import PhotoUploadField from './PhotoUploadField'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
 import { EMPTY_DRAFT } from '../lib/fleet'
@@ -87,11 +88,10 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             value={draft.name}
             onChange={(value) => setDraft((prev) => ({ ...prev, name: value }))}
           />
-          <Field
+          <PhoneField
             label="Teléfono"
             value={draft.phone}
             onChange={(value) => setDraft((prev) => ({ ...prev, phone: value }))}
-            placeholder="58414..."
           />
           <label className="block space-y-1">
             <span className="text-[11px] font-medium tracking-wide text-mist uppercase">

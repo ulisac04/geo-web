@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext'
 import { convertFromUsd } from '../lib/money'
 import { defaultScheduleLocal, fromDatetimeLocal } from '../lib/schedule'
 import { sortServiceTypeOptions } from '../lib/services'
+import PhoneField from './PhoneField'
 import PlaceSearchField from './PlaceSearchField'
 
 export default function ValidationStep() {
@@ -133,18 +134,16 @@ export default function ValidationStep() {
           onChange={(value) => updateOrder({ destExact: value })}
         />
       </PlaceSearchField>
-      <div className="grid grid-cols-2 gap-2">
-        <Field
-          label="Nombre cliente"
-          value={order.clientName}
-          onChange={(value) => updateOrder({ clientName: value })}
-        />
-        <Field
-          label="Teléfono"
-          value={order.clientPhone}
-          onChange={(value) => updateOrder({ clientPhone: value })}
-        />
-      </div>
+      <Field
+        label="Nombre cliente"
+        value={order.clientName}
+        onChange={(value) => updateOrder({ clientName: value })}
+      />
+      <PhoneField
+        label="Teléfono"
+        value={order.clientPhone}
+        onChange={(value) => updateOrder({ clientPhone: value })}
+      />
       <AmountFields
         usd={order.amount}
         usdToCop={settings.usdToCop}

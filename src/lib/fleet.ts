@@ -1,6 +1,7 @@
 import type { CityId, Driver, DriverDraft, DriverStatus, VehicleType } from '../types'
 import { api } from './api'
 import { getCity } from './cities'
+import { defaultPhoneCountry, toWhatsAppDigits } from './phone'
 import { etaFromMeters, haversineMeters } from './geo'
 
 export const NEARBY_RADIUS_M = 1500
@@ -80,7 +81,7 @@ function fromApi(driver: ApiDriver, extra?: { distanceM?: number; etaMin?: numbe
 function draftBody(draft: DriverDraft, cityId?: CityId) {
   return {
     name: draft.name.trim(),
-    phone: draft.phone.replace(/\D/g, ''),
+    phone: toWhatsAppDigits(draft.phone, defaultPhoneCountry(cityId ? getCity(cityId).country : undefined)),
     vehicle_type: draft.vehicleType,
     vehicle: draft.vehicle.trim(),
     license_plate: draft.licensePlate.trim().toUpperCase(),
