@@ -37,6 +37,9 @@ function DashboardLayout() {
     confirmTakeOffline,
     cancelTakeOffline,
     setPinFromMap,
+    pendingRouteChange,
+    confirmRouteChange,
+    cancelRouteChange,
     moveOrigin,
     moveDest,
     clearPin,
@@ -86,6 +89,27 @@ function DashboardLayout() {
           />
         </Suspense>
       </div>
+      <ConfirmDialog
+        open={pendingRouteChange !== null}
+        title="¿Cambiar la ruta?"
+        description={
+          pendingRouteChange?.pin === 'origin' ? (
+            <>
+              Esta orden ya tiene origen y destino. Un clic va a mover el{' '}
+              <span className="font-semibold text-snow">punto A (recogida)</span>. ¿Estás seguro?
+            </>
+          ) : (
+            <>
+              Esta orden ya tiene origen y destino. Un clic va a mover el{' '}
+              <span className="font-semibold text-snow">punto B (entrega)</span>. ¿Estás seguro?
+            </>
+          )
+        }
+        confirmLabel="Sí, cambiar"
+        cancelLabel="Dejar como está"
+        onCancel={cancelRouteChange}
+        onConfirm={confirmRouteChange}
+      />
       <ConfirmDialog
         open={pendingOffline !== null}
         title="¿Sacar de servicio?"

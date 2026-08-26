@@ -85,6 +85,9 @@ interface DispatchContextValue {
   hoverDriver: (id: string | null) => void
   focusDriver: (id: string | null) => void
   setPinFromMap: (coords: [number, number]) => void
+  pendingRouteChange: { coords: [number, number]; pin: PinFocus } | null
+  confirmRouteChange: () => void
+  cancelRouteChange: () => void
   moveOrigin: (coords: [number, number]) => void
   moveDest: (coords: [number, number]) => void
   clearPin: (pin: PinFocus) => void
@@ -131,6 +134,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [copied, setCopied] = useState<CopiedFeedback>(null)
   const [activePin, setActivePin] = useState<PinFocus>('origin')
+  const [pendingRouteChange, setPendingRouteChange] = useState<{
+    coords: [number, number]
+    pin: PinFocus
+  } | null>(null)
   const [acceptedServiceId, setAcceptedServiceId] = useState<string | null>(null)
   const [mapMode, setMapMode] = useState<MapMode>('fleet')
   const [focusedTripId, setFocusedTripId] = useState<string | null>(null)
@@ -317,7 +324,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         })
         return
       }
-      applyMapCoords(activePin, coords)
+      setPendingRouteChange({ coords, pin: activePin })
     },
     [
       activePin,
@@ -330,6 +337,16 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       order.originHint,
     ],
   )
+
+  const cancelRouteChange = useCallback(() => {
+    setPendingRouteChange(null)
+  }, [])
+
+  const confirmRouteChange = useCallback(() => {
+    if (!pendingRouteChange) return
+    applyMapCoords(pendingRouteChange.pin, pendingRouteChange.coords)
+    setPendingRouteChange(null)
+  }, [applyMapCoords, pendingRouteChange])
 
   const focusDriver = useCallback((id: string | null) => {
     setFocusedDriverId(id)
@@ -692,6 +709,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     setSearchError(null)
     setActivePin('origin')
     setAcceptedServiceId(null)
+    setPendingRouteChange(null)
   }, [types])
 
   const scheduleService = useCallback(
@@ -899,6 +917,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       hoverDriver: setHoveredDriverId,
       focusDriver,
       setPinFromMap,
+      pendingRouteChange,
+      confirmRouteChange,
+      cancelRouteChange,
       moveOrigin,
       moveDest,
       clearPin,
@@ -961,6 +982,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       rescheduleService,
       focusDriver,
       setPinFromMap,
+      pendingRouteChange,
+      confirmRouteChange,
+      cancelRouteChange,
       moveOrigin,
       moveDest,
       clearPin,

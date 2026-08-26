@@ -195,8 +195,9 @@ export default function MapViewer(props: MapViewerProps) {
                       : `Solo ${vehicleTypeLabel(vehicleFilter).toLowerCase()}. Verde: recogida · Rojo: entrega · Ámbar: chofer`}
               </p>
               <p className="mt-1">
-                Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Arrastra para
-                ajustar. Clic derecho en un pin para quitarlo.
+                Click coloca el punto {props.activePin === 'origin' ? 'A' : 'B'}. Si A y B ya
+                están, te pedimos confirmar el cambio. Arrastra para ajustar. Clic derecho en un
+                pin para quitarlo.
               </p>
             </>
           )}
