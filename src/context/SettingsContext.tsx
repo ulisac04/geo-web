@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppSettings, CityId, MapRefreshSeconds } from '../types'
+import type { AppSettings, CityId, MapRefreshSeconds, OfferWaitSeconds } from '../types'
 import { getCity, type City } from '../lib/cities'
 import {
   cacheSettings,
@@ -29,6 +29,7 @@ interface SettingsContextValue {
   setWhatsappClientTemplate: (template: string) => Promise<void>
   setSchedulingEnabled: (enabled: boolean) => Promise<void>
   setSchedulingReminderMinutes: (minutes: ReminderMinutes) => Promise<void>
+  setOfferWaitSeconds: (seconds: OfferWaitSeconds) => Promise<void>
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null)
@@ -194,6 +195,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [apply],
   )
 
+  const setOfferWaitSeconds = useCallback(
+    async (seconds: OfferWaitSeconds) => {
+      generation.current += 1
+      setSettings((current) => {
+        const next = { ...current, offerWaitSeconds: seconds }
+        cacheSettings(next)
+        return next
+      })
+      try {
+        apply(await patchSettings({ offerWaitSeconds: seconds }))
+      } catch {
+        // Keep the local wait so the offer timeout still follows the operator.
+      }
+    },
+    [apply],
+  )
+
   const city = useMemo(() => getCity(settings.cityId), [settings.cityId])
 
   const value = useMemo(
@@ -208,6 +226,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setWhatsappClientTemplate,
       setSchedulingEnabled,
       setSchedulingReminderMinutes,
+      setOfferWaitSeconds,
     }),
     [
       settings,
@@ -220,6 +239,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setWhatsappClientTemplate,
       setSchedulingEnabled,
       setSchedulingReminderMinutes,
+      setOfferWaitSeconds,
     ],
   )
 

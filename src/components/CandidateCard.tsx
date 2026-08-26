@@ -22,6 +22,8 @@ export default function CandidateCard({
   onAssign,
   onTakeOffline,
 }: CandidateCardProps) {
+  const busy = driver.status === 'busy'
+  const afterCurrent = Boolean(driver.afterCurrent)
   return (
     <article
       onMouseEnter={() => onHover(driver.id)}
@@ -48,6 +50,7 @@ export default function CandidateCard({
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] text-mist">
           <Clock className="size-3" />
+          {afterCurrent ? 'Al terminar · ' : ''}
           {driver.etaMin} min · {formatDistance(driver.distanceM)}
         </span>
       </div>
@@ -61,20 +64,30 @@ export default function CandidateCard({
           </p>
           <span className="flex items-center gap-1 text-[11px] text-mist">
             <MapPin className="size-3 text-signal" />
-            Cercano al punto A
+            {afterCurrent
+              ? 'ETA al terminar el pedido actual'
+              : busy
+                ? 'En un servicio ahora'
+                : 'Cercano al punto A'}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation()
-            void onAssign(driver)
-          }}
-          className="inline-flex items-center gap-1.5 rounded-md bg-signal px-2.5 py-1.5 text-xs font-semibold text-on-signal hover:bg-emerald-300"
-        >
-          <UserCheck className="size-3.5" />
-          Ofrecer
-        </button>
+        {busy ? (
+          <span className="rounded-md border border-line bg-ink px-2.5 py-1.5 text-xs font-medium text-mist">
+            Ocupado
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              void onAssign(driver)
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md bg-signal px-2.5 py-1.5 text-xs font-semibold text-on-signal hover:bg-emerald-300"
+          >
+            <UserCheck className="size-3.5" />
+            Ofrecer
+          </button>
+        )}
       </div>
       <div className="mt-2 flex justify-end">
         <TakeOfflineButton

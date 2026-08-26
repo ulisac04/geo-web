@@ -160,6 +160,7 @@ export interface ApiCandidate {
   coords: [number, number]
   distance_meters: number
   eta_seconds: number
+  after_current?: boolean
   phone: string
   vehicle_type: VehicleType
   vehicle: string
@@ -191,6 +192,7 @@ export function candidateToDriver(card: ApiCandidate, cityId: CityId): Driver {
     distanceM,
     etaMin: Math.max(1, Math.round(card.eta_seconds / 60)),
     completedToday: card.completed_today ?? 0,
+    afterCurrent: Boolean(card.after_current),
     notes: '',
     cityId,
   }
@@ -247,9 +249,9 @@ export function closestAssignable(
   origin: [number, number],
   limit = 5,
 ): Driver[] {
-  const available = rankCandidates(drivers, origin, limit, Infinity)
-  if (available.length > 0) return available
-  return rankNearestToOrigin(drivers, origin, limit)
+  return rankByDistanceToOrigin(drivers, origin, limit, Infinity, (driver) =>
+    driver.status !== 'offline',
+  )
 }
 
 function rankByDistanceToOrigin(

@@ -1,10 +1,11 @@
-import type { AppSettings, CityId, MapRefreshSeconds } from '../types'
+import type { AppSettings, CityId, MapRefreshSeconds, OfferWaitSeconds } from '../types'
 import { api } from './api'
 import { DEFAULT_CITY_ID, isCityId } from './cities'
 
 const SETTINGS_KEY = 'geo_settings_v1'
 
 export const MAP_REFRESH_OPTIONS: MapRefreshSeconds[] = [5, 10, 15, 30, 60]
+export const OFFER_WAIT_OPTIONS: OfferWaitSeconds[] = [15, 30, 45, 60, 90, 120]
 export const REMINDER_MINUTE_OPTIONS = [5, 10, 15, 30, 60, 120] as const
 export type ReminderMinutes = (typeof REMINDER_MINUTE_OPTIONS)[number]
 
@@ -17,6 +18,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   whatsappClientTemplate: '',
   schedulingEnabled: false,
   schedulingReminderMinutes: 15,
+  offerWaitSeconds: 60,
 }
 
 interface ApiSettings {
@@ -28,10 +30,15 @@ interface ApiSettings {
   whatsapp_client_template?: string
   scheduling_enabled?: boolean
   scheduling_reminder_minutes?: number
+  offer_wait_seconds?: number
 }
 
 function isRefreshSeconds(value: unknown): value is MapRefreshSeconds {
   return MAP_REFRESH_OPTIONS.includes(value as MapRefreshSeconds)
+}
+
+function isOfferWaitSeconds(value: unknown): value is OfferWaitSeconds {
+  return OFFER_WAIT_OPTIONS.includes(value as OfferWaitSeconds)
 }
 
 function isNonNegativeRate(value: unknown): value is number {
@@ -71,6 +78,9 @@ function readCached(): AppSettings | null {
       schedulingReminderMinutes: isReminderMinutes(parsed.schedulingReminderMinutes)
         ? parsed.schedulingReminderMinutes
         : DEFAULT_SETTINGS.schedulingReminderMinutes,
+      offerWaitSeconds: isOfferWaitSeconds(parsed.offerWaitSeconds)
+        ? parsed.offerWaitSeconds
+        : DEFAULT_SETTINGS.offerWaitSeconds,
     }
   } catch {
     return null
@@ -106,6 +116,9 @@ function fromApi(data: ApiSettings, fallback: AppSettings = DEFAULT_SETTINGS): A
     schedulingReminderMinutes: isReminderMinutes(data.scheduling_reminder_minutes)
       ? data.scheduling_reminder_minutes
       : fallback.schedulingReminderMinutes,
+    offerWaitSeconds: isOfferWaitSeconds(data.offer_wait_seconds)
+      ? data.offer_wait_seconds
+      : fallback.offerWaitSeconds,
   }
 }
 
@@ -122,6 +135,7 @@ export async function patchSettings(patch: {
   whatsappClientTemplate?: string
   schedulingEnabled?: boolean
   schedulingReminderMinutes?: ReminderMinutes
+  offerWaitSeconds?: OfferWaitSeconds
 }): Promise<AppSettings> {
   const body: Record<string, string | number | boolean> = {}
   if (patch.mapRefreshSeconds !== undefined) {
@@ -148,6 +162,9 @@ export async function patchSettings(patch: {
   if (patch.schedulingReminderMinutes !== undefined) {
     body.scheduling_reminder_minutes = patch.schedulingReminderMinutes
   }
+  if (patch.offerWaitSeconds !== undefined) {
+    body.offer_wait_seconds = patch.offerWaitSeconds
+  }
   const cached = loadCachedSettings()
   const fallback: AppSettings = {
     mapRefreshSeconds: patch.mapRefreshSeconds ?? cached.mapRefreshSeconds,
@@ -158,6 +175,7 @@ export async function patchSettings(patch: {
     whatsappClientTemplate: patch.whatsappClientTemplate ?? cached.whatsappClientTemplate,
     schedulingEnabled: patch.schedulingEnabled ?? cached.schedulingEnabled,
     schedulingReminderMinutes: patch.schedulingReminderMinutes ?? cached.schedulingReminderMinutes,
+    offerWaitSeconds: patch.offerWaitSeconds ?? cached.offerWaitSeconds,
   }
   return fromApi(
     await api<ApiSettings>('/api/v1/settings', {

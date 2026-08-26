@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { CITIES } from '../lib/cities'
 import { parseUsd } from '../lib/money'
-import { MAP_REFRESH_OPTIONS, REMINDER_MINUTE_OPTIONS, type ReminderMinutes } from '../lib/settings'
+import { MAP_REFRESH_OPTIONS, OFFER_WAIT_OPTIONS, REMINDER_MINUTE_OPTIONS, type ReminderMinutes } from '../lib/settings'
 import {
   DEFAULT_CLIENT_TEMPLATE,
   DEFAULT_DRIVER_TEMPLATE,
@@ -11,7 +11,7 @@ import {
   resolveWhatsAppTemplate,
 } from '../lib/whatsapp'
 import { useSettings } from '../context/SettingsContext'
-import type { CityId, Driver, MapRefreshSeconds, OrderDraft } from '../types'
+import type { CityId, Driver, MapRefreshSeconds, OfferWaitSeconds, OrderDraft } from '../types'
 
 export default function SettingsPage() {
   const {
@@ -25,6 +25,7 @@ export default function SettingsPage() {
     setWhatsappClientTemplate,
     setSchedulingEnabled,
     setSchedulingReminderMinutes,
+    setOfferWaitSeconds,
   } = useSettings()
   const [copDraft, setCopDraft] = useState(rateDraft(settings.usdToCop))
   const [vesDraft, setVesDraft] = useState(rateDraft(settings.usdToVes))
@@ -92,6 +93,32 @@ export default function SettingsPage() {
                 className="w-full rounded-md border border-line bg-ink px-2.5 py-2 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
               >
                 {MAP_REFRESH_OPTIONS.map((seconds) => (
+                  <option key={seconds} value={seconds}>
+                    {seconds} segundos
+                  </option>
+                ))}
+              </select>
+            </label>
+          </section>
+
+          <section className="rounded-xl border border-line bg-panel p-5">
+            <h2 className="text-sm font-semibold text-snow">Espera de oferta</h2>
+            <p className="mt-1 text-xs text-mist">
+              Tiempo máximo esperando que el chofer tome el servicio. Al cumplirse, la oferta avisa
+              para reasignar.
+            </p>
+            <label className="mt-4 block space-y-1">
+              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+                Máximo de espera
+              </span>
+              <select
+                value={settings.offerWaitSeconds}
+                onChange={(e) =>
+                  void setOfferWaitSeconds(Number(e.target.value) as OfferWaitSeconds)
+                }
+                className="w-full rounded-md border border-line bg-ink px-2.5 py-2 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
+              >
+                {OFFER_WAIT_OPTIONS.map((seconds) => (
                   <option key={seconds} value={seconds}>
                     {seconds} segundos
                   </option>

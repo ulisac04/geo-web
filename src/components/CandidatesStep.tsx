@@ -44,8 +44,8 @@ export default function CandidatesStep() {
       ) : (
         <>
           <p className="text-xs text-mist">
-            Top {candidates.length} más cercanos al punto de recogida, aunque estén lejos. Clic en
-            una tarjeta para verlo en el mapa.
+            Top {candidates.length} por ETA al punto A. Incluye ocupados si, al
+            terminar su entrega, llegan antes que un libre.
           </p>
           {candidates.map((driver) => (
             <CandidateCard

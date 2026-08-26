@@ -320,3 +320,18 @@ html.light .status-toggle-btn--offline.is-active {
   color: var(--danger);
 }
 
+@keyframes offer-wait-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+.offer-wait-pulse {
+  animation: offer-wait-pulse 1.1s ease-in-out infinite;
+  transform-origin: center;
+}
+

@@ -14,6 +14,7 @@ export type PinFocus = 'origin' | 'dest'
 export type CostRuleType = 'distance' | 'night'
 export type SurchargeType = 'fixed' | 'percent'
 export type MapRefreshSeconds = 5 | 10 | 15 | 30 | 60
+export type OfferWaitSeconds = 15 | 30 | 45 | 60 | 90 | 120
 export type VehicleType = 'car' | 'motorcycle'
 export type VehicleFilter = VehicleType | 'all'
 
@@ -33,6 +34,8 @@ export interface Driver {
   distanceM: number
   etaMin: number
   completedToday?: number
+  /** ETA incluye el viaje actual (dropoff → pickup nuevo). */
+  afterCurrent?: boolean
   notes: string
   cityId: CityId
 }
@@ -76,6 +79,7 @@ export interface AppSettings {
   whatsappClientTemplate: string
   schedulingEnabled: boolean
   schedulingReminderMinutes: number
+  offerWaitSeconds: number
 }
 
 export interface ServiceType {

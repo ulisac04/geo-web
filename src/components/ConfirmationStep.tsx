@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, Clock, Copy, IdCard, Plus, Send, X } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
+import ConfirmDialog from './ConfirmDialog'
 import { useDispatchFlow } from '../context/DispatchContext'
+import { useSettings } from '../context/SettingsContext'
 import { formatVehicleLine } from '../lib/vehicles'
 
 function formatElapsed(ms: number): string {
@@ -10,6 +12,14 @@ function formatElapsed(ms: number): string {
   const seconds = total % 60
   if (minutes === 0) return `${seconds} s`
   return `${minutes} min ${seconds.toString().padStart(2, '0')} s`
+}
+
+function waitStartedAt(createdAt: string | undefined, fallback: number, maxWaitMs: number): number {
+  if (!createdAt) return fallback
+  const parsed = new Date(createdAt).getTime()
+  if (!Number.isFinite(parsed)) return fallback
+  if (fallback - parsed > maxWaitMs) return fallback
+  return parsed
 }
 
 export default function ConfirmationStep() {
@@ -28,13 +38,30 @@ export default function ConfirmationStep() {
     beginReassign,
     actingTripId,
   } = useDispatchFlow()
+  const { settings } = useSettings()
 
   const status = offeredRecord?.status
   const waiting = !status || status === 'assigned'
-  const [offeredAt] = useState(() => Date.now())
+  const [offeredAt, setOfferedAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
   const [fichaError, setFichaError] = useState<string | null>(null)
   const [fichaOpen, setFichaOpen] = useState(false)
+  const [dismissedWaitForId, setDismissedWaitForId] = useState<string | null>(null)
+
+  const elapsedMs = now - offeredAt
+  const overdue = waiting && elapsedMs >= settings.offerWaitSeconds * 1000
+  const waitDialogOpen =
+    overdue && Boolean(acceptedServiceId) && dismissedWaitForId !== acceptedServiceId
+
+  useEffect(() => {
+    setDismissedWaitForId(null)
+  }, [acceptedServiceId])
+
+  useEffect(() => {
+    setOfferedAt(
+      waitStartedAt(offeredRecord?.createdAt, Date.now(), settings.offerWaitSeconds * 1000),
+    )
+  }, [acceptedServiceId, offeredRecord?.createdAt, settings.offerWaitSeconds])
 
   useEffect(() => {
     if (!waiting) return
@@ -82,7 +109,7 @@ export default function ConfirmationStep() {
             : rejected
               ? 'border-danger/30 bg-danger/10'
               : 'border-signal/30 bg-signal/10'
-        }`}
+        }${overdue ? ' offer-wait-pulse' : ''}`}
       >
         <CheckCircle2
           className={`mt-0.5 size-5 shrink-0 ${waiting ? 'text-amber-300' : 'text-signal'}`}
@@ -97,7 +124,7 @@ export default function ConfirmationStep() {
           {waiting ? (
             <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium tabular-nums text-amber-200">
               <Clock className="size-3.5" />
-              {formatElapsed(now - offeredAt)}
+              {formatElapsed(elapsedMs)}
             </p>
           ) : null}
         </div>
@@ -299,6 +326,28 @@ export default function ConfirmationStep() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={waitDialogOpen}
+        title="Sigue en espera"
+        description={
+          <>
+            Llevas {formatElapsed(elapsedMs)} esperando a {selectedDriver.name}. Puede que ya se
+            pueda asignar a otro conductor.
+          </>
+        }
+        cancelLabel="Seguir esperando"
+        confirmLabel="Reasignar"
+        confirmTone="signal"
+        busy={acting}
+        busyLabel="Reasignando…"
+        onCancel={() => {
+          if (acceptedServiceId) setDismissedWaitForId(acceptedServiceId)
+        }}
+        onConfirm={() => {
+          if (acceptedServiceId) void beginReassign(acceptedServiceId)
+        }}
+      />
     </div>
   )
 }
