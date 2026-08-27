@@ -295,7 +295,10 @@ function MapViewerController({
       dashed: true,
       weight: 2.5,
     })
-    driverInfoRef.current = new google.maps.InfoWindow({ pixelOffset: new google.maps.Size(0, -8) })
+    driverInfoRef.current = new google.maps.InfoWindow({
+      pixelOffset: new google.maps.Size(0, -8),
+      headerDisabled: true,
+    })
     pinInfoRef.current = new google.maps.InfoWindow({ pixelOffset: new google.maps.Size(0, -28) })
 
     const clickListener = map.addListener('click', (event: google.maps.MapMouseEvent) => {
@@ -357,7 +360,11 @@ function MapViewerController({
       })
       marker.addListener('click', () => {
         driverInfoRef.current?.setContent(
-          createDriverPopup(driver, () => onTakeOfflineRef.current(driver.id)),
+          createDriverPopup(
+            driver,
+            () => onTakeOfflineRef.current(driver.id),
+            () => driverInfoRef.current?.close(),
+          ),
         )
         driverInfoRef.current?.open({ map, anchor: marker })
         if (modeRef.current === 'live') {

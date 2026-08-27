@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { Power } from 'lucide-react'
 
 interface TakeOfflineButtonProps {
   driverName: string
@@ -22,12 +22,12 @@ export default function TakeOfflineButton({
       }}
       className={
         compact
-          ? 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-rose-300 hover:bg-danger/15'
-          : 'inline-flex items-center gap-1.5 rounded-md border border-danger/40 bg-danger/10 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-danger/20'
+          ? 'inline-flex items-center gap-1 rounded-md bg-danger px-2 py-1 text-[11px] font-semibold text-white hover:brightness-110'
+          : 'inline-flex items-center gap-1.5 rounded-md bg-danger px-2.5 py-1.5 text-xs font-semibold text-white hover:brightness-110'
       }
     >
-      <X className="size-3.5 shrink-0 text-red-500" />
-      {label}
+      <Power className="size-3.5 shrink-0" />
+      {compact ? 'Sacar de servicio' : label}
     </button>
   )
 }

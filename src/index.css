@@ -226,8 +226,16 @@ html.light .driver-marker {
   font-family: var(--font-sans);
 }
 
+.gm-style .gm-style-iw-c:has(.driver-popup) {
+  padding: 0 !important;
+}
+
+.gm-style .gm-style-iw-c:has(.driver-popup) .gm-style-iw-chr {
+  display: none !important;
+}
+
 .gm-style .gm-style-iw-d {
-  overflow: auto !important;
+  overflow: hidden !important;
 }
 
 .gm-style .gm-style-iw-t::after,
@@ -237,34 +245,81 @@ html.light .driver-marker {
 
 .driver-popup {
   display: flex;
-  min-width: 148px;
+  width: 208px;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  padding: 12px;
+}
+
+.driver-popup-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.driver-popup-title {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .driver-popup strong {
+  overflow: hidden;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.25;
+  color: var(--snow);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.driver-popup-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mist);
+  cursor: pointer;
+}
+
+.driver-popup-close:hover {
+  background: var(--elevated);
   color: var(--snow);
 }
 
 .driver-popup-offline {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  margin-top: 6px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  padding: 6px 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--danger);
+  font: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: #fda4af;
+  line-height: 1;
+  color: #fff;
   cursor: pointer;
 }
 
 .driver-popup-offline:hover {
-  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  filter: brightness(1.08);
+}
+
+.driver-popup-offline svg {
+  flex-shrink: 0;
 }
 
 .status-toggle {

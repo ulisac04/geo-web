@@ -102,39 +102,57 @@ export function createDriverPinElement(
   return pin
 }
 
-export function createDriverPopup(driver: Driver, onTakeOffline: () => void): HTMLDivElement {
+export function createDriverPopup(
+  driver: Driver,
+  onTakeOffline: () => void,
+  onClose: () => void,
+): HTMLDivElement {
   const wrap = document.createElement('div')
   wrap.className = 'driver-popup'
 
+  const head = document.createElement('div')
+  head.className = 'driver-popup-head'
+
+  const title = document.createElement('div')
+  title.className = 'driver-popup-title'
+
   const name = document.createElement('strong')
   name.textContent = driver.name
-  wrap.append(name)
+  title.append(name)
 
-  if (driver.licensePlate) {
-    const plate = document.createElement('span')
-    plate.className = 'popup-muted'
-    plate.textContent = driver.licensePlate
-    wrap.append(plate)
-  }
-
-  const status = document.createElement('span')
-  status.className = 'popup-muted'
-  status.textContent =
+  const meta = document.createElement('span')
+  meta.className = 'popup-muted'
+  const statusLabel =
     driver.status === 'busy'
       ? 'En un servicio'
       : driver.status === 'offline'
         ? 'Fuera de servicio'
         : 'Disponible'
-  wrap.append(status)
+  meta.textContent = driver.licensePlate ? `${driver.licensePlate} · ${statusLabel}` : statusLabel
+  title.append(meta)
+
+  const close = document.createElement('button')
+  close.type = 'button'
+  close.className = 'driver-popup-close'
+  close.setAttribute('aria-label', 'Cerrar')
+  close.innerHTML =
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+  close.addEventListener('click', (event) => {
+    event.stopPropagation()
+    onClose()
+  })
+
+  head.append(title, close)
+  wrap.append(head)
 
   if (driver.status !== 'offline') {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = 'driver-popup-offline'
     button.innerHTML =
-      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v10"/><path d="M8.5 4.6a8 8 0 1 0 7 0"/></svg>'
     const action = document.createElement('span')
-    action.textContent = `Sacar a ${driver.name} de servicio`
+    action.textContent = 'Sacar de servicio'
     button.append(action)
     button.addEventListener('click', (event) => {
       event.stopPropagation()
