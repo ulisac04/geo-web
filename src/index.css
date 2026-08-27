@@ -84,7 +84,6 @@ body {
 
 .driver-pin.highlighted .driver-marker {
   transform: scale(1.18);
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.35);
 }
 
 .driver-pin.focused {
@@ -93,10 +92,6 @@ body {
 
 .driver-pin.focused .driver-marker {
   transform: scale(1.28);
-  border-width: 2px;
-  box-shadow:
-    0 0 0 3px rgba(52, 211, 153, 0.5),
-    0 0 0 5px rgba(251, 191, 36, 0.35);
 }
 
 .driver-marker {
@@ -106,21 +101,28 @@ body {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--on-signal);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  border: 3px solid #64748b;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: transform 160ms ease, border-color 160ms ease;
 }
 
 html.light .driver-marker {
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
 }
 
 .driver-pin.available .driver-marker {
   background: #059669;
+  border-color: #22c55e;
 }
 
 .driver-pin.busy .driver-marker {
-  background: #d97706;
+  background: #ca8a04;
+  border-color: #eab308;
+}
+
+.driver-pin.offline .driver-marker {
+  background: #b91c1c;
+  border-color: #ef4444;
 }
 
 .driver-marker-label {
@@ -140,6 +142,11 @@ html.light .driver-marker {
   padding: 3px 7px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   pointer-events: none;
+  visibility: hidden;
+}
+
+.driver-pin.focused .driver-marker-label {
+  visibility: visible;
 }
 
 .driver-marker-label strong {

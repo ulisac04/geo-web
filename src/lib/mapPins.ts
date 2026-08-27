@@ -123,7 +123,7 @@ export function createDriverPopup(driver: Driver, onTakeOffline: () => void): HT
   status.className = 'popup-muted'
   status.textContent =
     driver.status === 'busy'
-      ? 'Ocupado'
+      ? 'En un servicio'
       : driver.status === 'offline'
         ? 'Fuera de servicio'
         : 'Disponible'
