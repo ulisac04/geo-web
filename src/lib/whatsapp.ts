@@ -150,6 +150,11 @@ export function buildDriverInviteMessage(name: string, inviteCode: string): stri
   return `Hola ${name}, pega este código en Geo y prende el GPS:\n${code}`
 }
 
+export function buildWhatsAppUrlForPhone(phone: string, text: string): string {
+  const digits = toWhatsAppDigits(phone)
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
+}
+
 export function buildDriverInviteWhatsAppUrl(phone: string, name: string, inviteCode: string): string {
   return buildWhatsAppUrlForPhone(phone, buildDriverInviteMessage(name, inviteCode))
 }
