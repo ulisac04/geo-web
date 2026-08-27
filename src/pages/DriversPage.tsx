@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Car, MapPin, MapPinned, MessageCircle, Motorbike, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Car, Copy, MapPin, MapPinned, MessageCircle, Motorbike, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
@@ -7,8 +7,8 @@ import PlaceDriverMap from '../components/PlaceDriverMap'
 import { useFleet } from '../context/FleetContext'
 import { useSettings } from '../context/SettingsContext'
 import { CITIES } from '../lib/cities'
-import { toWhatsAppDigits } from '../lib/phone'
 import { formatVehicleLine, vehicleTypeLabel } from '../lib/vehicles'
+import { buildDriverInviteWhatsAppUrl } from '../lib/whatsapp'
 import type { CityId, Driver, DriverDraft, DriverStatus, VehicleFilter, VehicleType } from '../types'
 
 const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
@@ -52,6 +52,7 @@ export default function DriversPage() {
     setStatus,
     moveDriverCity,
     setDriverLocation,
+    rotateInvite,
   } = useFleet()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | DriverStatus>('all')
@@ -69,6 +70,9 @@ export default function DriversPage() {
   const [placeCoords, setPlaceCoords] = useState<[number, number] | null>(null)
   const [placingBusy, setPlacingBusy] = useState(false)
   const [placeError, setPlaceError] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [pendingRegen, setPendingRegen] = useState<Driver | null>(null)
+  const [regenBusy, setRegenBusy] = useState(false)
 
   const cityDrivers = useMemo(
     () => drivers.filter((driver) => driver.cityId === city.id),
@@ -109,6 +113,30 @@ export default function DriversPage() {
   async function handleSubmit(draft: DriverDraft) {
     if (editing) await updateDriver(editing.id, draft)
     else await addDriver(draft)
+  }
+
+  async function copyInvite(driver: Driver) {
+    const code = driver.inviteCode?.trim()
+    if (!code) return
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopiedId(driver.id)
+      window.setTimeout(() => setCopiedId((current) => (current === driver.id ? null : current)), 1500)
+    } catch {
+      // ignore
+    }
+  }
+
+  async function confirmRegen() {
+    if (!pendingRegen) return
+    setRegenBusy(true)
+    try {
+      const updated = await rotateInvite(pendingRegen.id)
+      setEditing((current) => (current?.id === updated.id ? updated : current))
+      setPendingRegen(null)
+    } finally {
+      setRegenBusy(false)
+    }
   }
 
   function requestStatus(driver: Driver, status: DriverStatus) {
@@ -272,6 +300,11 @@ export default function DriversPage() {
                     <DriverAvatar src={driver.driverPhoto} name={driver.name} />
                     <div>
                       <p className="font-medium text-snow">{driver.name}</p>
+                      {driver.inviteCode ? (
+                        <p className="font-mono text-[11px] tracking-wide text-signal">
+                          {driver.inviteCode}
+                        </p>
+                      ) : null}
                       {driver.notes ? <p className="text-xs text-mist">{driver.notes}</p> : null}
                     </div>
                   </div>
@@ -326,15 +359,35 @@ export default function DriversPage() {
                 </td>
                 <td className="py-3">
                   <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => void copyInvite(driver)}
+                      className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
+                      title={copiedId === driver.id ? 'Copiado' : 'Copiar código'}
+                    >
+                      <Copy className="size-4" />
+                    </button>
                     <a
-                      href={`https://wa.me/${toWhatsAppDigits(driver.phone)}`}
+                      href={buildDriverInviteWhatsAppUrl(
+                        driver.phone,
+                        driver.name,
+                        driver.inviteCode ?? '',
+                      )}
                       target="_blank"
                       rel="noreferrer"
                       className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-signal"
-                      title="WhatsApp"
+                      title="WhatsApp con código"
                     >
                       <MessageCircle className="size-4" />
                     </a>
+                    <button
+                      type="button"
+                      onClick={() => setPendingRegen(driver)}
+                      className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
+                      title="Regenerar código"
+                    >
+                      <RefreshCw className="size-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => openPlace(driver)}
@@ -399,6 +452,33 @@ export default function DriversPage() {
         driver={editing}
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
+        onCopyInvite={editing ? () => void copyInvite(editing) : undefined}
+        onWhatsAppInvite={
+          editing
+            ? buildDriverInviteWhatsAppUrl(editing.phone, editing.name, editing.inviteCode ?? '')
+            : undefined
+        }
+        onRegenerateInvite={editing ? () => setPendingRegen(editing) : undefined}
+      />
+      <ConfirmDialog
+        open={pendingRegen !== null}
+        title="¿Regenerar código?"
+        description={
+          pendingRegen ? (
+            <>
+              El código anterior de{' '}
+              <span className="font-semibold text-snow">{pendingRegen.name}</span> dejará de
+              funcionar. Mándale el nuevo por WhatsApp.
+            </>
+          ) : null
+        }
+        confirmLabel="Sí, regenerar"
+        busy={regenBusy}
+        busyLabel="Regenerando…"
+        onCancel={() => {
+          if (!regenBusy) setPendingRegen(null)
+        }}
+        onConfirm={confirmRegen}
       />
       <ConfirmDialog
         open={pendingOffline !== null}

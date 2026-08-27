@@ -4,6 +4,7 @@ import {
   DEFAULT_DRIVER_TEMPLATE,
   buildClientMessage,
   buildDispatchMessage,
+  buildDriverInviteMessage,
   clientTrackingUrl,
   renderTemplate,
   resolveWhatsAppTemplate,
@@ -112,5 +113,14 @@ describe('buildClientMessage', () => {
     const message = buildClientMessage(order, driver, undefined, link)
     expect(link).toBe('https://norte.localhost/s/abc-123')
     expect(message).toContain('Seguí al conductor: https://norte.localhost/s/abc-123')
+  })
+})
+
+describe('buildDriverInviteMessage', () => {
+  it('incluye nombre y código para pegar en la app', () => {
+    const message = buildDriverInviteMessage('Juan Pérez', 'GEO-7K2M-9QWX')
+    expect(message).toContain('Juan Pérez')
+    expect(message).toContain('GEO-7K2M-9QWX')
+    expect(message).toContain('pega este código')
   })
 })

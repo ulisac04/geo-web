@@ -40,6 +40,8 @@ export interface Driver {
   afterCurrent?: boolean
   notes: string
   cityId: CityId
+  /** Opaque WhatsApp paste code (`GEO-XXXX-XXXX`). */
+  inviteCode?: string
 }
 
 export interface DriverDraft {

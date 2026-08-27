@@ -15,6 +15,7 @@ import {
   patchDriverCity,
   patchDriverLocation,
   patchDriverStatus,
+  regenerateDriverInvite,
   updateDriver as patchDriver,
 } from '../lib/fleet'
 import { useSettings } from './SettingsContext'
@@ -28,6 +29,7 @@ interface FleetContextValue {
   setStatus: (id: string, status: DriverStatus) => Promise<void>
   moveDriverCity: (id: string, cityId: CityId) => Promise<void>
   setDriverLocation: (id: string, coords: [number, number]) => Promise<void>
+  rotateInvite: (id: string) => Promise<Driver>
 }
 
 const FleetContext = createContext<FleetContextValue | null>(null)
@@ -88,6 +90,12 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
   }, [])
 
+  const rotateInvite = useCallback(async (id: string) => {
+    const updated = await regenerateDriverInvite(id)
+    setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
+    return updated
+  }, [])
+
   const value = useMemo(
     () => ({
       drivers,
@@ -98,6 +106,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       setStatus,
       moveDriverCity,
       setDriverLocation,
+      rotateInvite,
     }),
     [
       drivers,
@@ -108,6 +117,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       setStatus,
       moveDriverCity,
       setDriverLocation,
+      rotateInvite,
     ],
   )
 

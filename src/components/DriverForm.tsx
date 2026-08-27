@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { X } from 'lucide-react'
+import { Copy, MessageCircle, RefreshCw, X } from 'lucide-react'
 import PhoneField from './PhoneField'
 import PhotoUploadField from './PhotoUploadField'
 import type { Driver, DriverDraft, DriverStatus } from '../types'
@@ -11,6 +11,9 @@ interface DriverFormProps {
   driver: Driver | null
   onClose: () => void
   onSubmit: (draft: DriverDraft) => void | Promise<void>
+  onCopyInvite?: () => void
+  onWhatsAppInvite?: string
+  onRegenerateInvite?: () => void
 }
 
 const STATUSES: { value: DriverStatus; label: string }[] = [
@@ -19,7 +22,15 @@ const STATUSES: { value: DriverStatus; label: string }[] = [
   { value: 'offline', label: 'Fuera de servicio' },
 ]
 
-export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFormProps) {
+export default function DriverForm({
+  open,
+  driver,
+  onClose,
+  onSubmit,
+  onCopyInvite,
+  onWhatsAppInvite,
+  onRegenerateInvite,
+}: DriverFormProps) {
   const [draft, setDraft] = useState<DriverDraft>(EMPTY_DRAFT)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -93,6 +104,49 @@ export default function DriverForm({ open, driver, onClose, onSubmit }: DriverFo
             value={draft.phone}
             onChange={(value) => setDraft((prev) => ({ ...prev, phone: value }))}
           />
+          {driver?.inviteCode ? (
+            <div className="space-y-1">
+              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+                Código de la app
+              </span>
+              <div className="flex items-center gap-2">
+                <p className="flex-1 rounded-md border border-line bg-ink px-2.5 py-1.5 font-mono text-sm tracking-wide text-snow">
+                  {driver.inviteCode}
+                </p>
+                {onCopyInvite ? (
+                  <button
+                    type="button"
+                    onClick={onCopyInvite}
+                    className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
+                    title="Copiar código"
+                  >
+                    <Copy className="size-4" />
+                  </button>
+                ) : null}
+                {onWhatsAppInvite ? (
+                  <a
+                    href={onWhatsAppInvite}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-signal"
+                    title="WhatsApp"
+                  >
+                    <MessageCircle className="size-4" />
+                  </a>
+                ) : null}
+                {onRegenerateInvite ? (
+                  <button
+                    type="button"
+                    onClick={onRegenerateInvite}
+                    className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
+                    title="Regenerar código"
+                  >
+                    <RefreshCw className="size-4" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           <label className="block space-y-1">
             <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
               Tipo de vehículo

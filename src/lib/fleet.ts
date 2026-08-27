@@ -37,6 +37,7 @@ interface ApiDriver {
   coords: [number, number]
   battery: number | null
   updated_at: string
+  invite_code?: string
 }
 
 interface FleetResponse {
@@ -53,6 +54,7 @@ export function withFleetProfile(driver: Driver, fleet: Driver[]): Driver {
     driverPhoto: driver.driverPhoto || full.driverPhoto,
     notes: full.notes || driver.notes,
     phone: driver.phone || full.phone,
+    inviteCode: full.inviteCode || driver.inviteCode,
   }
 }
 
@@ -76,6 +78,7 @@ function fromApi(driver: ApiDriver, extra?: { distanceM?: number; etaMin?: numbe
     etaMin: extra?.etaMin ?? 0,
     notes: driver.notes ?? '',
     cityId: driver.city_id,
+    inviteCode: driver.invite_code ?? '',
   }
 }
 
@@ -153,6 +156,11 @@ export async function patchDriverLocation(
 
 export async function deleteDriver(id: string): Promise<void> {
   await api<void>(`/api/v1/drivers/${id}`, { method: 'DELETE' })
+}
+
+export async function regenerateDriverInvite(id: string): Promise<Driver> {
+  const updated = await api<ApiDriver>(`/api/v1/drivers/${id}/invite`, { method: 'POST' })
+  return fromApi(updated)
 }
 
 export interface ApiCandidate {
