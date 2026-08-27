@@ -17,6 +17,7 @@ import {
 } from '../lib/mapGeometry'
 import {
   createAdvancedMarker,
+  type MapPinMarker,
   createDriverPinElement,
   createDriverPopup,
   createOrderPinElement,
@@ -237,10 +238,10 @@ function MapViewerController({
 }: MapViewerProps & { nearestOnly: boolean; driverPinSize: number }) {
   const map = useMap('dispatch-map')
   const markerLib = useMapsLibrary('marker')
-  const driverMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
-  const originMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
-  const destMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
-  const livePinsRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const driverMarkersRef = useRef<MapPinMarker[]>([])
+  const originMarkerRef = useRef<MapPinMarker | null>(null)
+  const destMarkerRef = useRef<MapPinMarker | null>(null)
+  const livePinsRef = useRef<MapPinMarker[]>([])
   const tripLineRef = useRef<google.maps.Polyline | null>(null)
   const driverLineRef = useRef<google.maps.Polyline | null>(null)
   const livePickupRef = useRef<google.maps.Polyline[]>([])
@@ -689,7 +690,7 @@ function syncOrderPin({
   onRemove,
 }: {
   map: google.maps.Map
-  marker: google.maps.marker.AdvancedMarkerElement | null
+  marker: MapPinMarker | null
   coords: [number, number] | null
   color: string
   label: string
@@ -698,7 +699,7 @@ function syncOrderPin({
   infoWindow: google.maps.InfoWindow | null
   onMove: (coords: [number, number]) => void
   onRemove: () => void
-}): google.maps.marker.AdvancedMarkerElement | null {
+}): MapPinMarker | null {
   if (!coords) {
     removeMarker(marker)
     return null
@@ -766,7 +767,7 @@ function createLivePin({
   active: boolean
   infoWindow: google.maps.InfoWindow | null
   onClick: () => void
-}): google.maps.marker.AdvancedMarkerElement {
+}): MapPinMarker {
   const marker = createAdvancedMarker({
     map,
     coords,

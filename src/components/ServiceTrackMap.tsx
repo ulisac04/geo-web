@@ -10,6 +10,7 @@ import {
 } from '../lib/mapGeometry'
 import {
   createAdvancedMarker,
+  type MapPinMarker,
   createOrderPinElement,
   ORDER_PIN_DEST,
   ORDER_PIN_ORIGIN,
@@ -61,8 +62,8 @@ function ServiceTrackController({
 }) {
   const map = useMap('service-track-map')
   const markerLib = useMapsLibrary('marker')
-  const originMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
-  const destMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
+  const originMarkerRef = useRef<MapPinMarker | null>(null)
+  const destMarkerRef = useRef<MapPinMarker | null>(null)
   const lineRef = useRef<google.maps.Polyline | null>(null)
   const pinInfoRef = useRef<google.maps.InfoWindow | null>(null)
   const fitKeyRef = useRef('')
@@ -154,7 +155,7 @@ function createStaticPin(
   color: string,
   label: string,
   infoWindow: google.maps.InfoWindow | null,
-): google.maps.marker.AdvancedMarkerElement {
+): MapPinMarker {
   const marker = createAdvancedMarker({
     map,
     coords,

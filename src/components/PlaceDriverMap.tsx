@@ -3,6 +3,7 @@ import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import type { Driver } from '../types'
 import {
   createAdvancedMarker,
+  type MapPinMarker,
   createDriverPinElement,
   markerLngLat,
   removeMarker,
@@ -39,7 +40,7 @@ function PlaceDriverController({
 }) {
   const map = useMap(MAP_ID)
   const markerLib = useMapsLibrary('marker')
-  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
+  const markerRef = useRef<MapPinMarker | null>(null)
   const draggingRef = useRef(false)
   const onChangeRef = useRef(onChange)
   const coordsRef = useRef(coords)

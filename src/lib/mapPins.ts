@@ -31,28 +31,26 @@ export function storeDriverPinSize(size: number) {
   }
 }
 
-export function removeMarker(marker: google.maps.marker.AdvancedMarkerElement | null) {
-  if (!marker) return
-  marker.map = null
+export type MapPinMarker = google.maps.OverlayView & {
+  position: google.maps.LatLng | google.maps.LatLngLiteral | null
+  content: HTMLElement
+  addEventListener: (type: string, listener: EventListener, options?: AddEventListenerOptions) => void
+  getPosition: () => google.maps.LatLng
 }
 
-export function setMarkerLngLat(
-  marker: google.maps.marker.AdvancedMarkerElement,
-  coords: [number, number],
-) {
+export function removeMarker(marker: MapPinMarker | null) {
+  marker?.setMap(null)
+}
+
+export function setMarkerLngLat(marker: MapPinMarker, coords: [number, number]) {
   marker.position = toLatLng(coords)
 }
 
-export function markerLngLat(
-  marker: google.maps.marker.AdvancedMarkerElement,
-): [number, number] | null {
+export function markerLngLat(marker: MapPinMarker): [number, number] | null {
   return fromLatLng(marker.position)
 }
 
-export function togglePinActive(
-  marker: google.maps.marker.AdvancedMarkerElement,
-  active: boolean,
-) {
+export function togglePinActive(marker: MapPinMarker, active: boolean) {
   const el = marker.content
   if (el instanceof HTMLElement) el.classList.toggle('is-active', active)
 }
@@ -162,16 +160,189 @@ export function createAdvancedMarker({
   title?: string
   draggable?: boolean
   zIndex?: number
-}): google.maps.marker.AdvancedMarkerElement {
-  return new google.maps.marker.AdvancedMarkerElement({
+}): MapPinMarker {
+  return new (getHtmlMapMarkerClass())({
     map,
-    position: toLatLng(coords),
+    coords,
     content,
     title,
-    gmpDraggable: draggable,
-    gmpClickable: true,
+    draggable,
     zIndex,
   })
+}
+
+type HtmlMapMarkerOptions = {
+  map: google.maps.Map
+  coords: [number, number]
+  content: HTMLElement
+  title?: string
+  draggable?: boolean
+  zIndex?: number
+}
+
+type HtmlMapMarkerCtor = new (options: HtmlMapMarkerOptions) => MapPinMarker
+
+let HtmlMapMarkerClass: HtmlMapMarkerCtor | null = null
+
+function getHtmlMapMarkerClass(): HtmlMapMarkerCtor {
+  if (HtmlMapMarkerClass) return HtmlMapMarkerClass
+
+  class HtmlMapMarker extends google.maps.OverlayView {
+    private latLng: google.maps.LatLng
+    private node: HTMLElement
+    private draggable: boolean
+    private zIndexValue: number
+    private dragging = false
+    private moved = false
+    private savedGestures: string | null = null
+    private contentListeners: Array<[string, EventListener]> = []
+
+    constructor(options: HtmlMapMarkerOptions) {
+      super()
+      this.latLng = new google.maps.LatLng(toLatLng(options.coords))
+      this.node = options.content
+      this.draggable = options.draggable ?? false
+      this.zIndexValue = options.zIndex ?? 0
+      this.styleNode()
+      if (options.title) this.node.title = options.title
+      this.bindNode()
+      this.setMap(options.map)
+    }
+
+    get content(): HTMLElement {
+      return this.node
+    }
+
+    set content(node: HTMLElement) {
+      if (node === this.node) return
+      const parent = this.node.parentNode
+      const prev = this.node
+      this.unbindNode()
+      this.node = node
+      this.styleNode()
+      this.bindNode()
+      parent?.replaceChild(this.node, prev)
+    }
+
+  get position(): google.maps.LatLng {
+    return this.latLng
+  }
+
+  set position(value: google.maps.LatLng | google.maps.LatLngLiteral | null) {
+    if (!value) return
+    this.latLng = value instanceof google.maps.LatLng ? value : new google.maps.LatLng(value)
+    this.draw()
+  }
+
+  getPosition(): google.maps.LatLng {
+    return this.latLng
+  }
+
+  addEventListener(type: string, listener: EventListener, options?: AddEventListenerOptions) {
+    this.node.addEventListener(type, listener, options)
+  }
+
+  onAdd() {
+    this.getPanes()?.overlayMouseTarget.appendChild(this.node)
+  }
+
+  draw() {
+    const projection = this.getProjection()
+    if (!projection) return
+    const point = projection.fromLatLngToDivPixel(this.latLng)
+    if (!point) return
+    this.node.style.left = `${point.x}px`
+    this.node.style.top = `${point.y}px`
+    this.node.style.zIndex = String(this.zIndexValue)
+  }
+
+  onRemove() {
+    this.unbindNode()
+    this.node.remove()
+  }
+
+  private styleNode() {
+    this.node.style.position = 'absolute'
+    this.node.style.transform = 'translate(-50%, -100%)'
+    this.node.style.cursor = this.draggable ? 'grab' : 'pointer'
+    this.node.style.pointerEvents = 'auto'
+  }
+
+  private bindNode() {
+    const onClick = (event: Event) => {
+      event.stopPropagation()
+      if (this.moved) return
+      google.maps.event.trigger(this, 'click')
+    }
+    const onPointerDown = (event: Event) => {
+      if (!this.draggable || !(event instanceof PointerEvent) || event.button !== 0) return
+      event.preventDefault()
+      event.stopPropagation()
+      this.dragging = true
+      this.moved = false
+      this.node.style.cursor = 'grabbing'
+      this.node.setPointerCapture(event.pointerId)
+      const map = this.getMap() as google.maps.Map | null
+      if (map) {
+        this.savedGestures = map.get('gestureHandling') as string
+        map.setOptions({ gestureHandling: 'none' })
+      }
+      google.maps.event.trigger(this, 'dragstart')
+    }
+    const onPointerMove = (event: Event) => {
+      if (!this.dragging || !(event instanceof PointerEvent)) return
+      const projection = this.getProjection()
+      const map = this.getMap() as google.maps.Map | null
+      if (!projection || !map) return
+      this.moved = true
+      const rect = map.getDiv().getBoundingClientRect()
+      const latLng = projection.fromContainerPixelToLatLng(
+        new google.maps.Point(event.clientX - rect.left, event.clientY - rect.top),
+      )
+      if (latLng) this.position = latLng
+      google.maps.event.trigger(this, 'drag')
+    }
+    const onPointerUp = (event: Event) => {
+      if (!this.dragging) return
+      this.dragging = false
+      this.node.style.cursor = 'grab'
+      if (event instanceof PointerEvent) {
+        try {
+          this.node.releasePointerCapture(event.pointerId)
+        } catch {
+          /* already released */
+        }
+      }
+      const map = this.getMap() as google.maps.Map | null
+      if (map) map.setOptions({ gestureHandling: this.savedGestures ?? 'greedy' })
+      google.maps.event.trigger(this, 'dragend')
+      window.setTimeout(() => {
+        this.moved = false
+      }, 0)
+    }
+    const listeners: Array<[string, EventListener]> = [
+      ['click', onClick],
+      ['pointerdown', onPointerDown],
+      ['pointermove', onPointerMove],
+      ['pointerup', onPointerUp],
+      ['pointercancel', onPointerUp],
+    ]
+    for (const [type, listener] of listeners) {
+      this.node.addEventListener(type, listener)
+      this.contentListeners.push([type, listener])
+    }
+  }
+
+  private unbindNode() {
+    for (const [type, listener] of this.contentListeners) {
+      this.node.removeEventListener(type, listener)
+    }
+    this.contentListeners = []
+  }
+  }
+
+  HtmlMapMarkerClass = HtmlMapMarker as unknown as HtmlMapMarkerCtor
+  return HtmlMapMarkerClass
 }
 
 function createVehicleIconElement(vehicleType: VehicleType): HTMLSpanElement {

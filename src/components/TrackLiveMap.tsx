@@ -11,6 +11,7 @@ import {
 } from '../lib/mapGeometry'
 import {
   createAdvancedMarker,
+  type MapPinMarker,
   createDriverPinElement,
   createOrderPinElement,
   ORDER_PIN_ORIGIN,
@@ -60,8 +61,8 @@ function TrackLiveController({
 }) {
   const map = useMap(MAP_ID)
   const markerLib = useMapsLibrary('marker')
-  const originRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
-  const driverRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
+  const originRef = useRef<MapPinMarker | null>(null)
+  const driverRef = useRef<MapPinMarker | null>(null)
   const lineRef = useRef<google.maps.Polyline | null>(null)
   const fitKeyRef = useRef('')
 

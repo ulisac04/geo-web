@@ -1,12 +1,8 @@
 import type { ReactNode } from 'react'
-import {
-  APILoadingStatus,
-  ColorScheme,
-  Map,
-  useApiLoadingStatus,
-} from '@vis.gl/react-google-maps'
+import { APILoadingStatus, Map, useApiLoadingStatus } from '@vis.gl/react-google-maps'
 import { useTheme } from '../context/ThemeContext'
-import { GOOGLE_MAPS_MAP_ID, hasGoogleMapsKey } from '../lib/mapsConfig'
+import { hasGoogleMapsKey } from '../lib/mapsConfig'
+import { darkDispatchMapStyles } from '../lib/mapStyles'
 import MapUnavailable from './MapUnavailable'
 
 export default function GoogleMapFrame({
@@ -21,6 +17,7 @@ export default function GoogleMapFrame({
   children?: ReactNode
 }) {
   const { theme } = useTheme()
+  const isDark = theme !== 'light'
 
   if (!hasGoogleMapsKey()) {
     return <MapUnavailable className={className} />
@@ -28,12 +25,12 @@ export default function GoogleMapFrame({
 
   return (
     <Map
+      key={isDark ? 'dark' : 'light'}
       id={id}
       className={className}
-      mapId={GOOGLE_MAPS_MAP_ID}
       defaultCenter={{ lat: center[1], lng: center[0] }}
       defaultZoom={13.2}
-      colorScheme={theme === 'light' ? ColorScheme.LIGHT : ColorScheme.DARK}
+      styles={isDark ? darkDispatchMapStyles : []}
       disableDefaultUI
       zoomControl
       clickableIcons={false}
