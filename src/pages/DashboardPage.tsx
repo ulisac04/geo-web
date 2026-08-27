@@ -57,7 +57,7 @@ function DashboardLayout() {
   return (
     <div className="flex h-full overflow-hidden bg-ink">
       <SidebarDispatch />
-      <div className="relative h-full w-[70%] min-w-0">
+      <div className="relative h-full min-w-0 flex-1">
         <Suspense
           fallback={
             <section className="flex h-full items-center justify-center text-sm text-mist">
