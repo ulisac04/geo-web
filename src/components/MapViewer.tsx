@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
+import ActiveDriversDrawer from './ActiveDriversDrawer'
 import GoogleMapFrame from './GoogleMapFrame'
 import MapModeToggle from './MapModeToggle'
 import type { Driver, LiveTrip, MapMode, OrderDraft, PinFocus, VehicleFilter } from '../types'
@@ -130,7 +131,7 @@ export default function MapViewer(props: MapViewerProps) {
       ) : (
         <GoogleMapFrame id="dispatch-map" center={props.center} className="h-full w-full" />
       )}
-      <div className="absolute top-4 left-4 max-w-[calc(100%-2rem)]">
+      <div className="absolute top-4 left-4 max-w-[calc(100%-20rem)]">
         <div
           className="inline-flex flex-wrap items-center rounded-lg border border-line bg-panel/90 p-0.5 backdrop-blur"
           title={mapToolbarHint(props.mode, props.activePin)}
@@ -208,6 +209,7 @@ export default function MapViewer(props: MapViewerProps) {
           ) : null}
         </div>
       </div>
+      <ActiveDriversDrawer />
     </section>
   )
 }
@@ -503,12 +505,18 @@ function MapViewerController({
 
     abortDriverRef.current?.abort()
 
-    if (mode !== 'fleet' || driverLng == null || driverLat == null || !originCoords) {
+    if (mode !== 'fleet' || driverLng == null || driverLat == null) {
       line.setPath([])
       return
     }
 
     const from: [number, number] = [driverLng, driverLat]
+    if (!originCoords) {
+      line.setPath([])
+      if (focusedDriverId) fitTo(map, [from])
+      return
+    }
+
     setPolylineCoords(line, [from, originCoords])
     if (focusedDriverId) fitTo(map, [from, originCoords])
 

@@ -71,6 +71,7 @@ function fromApi(driver: ApiDriver, extra?: { distanceM?: number; etaMin?: numbe
     status: driver.status,
     coords: [coords[0], coords[1]],
     battery: driver.battery ?? 0,
+    updatedAt: driver.updated_at ?? null,
     distanceM: extra?.distanceM ?? 0,
     etaMin: extra?.etaMin ?? 0,
     notes: driver.notes ?? '',

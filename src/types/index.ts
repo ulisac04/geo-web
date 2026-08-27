@@ -31,6 +31,8 @@ export interface Driver {
   status: DriverStatus
   coords: [number, number]
   battery: number
+  /** Last GPS/presence ping from the API (`updated_at`). */
+  updatedAt?: string | null
   distanceM: number
   etaMin: number
   completedToday?: number
