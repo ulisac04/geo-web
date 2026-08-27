@@ -11,6 +11,7 @@ import DashboardPage from './pages/DashboardPage'
 import DriversPage from './pages/DriversPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LoginPage from './pages/LoginPage'
+import ReportsPage from './pages/ReportsPage'
 import ServicesPage from './pages/ServicesPage'
 import SettingsPage from './pages/SettingsPage'
 import TrackServicePage from './pages/TrackServicePage'
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/ciudades" element={<CitiesPage />} />
           <Route path="/conductores" element={<DriversPage />} />
           <Route path="/servicios" element={<ServicesPage />} />
+          <Route path="/reportes" element={<ReportsPage />} />
           <Route path="/costos" element={<CostsPage />} />
           <Route path="/configuracion" element={<SettingsPage />} />
         </Route>

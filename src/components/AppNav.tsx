@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Briefcase,
   Contact,
+  Flame,
   LayoutDashboard,
   LogOut,
   Moon,
@@ -17,6 +18,7 @@ const LINKS = [
   { to: '/dashboard', label: 'Despacho', icon: LayoutDashboard },
   { to: '/conductores', label: 'Agenda', icon: Contact },
   { to: '/servicios', label: 'Servicios', icon: Briefcase },
+  { to: '/reportes', label: 'Reportes', icon: Flame },
   { to: '/configuracion', label: 'Config', icon: Settings },
 ]
 
