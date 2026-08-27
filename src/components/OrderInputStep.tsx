@@ -13,7 +13,6 @@ import { SAMPLE_WHATSAPP } from '../lib/mock-data'
 import { ParserError, ocrImage, transcribeAudio } from '../lib/parser'
 import { ApiError } from '../lib/api'
 import BlockingProgressOverlay from './BlockingProgressOverlay'
-import NearbyDriverList from './NearbyDriverList'
 
 export default function OrderInputStep() {
   const {
@@ -322,7 +321,6 @@ export default function OrderInputStep() {
         </p>
       ) : null}
 
-      <NearbyDriverList />
       <BlockingProgressOverlay open={extracting} onCancel={cancelExtract} />
     </div>
   )

@@ -19,13 +19,7 @@ import type {
   ServiceStatus,
 } from '../types'
 import { ApiError, isAbortError } from '../lib/api'
-import {
-  closestAssignable,
-  fetchCandidates,
-  NEARBY_RADIUS_M,
-  rankCandidates,
-  withFleetProfile,
-} from '../lib/fleet'
+import { closestAssignable, fetchCandidates, withFleetProfile } from '../lib/fleet'
 import { copyImageToClipboard } from '../lib/image'
 import { formatPlaceHint, geocodeFirst, reverseGeocode } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
@@ -46,7 +40,6 @@ interface DispatchContextValue {
   order: OrderDraft
   fleet: Driver[]
   candidates: Driver[]
-  nearbyDrivers: Driver[]
   hoveredDriverId: string | null
   focusedDriverId: string | null
   selectedDriver: Driver | null
@@ -228,11 +221,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     () => records.find((record) => record.id === acceptedServiceId) ?? null,
     [acceptedServiceId, records],
   )
-
-  const nearbyDrivers = useMemo(() => {
-    if (!order.originCoords) return []
-    return rankCandidates(fleet, order.originCoords, 4, NEARBY_RADIUS_M)
-  }, [fleet, order.originCoords])
 
   const updateOrder = useCallback((patch: Partial<OrderDraft>) => {
     setOrder((prev) => ({ ...prev, ...patch }))
@@ -878,7 +866,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       order,
       fleet,
       candidates,
-      nearbyDrivers,
       hoveredDriverId,
       focusedDriverId,
       selectedDriver,
@@ -947,7 +934,6 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       order,
       fleet,
       candidates,
-      nearbyDrivers,
       hoveredDriverId,
       focusedDriverId,
       selectedDriver,
