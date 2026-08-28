@@ -145,15 +145,17 @@ export function extractedToDraft(
   extracted: ExtractedOrder,
   serviceTypeId = EMPTY_ORDER.serviceTypeId,
 ): OrderDraft {
+  const origin = extracted.pickup_address?.trim() ?? ''
+  const destination = extracted.dropoff_address?.trim() ?? ''
   return {
-    origin: extracted.pickup_address?.trim() ?? '',
-    destination: extracted.dropoff_address?.trim() ?? '',
+    origin,
+    destination,
     originCoords: null,
     destCoords: null,
     originHint: '',
     destHint: '',
-    originExact: '',
-    destExact: '',
+    originExact: origin,
+    destExact: destination,
     clientName: extracted.customer_name?.trim() ?? '',
     clientPhone: extracted.customer_phone?.trim() ?? '',
     paymentMethod: formatPayment(extracted.payment_method),

@@ -75,8 +75,10 @@ describe('buildDispatchMessage', () => {
   it('usa el default actual cuando no hay plantilla guardada', () => {
     const message = buildDispatchMessage(order, driver)
     expect(message).toContain('Hola Juan Pérez, tienes un servicio asignado:')
-    expect(message).toContain('📍 Recogida (ref. mapa): Altamira')
-    expect(message).toContain('Punto exacto: Torre A')
+    expect(message).toContain('📍 Recogida: Torre A')
+    expect(message).not.toContain('Altamira')
+    expect(message).not.toContain('Chacao')
+    expect(message).not.toContain('ref. mapa')
     expect(message).toContain('👤 Cliente: María González')
     expect(message).toContain('📝 Llamar al llegar')
     expect(message).toContain('Tu Ruta · Despacho')
@@ -98,6 +100,8 @@ describe('buildClientMessage', () => {
   it('incluye vehículo y placa en el default', () => {
     const message = buildClientMessage(order, driver)
     expect(message).toContain('Hola María González, tu servicio fue asignado.')
+    expect(message).toContain('📍 Recogida: Torre A')
+    expect(message).not.toContain('Altamira')
     expect(message).toContain('🚗 Conductor: Juan Pérez')
     expect(message).toContain('Moto · Yamaha NMAX · AB123CD')
     expect(message).toContain('Tu Ruta')

@@ -12,8 +12,9 @@ export function formatDestLabel(order: OrderDraft): string {
   return formatStopLabel(order.destination, order.destExact)
 }
 
-export function formatStopLines(title: string, place: string, exact: string): string[] {
-  const lines = [`${title}: ${place.trim()}`]
-  if (exact.trim()) lines.push(`   Punto exacto: ${exact.trim()}`)
-  return lines
+/** WhatsApp: solo el punto que escribe el operador, no la etiqueta de Maps. */
+export function formatStopLines(title: string, exact: string): string[] {
+  const text = exact.trim()
+  if (!text) return []
+  return [`${title}: ${text}`]
 }
