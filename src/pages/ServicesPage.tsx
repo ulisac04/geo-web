@@ -13,8 +13,8 @@ import type { ServiceRecord, ServiceStatus, ServiceType, ServiceTypeDraft } from
 type Tab = 'catalog' | 'history'
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'catalog', label: 'Catálogo' },
   { value: 'history', label: 'Historial' },
+  { value: 'catalog', label: 'Catálogo' },
 ]
 
 const STATUS_FILTERS: { value: 'all' | ServiceStatus; label: string }[] = [
@@ -39,7 +39,7 @@ const STATUS_LABEL: Record<ServiceStatus, string> = {
 export default function ServicesPage() {
   const { city } = useSettings()
   const { types, records, addType, updateType, removeType } = useServices()
-  const [tab, setTab] = useState<Tab>('catalog')
+  const [tab, setTab] = useState<Tab>('history')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ServiceStatus>('all')
   const [editing, setEditing] = useState<ServiceType | null>(null)

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Car, Copy, MapPin, MapPinned, MessageCircle, Motorbike, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Car, ChevronLeft, ChevronRight, Copy, MapPin, MapPinned, MessageCircle, Motorbike, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import DriverAvatar from '../components/DriverAvatar'
 import DriverForm from '../components/DriverForm'
@@ -33,6 +33,8 @@ const VEHICLE_FILTERS: {
   { value: 'car', label: 'Carros', icon: Car },
 ]
 
+const PAGE_SIZE = 20
+
 function VehicleTypeIcon({ type, className }: { type: VehicleType; className?: string }) {
   const Icon = type === 'motorcycle' ? Motorbike : Car
   return <Icon className={className ?? 'size-4'} />
@@ -57,6 +59,7 @@ export default function DriversPage() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | DriverStatus>('all')
   const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('all')
+  const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<Driver | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
@@ -99,6 +102,16 @@ export default function DriversPage() {
       return matchesFilter && matchesVehicle && matchesQuery
     })
   }, [cityDrivers, filter, query, vehicleFilter])
+
+  useEffect(() => {
+    setPage(1)
+  }, [city.id, filter, query, vehicleFilter])
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageStart = visible.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE
+  const paged = visible.slice(pageStart, pageStart + PAGE_SIZE)
+  const pageEnd = pageStart + paged.length
 
   function openCreate() {
     setEditing(null)
@@ -293,7 +306,7 @@ export default function DriversPage() {
             </tr>
           </thead>
           <tbody>
-            {visible.map((driver) => (
+            {paged.map((driver) => (
               <tr key={driver.id} className="border-b border-line/70 hover:bg-panel/70">
                 <td className="py-3 pr-3">
                   <div className="flex items-center gap-3">
@@ -446,6 +459,37 @@ export default function DriversPage() {
           </p>
         ) : null}
       </div>
+
+      {visible.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-3">
+          <p className="text-xs text-mist">
+            Mostrando {pageStart + 1}–{pageEnd} de {visible.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              className="inline-flex items-center gap-1 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-medium text-snow hover:border-mist/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft className="size-3.5" />
+              Anterior
+            </button>
+            <span className="min-w-16 text-center text-xs text-mist">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              className="inline-flex items-center gap-1 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-medium text-snow hover:border-mist/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+              <ChevronRight className="size-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <DriverForm
         open={formOpen}
