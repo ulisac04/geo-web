@@ -19,6 +19,9 @@ export const EMPTY_ORDER: OrderDraft = {
   clientPhone: '',
   paymentMethod: '',
   amount: '',
+  amountCop: '',
+  amountVes: '',
+  chargeCurrency: 'VES',
   notes: '',
   serviceTypeId: '',
 }
@@ -522,6 +525,9 @@ export const SCREENSHOT_ORDER: OrderDraft = {
   clientPhone: '0414-622-7741',
   paymentMethod: 'Pago móvil',
   amount: '$22',
+  amountCop: '',
+  amountVes: '',
+  chargeCurrency: 'VES',
   notes: '',
   serviceTypeId: 'svc-delivery',
 }

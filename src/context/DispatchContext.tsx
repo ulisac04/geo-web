@@ -24,6 +24,7 @@ import { copyImageToClipboard } from '../lib/image'
 import { formatPlaceHint, geocodeFirst, reverseGeocode } from '../lib/geocode'
 import { haversineMeters } from '../lib/geo'
 import { EMPTY_ORDER } from '../lib/mock-data'
+import { localAmountsFromUsd } from '../lib/money'
 import { formatDestLabel, formatOriginLabel } from '../lib/orderStops'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
 import { defaultServiceTypeId, isLiveServiceStatus, isScheduledPending } from '../lib/services'
@@ -367,7 +368,10 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     try {
       const extracted = await extractOrder({ rawText }, controller.signal)
       if (controller.signal.aborted) return
-      const draft = extractedToDraft(extracted, order.serviceTypeId)
+      const draft = extractedToDraft(extracted, order.serviceTypeId, {
+        usdToCop: settings.usdToCop,
+        usdToVes: settings.usdToVes,
+      })
       const [originHit, destHit] = await Promise.all([
         geocodeFirst(draft.origin, city, controller.signal),
         geocodeFirst(draft.destination, city, controller.signal),
@@ -398,7 +402,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       }
       setExtracting(false)
     }
-  }, [city, order.serviceTypeId, rawText])
+  }, [city, order.serviceTypeId, rawText, settings.usdToCop, settings.usdToVes])
 
   const cancelExtract = useCallback(() => {
     extractAbortRef.current?.abort()
@@ -629,6 +633,11 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
           clientPhone: record.clientPhone,
           paymentMethod: record.paymentMethod,
           amount: record.amount,
+          ...localAmountsFromUsd(record.amount, {
+            usdToCop: settings.usdToCop,
+            usdToVes: settings.usdToVes,
+          }),
+          chargeCurrency: 'VES',
           serviceTypeId: record.typeId || prev.serviceTypeId,
         }))
         setSearching(true)
@@ -648,7 +657,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
         setStep(3)
       }
     },
-    [loadCandidatesFor, records],
+    [loadCandidatesFor, records, settings.usdToCop, settings.usdToVes],
   )
 
   const takeOffline = useCallback(
@@ -774,7 +783,13 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
       const seguimiento = clientTrackingUrl(offeredRecord?.shareToken)
       return target === 'client'
-        ? buildClientMessage(order, selectedDriver, settings.whatsappClientTemplate, seguimiento)
+        ? buildClientMessage(
+            order,
+            selectedDriver,
+            settings.whatsappClientTemplate,
+            seguimiento,
+            rates,
+          )
         : buildDispatchMessage(order, selectedDriver, rates, settings.whatsappDriverTemplate)
     },
     [
@@ -799,6 +814,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
             selectedDriver,
             settings.whatsappClientTemplate,
             seguimiento,
+            rates,
           )
         : buildWhatsAppUrl(order, selectedDriver, rates, settings.whatsappDriverTemplate)
     },

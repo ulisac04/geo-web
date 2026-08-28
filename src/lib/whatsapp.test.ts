@@ -23,6 +23,9 @@ const order: OrderDraft = {
   clientPhone: '04125550189',
   paymentMethod: 'Efectivo',
   amount: '15',
+  amountCop: '',
+  amountVes: '',
+  chargeCurrency: 'VES',
   notes: 'Llamar al llegar',
   serviceTypeId: '',
 }
@@ -94,6 +97,16 @@ describe('buildDispatchMessage', () => {
     const message = buildDispatchMessage(order, driver, undefined, 'Servicio para {cliente}')
     expect(message).toBe('Servicio para María González')
   })
+
+  it('usa COP y VES editados junto al USD', () => {
+    const message = buildDispatchMessage(
+      { ...order, amountCop: '60.000', amountVes: '3.000' },
+      driver,
+    )
+    expect(message).toContain('💵 USD 15,00')
+    expect(message).toContain('🇨🇴 COP 60.000')
+    expect(message).toContain('🇻🇪 VES 3.000')
+  })
 })
 
 describe('buildClientMessage', () => {
@@ -117,6 +130,26 @@ describe('buildClientMessage', () => {
     const message = buildClientMessage(order, driver, undefined, link)
     expect(link).toBe('https://norte.localhost/s/abc-123')
     expect(message).toContain('Seguí al conductor: https://norte.localhost/s/abc-123')
+  })
+
+  it('incluye solo bolívares en {monto} por defecto', () => {
+    const message = buildClientMessage(
+      { ...order, amountCop: '60.000', amountVes: '3.000' },
+      driver,
+    )
+    expect(message).toContain('🇻🇪 VES 3.000')
+    expect(message).not.toContain('💵 USD')
+    expect(message).not.toContain('🇨🇴 COP')
+  })
+
+  it('incluye solo dólares si chargeCurrency es USD', () => {
+    const message = buildClientMessage(
+      { ...order, amountCop: '60.000', amountVes: '3.000', chargeCurrency: 'USD' },
+      driver,
+    )
+    expect(message).toContain('💵 USD 15,00')
+    expect(message).not.toContain('🇻🇪 VES')
+    expect(message).not.toContain('🇨🇴 COP')
   })
 })
 

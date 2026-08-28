@@ -1,5 +1,5 @@
 import type { Driver, OrderDraft } from '../types'
-import { formatDispatchAmount } from './money'
+import { formatClientAmount, formatDispatchAmount, type ExchangeRates } from './money'
 import { formatStopLines } from './orderStops'
 import { formatVehicleLine } from './vehicles'
 import { toWhatsAppDigits } from './phone'
@@ -41,6 +41,8 @@ export const DEFAULT_CLIENT_TEMPLATE = [
   '',
   '{recogida}',
   '{destino}',
+  '',
+  '{monto}',
   '',
   'Seguí al conductor: {seguimiento}',
   '',
@@ -102,8 +104,8 @@ export function clientTrackingUrl(
 export function buildWhatsAppVars(
   order: OrderDraft,
   driver: Driver,
-  rates?: { usdToCop: number; usdToVes: number },
-  extras?: { seguimiento?: string },
+  rates?: ExchangeRates,
+  extras?: { seguimiento?: string; client?: boolean },
 ): TemplateVars {
   return {
     conductor: driver.name.trim(),
@@ -114,7 +116,7 @@ export function buildWhatsAppVars(
     tel_cliente: order.clientPhone.trim(),
     recogida: formatStopLines('📍 Recogida', order.originExact).join('\n'),
     destino: formatStopLines('🎯 Destino', order.destExact).join('\n'),
-    monto: formatDispatchAmount(order.amount, rates),
+    monto: extras?.client ? formatClientAmount(order, rates) : formatDispatchAmount(order, rates),
     notas: order.notes.trim(),
     firma: 'Tu Ruta',
     seguimiento: extras?.seguimiento?.trim() ?? '',
@@ -124,7 +126,7 @@ export function buildWhatsAppVars(
 export function buildDispatchMessage(
   order: OrderDraft,
   driver: Driver,
-  rates?: { usdToCop: number; usdToVes: number },
+  rates?: ExchangeRates,
   template?: string,
 ): string {
   return renderTemplate(
@@ -138,10 +140,11 @@ export function buildClientMessage(
   driver: Driver,
   template?: string,
   seguimiento?: string,
+  rates?: ExchangeRates,
 ): string {
   return renderTemplate(
     resolveWhatsAppTemplate(template, DEFAULT_CLIENT_TEMPLATE),
-    buildWhatsAppVars(order, driver, undefined, { seguimiento }),
+    buildWhatsAppVars(order, driver, rates, { seguimiento, client: true }),
   )
 }
 
@@ -162,7 +165,7 @@ export function buildDriverInviteWhatsAppUrl(phone: string, name: string, invite
 export function buildWhatsAppUrl(
   order: OrderDraft,
   driver: Driver,
-  rates?: { usdToCop: number; usdToVes: number },
+  rates?: ExchangeRates,
   template?: string,
 ): string {
   return buildWhatsAppUrlForPhone(
@@ -176,10 +179,11 @@ export function buildClientWhatsAppUrl(
   driver: Driver,
   template?: string,
   seguimiento?: string,
+  rates?: ExchangeRates,
 ): string {
   return buildWhatsAppUrlForPhone(
     order.clientPhone,
-    buildClientMessage(order, driver, template, seguimiento),
+    buildClientMessage(order, driver, template, seguimiento, rates),
   )
 }
 

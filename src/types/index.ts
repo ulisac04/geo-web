@@ -17,6 +17,7 @@ export type MapRefreshSeconds = 5 | 10 | 15 | 30 | 60
 export type OfferWaitSeconds = 15 | 30 | 45 | 60 | 90 | 120
 export type VehicleType = 'car' | 'motorcycle'
 export type VehicleFilter = VehicleType | 'all'
+export type ChargeCurrency = 'USD' | 'COP' | 'VES'
 
 export interface Driver {
   id: string
@@ -70,6 +71,9 @@ export interface OrderDraft {
   clientPhone: string
   paymentMethod: string
   amount: string
+  amountCop: string
+  amountVes: string
+  chargeCurrency: ChargeCurrency
   notes: string
   serviceTypeId: string
 }

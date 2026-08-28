@@ -1,6 +1,7 @@
 import type { OrderDraft } from '../types'
 import { api, ApiError } from './api'
 import { EMPTY_ORDER } from './mock-data'
+import { localAmountsFromUsd, type ExchangeRates } from './money'
 
 export class ParserError extends ApiError {
   constructor(message: string, status: number, code = 'ERROR') {
@@ -144,9 +145,11 @@ function formatAmount(amount: number | null | undefined): string {
 export function extractedToDraft(
   extracted: ExtractedOrder,
   serviceTypeId = EMPTY_ORDER.serviceTypeId,
+  rates?: ExchangeRates,
 ): OrderDraft {
   const origin = extracted.pickup_address?.trim() ?? ''
   const destination = extracted.dropoff_address?.trim() ?? ''
+  const amount = formatAmount(extracted.amount)
   return {
     origin,
     destination,
@@ -159,7 +162,9 @@ export function extractedToDraft(
     clientName: extracted.customer_name?.trim() ?? '',
     clientPhone: extracted.customer_phone?.trim() ?? '',
     paymentMethod: formatPayment(extracted.payment_method),
-    amount: formatAmount(extracted.amount),
+    amount,
+    ...(rates ? localAmountsFromUsd(amount, rates) : { amountCop: '', amountVes: '' }),
+    chargeCurrency: 'VES',
     notes: extracted.notes?.trim() ?? '',
     serviceTypeId,
   }

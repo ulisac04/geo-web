@@ -238,6 +238,7 @@ export default function SettingsPage() {
                   PREVIEW_DRIVER,
                   template,
                   'https://tu-ruta.app/s/demo',
+                  { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes },
                 )
               }
               onSave={setWhatsappClientTemplate}
@@ -421,6 +422,9 @@ const PREVIEW_ORDER: OrderDraft = {
   clientPhone: '04125550189',
   paymentMethod: 'Efectivo',
   amount: '15',
+  amountCop: '',
+  amountVes: '',
+  chargeCurrency: 'VES',
   notes: 'Llamar al llegar',
   serviceTypeId: '',
 }

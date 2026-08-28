@@ -1,11 +1,12 @@
 import { Check, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { useServices } from '../context/ServicesContext'
 import { useSettings } from '../context/SettingsContext'
-import { convertFromUsd } from '../lib/money'
+import { localAmountsFromUsd } from '../lib/money'
 import { defaultScheduleLocal, fromDatetimeLocal } from '../lib/schedule'
 import { sortServiceTypeOptions } from '../lib/services'
+import type { ChargeCurrency } from '../types'
 import PhoneField from './PhoneField'
 import PlaceSearchField from './PlaceSearchField'
 
@@ -44,6 +45,22 @@ export default function ValidationStep() {
   const scheduledIso = fromDatetimeLocal(scheduledLocal)
   const scheduleReady =
     ready && Boolean(scheduledIso) && new Date(scheduledIso as string).getTime() > Date.now()
+
+  useEffect(() => {
+    const rates = { usdToCop: settings.usdToCop, usdToVes: settings.usdToVes }
+    const converted = localAmountsFromUsd(order.amount, rates)
+    const patch: Partial<typeof order> = {}
+    if (!order.amountCop.trim() && converted.amountCop) patch.amountCop = converted.amountCop
+    if (!order.amountVes.trim() && converted.amountVes) patch.amountVes = converted.amountVes
+    if (Object.keys(patch).length) updateOrder(patch)
+  }, [
+    order.amount,
+    order.amountCop,
+    order.amountVes,
+    settings.usdToCop,
+    settings.usdToVes,
+    updateOrder,
+  ])
 
   return (
     <div className="space-y-3">
@@ -146,9 +163,21 @@ export default function ValidationStep() {
       />
       <AmountFields
         usd={order.amount}
-        usdToCop={settings.usdToCop}
-        usdToVes={settings.usdToVes}
-        onUsdChange={(value) => updateOrder({ amount: value })}
+        cop={order.amountCop}
+        ves={order.amountVes}
+        chargeCurrency={order.chargeCurrency}
+        onUsdChange={(value) =>
+          updateOrder({
+            amount: value,
+            ...localAmountsFromUsd(value, {
+              usdToCop: settings.usdToCop,
+              usdToVes: settings.usdToVes,
+            }),
+          })
+        }
+        onCopChange={(value) => updateOrder({ amountCop: value })}
+        onVesChange={(value) => updateOrder({ amountVes: value })}
+        onChargeCurrencyChange={(value) => updateOrder({ chargeCurrency: value })}
       />
       <label className="block space-y-1">
         <span className="text-[11px] font-medium tracking-wide text-mist uppercase">Notas</span>
@@ -221,57 +250,119 @@ export default function ValidationStep() {
   )
 }
 
+const amountInputClass =
+  'w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow placeholder:text-mist/40 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none'
+
+function ChargeRadio({
+  id,
+  label,
+  checked,
+  onChange,
+}: {
+  id: ChargeCurrency
+  label: string
+  checked: boolean
+  onChange: (value: ChargeCurrency) => void
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-snow">
+      <input
+        type="radio"
+        name="chargeCurrency"
+        value={id}
+        checked={checked}
+        onChange={() => onChange(id)}
+        className="size-4 accent-emerald-400"
+      />
+      {label}
+    </label>
+  )
+}
+
 function AmountFields({
   usd,
-  usdToCop,
-  usdToVes,
+  cop,
+  ves,
+  chargeCurrency,
   onUsdChange,
+  onCopChange,
+  onVesChange,
+  onChargeCurrencyChange,
 }: {
   usd: string
-  usdToCop: number
-  usdToVes: number
+  cop: string
+  ves: string
+  chargeCurrency: ChargeCurrency
   onUsdChange: (value: string) => void
+  onCopChange: (value: string) => void
+  onVesChange: (value: string) => void
+  onChargeCurrencyChange: (value: ChargeCurrency) => void
 }) {
-  const cop = convertFromUsd(usd, usdToCop)
-  const ves = convertFromUsd(usd, usdToVes)
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <label className="block space-y-1">
-        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
-          🇺🇸 USD
-        </span>
-        <input
-          value={usd}
-          inputMode="decimal"
-          placeholder="0.00"
-          onChange={(e) => onUsdChange(e.target.value)}
-          className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow placeholder:text-mist/40 focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
-        />
-      </label>
-      <label className="block space-y-1">
-        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
-          🇨🇴 COP
-        </span>
-        <input
-          value={cop}
-          readOnly
-          tabIndex={-1}
-          placeholder="—"
-          className="w-full cursor-default rounded-md border border-line bg-ink/60 px-2.5 py-1.5 text-sm text-mist placeholder:text-mist/40 outline-none"
-        />
-      </label>
-      <label className="block space-y-1">
-        <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
-          🇻🇪 VES
-        </span>
-        <input
-          value={ves}
-          readOnly
-          tabIndex={-1}
-          placeholder="—"
-          className="w-full cursor-default rounded-md border border-line bg-ink/60 px-2.5 py-1.5 text-sm text-mist placeholder:text-mist/40 outline-none"
-        />
-      </label>
+    <div className="space-y-2">
+      <div className="grid grid-cols-3 gap-2">
+        <label className="block space-y-1">
+          <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+            🇺🇸 USD
+          </span>
+          <input
+            value={usd}
+            inputMode="decimal"
+            placeholder="0.00"
+            onChange={(e) => onUsdChange(e.target.value)}
+            className={amountInputClass}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+            🇨🇴 COP
+          </span>
+          <input
+            value={cop}
+            inputMode="decimal"
+            placeholder="—"
+            onChange={(e) => onCopChange(e.target.value)}
+            className={amountInputClass}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+            🇻🇪 VES
+          </span>
+          <input
+            value={ves}
+            inputMode="decimal"
+            placeholder="—"
+            onChange={(e) => onVesChange(e.target.value)}
+            className={amountInputClass}
+          />
+        </label>
+      </div>
+      <fieldset>
+        <legend className="mb-1 text-[11px] font-medium tracking-wide text-mist uppercase">
+          Precio al cliente
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
+          <ChargeRadio
+            id="USD"
+            label="Dólares"
+            checked={chargeCurrency === 'USD'}
+            onChange={onChargeCurrencyChange}
+          />
+          <ChargeRadio
+            id="COP"
+            label="Pesos"
+            checked={chargeCurrency === 'COP'}
+            onChange={onChargeCurrencyChange}
+          />
+          <ChargeRadio
+            id="VES"
+            label="Bolívares"
+            checked={chargeCurrency === 'VES'}
+            onChange={onChargeCurrencyChange}
+          />
+        </div>
+      </fieldset>
     </div>
   )
 }
