@@ -10,8 +10,9 @@ import {
   waitForPaint,
 } from '../lib/audio'
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
-import { ParserError, ocrImage } from '../lib/parser'
+import { ParserError, ocrImage, transcribeAudio } from '../lib/parser'
 import { ApiError, isAbortError } from '../lib/api'
+import { useVoiceExtractMode } from '../lib/voiceExtractMode'
 import BlockingProgressOverlay from './BlockingProgressOverlay'
 
 export default function OrderInputStep() {
@@ -24,7 +25,9 @@ export default function OrderInputStep() {
     extracting,
     extractError,
   } = useDispatchFlow()
+  const [voiceMode] = useVoiceExtractMode()
   const [recording, setRecording] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
   const [ocring, setOcring] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [mediaError, setMediaError] = useState<string | null>(null)
@@ -43,7 +46,10 @@ export default function OrderInputStep() {
 
   function appendText(chunk: string) {
     const current = rawTextRef.current
-    setRawText(current.trim() ? `${current.trimEnd()}\n\n${chunk}` : chunk)
+    const next = current.trim() ? `${current.trimEnd()}\n\n${chunk}` : chunk
+    setRawText(next)
+    rawTextRef.current = next
+    return next
   }
 
   function readImageFile(file: File) {
@@ -130,6 +136,32 @@ export default function OrderInputStep() {
     setMediaError(null)
     try {
       const dataUrl = await prepareRecordingDataUrl(blob)
+      if (voiceMode === 'transcribe') {
+        mediaAbortRef.current?.abort()
+        const controller = new AbortController()
+        mediaAbortRef.current = controller
+        setTranscribing(true)
+        await waitForPaint()
+        try {
+          const transcript = await transcribeAudio(dataUrl, controller.signal)
+          if (controller.signal.aborted) return
+          const combined = appendText(transcript)
+          await extractWithAI({ rawText: combined })
+        } catch (error) {
+          if (controller.signal.aborted || isAbortError(error)) return
+          const message =
+            error instanceof ParserError || error instanceof ApiError
+              ? error.message
+              : 'No se pudo transcribir el audio'
+          setMediaError(message)
+        } finally {
+          if (mediaAbortRef.current === controller) {
+            mediaAbortRef.current = null
+          }
+          setTranscribing(false)
+        }
+        return
+      }
       await extractWithAI({ audioDataUrl: dataUrl })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo leer el audio'
@@ -190,13 +222,13 @@ export default function OrderInputStep() {
   useEffect(() => {
     function onWindowPaste(event: globalThis.ClipboardEvent) {
       if (event.defaultPrevented) return
-      if (recording || ocring || extracting) return
+      if (recording || transcribing || ocring || extracting) return
       takeImageFromClipboard(event)
     }
 
     window.addEventListener('paste', onWindowPaste)
     return () => window.removeEventListener('paste', onWindowPaste)
-  }, [recording, ocring, extracting])
+  }, [recording, transcribing, ocring, extracting])
 
   useEffect(() => {
     return () => {
@@ -209,9 +241,9 @@ export default function OrderInputStep() {
     }
   }, [])
 
-  const busy = extracting || recording || ocring
+  const busy = extracting || recording || transcribing || ocring
   const canExtract = rawText.trim().length > 0
-  const iconBusy = ocring || extracting
+  const iconBusy = transcribing || ocring || extracting
 
   return (
     <div className="space-y-4">
@@ -257,9 +289,13 @@ export default function OrderInputStep() {
                 onClick={() => void startRecording()}
                 className="rounded-md border border-line bg-elevated p-1.5 text-mist hover:border-signal/50 hover:text-signal disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Grabar audio"
-                title="Dictar y extraer el pedido"
+                title={
+                  voiceMode === 'transcribe'
+                    ? 'Dictar, transcribir y extraer'
+                    : 'Dictar y extraer el pedido'
+                }
               >
-                {extracting ? (
+                {transcribing || extracting ? (
                   <Loader2 className="size-4 animate-spin text-signal" />
                 ) : (
                   <Mic className="size-4" />
@@ -285,9 +321,17 @@ export default function OrderInputStep() {
           </button>
           {ocring ? (
             <span className="text-xs text-mist">Leyendo captura…</span>
+          ) : transcribing ? (
+            <span className="text-xs text-mist">Transcribiendo…</span>
           ) : recording ? (
             <span className="text-xs text-mist">Grabando · máx. {MAX_AUDIO_SECONDS}s</span>
-          ) : null}
+          ) : (
+            <span className="text-xs text-mist">
+              {voiceMode === 'transcribe'
+                ? 'Nota de voz: transcribir y luego extraer'
+                : 'Nota de voz: extraer de una vez'}
+            </span>
+          )}
         </div>
         {mediaError ? (
           <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-rose-300">
@@ -325,8 +369,8 @@ export default function OrderInputStep() {
       ) : null}
 
       <BlockingProgressOverlay
-        open={extracting || ocring}
-        mode={extracting ? 'extract' : 'ocr'}
+        open={extracting || transcribing || ocring}
+        mode={extracting ? 'extract' : transcribing ? 'transcribe' : 'ocr'}
         onCancel={extracting ? cancelExtract : cancelMedia}
       />
     </div>

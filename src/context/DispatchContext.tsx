@@ -70,7 +70,7 @@ interface DispatchContextValue {
   setRawText: (value: string) => void
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
-  extractWithAI: (input?: { audioDataUrl?: string }) => Promise<void>
+  extractWithAI: (input?: { audioDataUrl?: string; rawText?: string }) => Promise<void>
   cancelExtract: () => void
   continueManually: () => void
   acceptService: () => Promise<void>
@@ -360,7 +360,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     [liveTrips],
   )
 
-  const extractWithAI = useCallback(async (input?: { audioDataUrl?: string }) => {
+  const extractWithAI = useCallback(async (input?: { audioDataUrl?: string; rawText?: string }) => {
     extractAbortRef.current?.abort()
     const controller = new AbortController()
     extractAbortRef.current = controller
@@ -369,7 +369,9 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     await waitForPaint()
     try {
       const extracted = await extractOrder(
-        input?.audioDataUrl ? { audioDataUrl: input.audioDataUrl } : { rawText },
+        input?.audioDataUrl
+          ? { audioDataUrl: input.audioDataUrl }
+          : { rawText: input?.rawText ?? rawText },
         controller.signal,
       )
       if (controller.signal.aborted) return
