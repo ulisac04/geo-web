@@ -2,35 +2,98 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Loader2 } from 'lucide-react'
 
-const PHASES = [
+type OverlayMode = 'extract' | 'transcribe' | 'ocr'
+
+const COPY: Record<
+  OverlayMode,
   {
-    after: 0,
-    title: 'Extrayendo datos con IA',
-    detail: 'Estamos leyendo el mensaje del cliente.',
+    phases: readonly { after: number; title: string; detail: string }[]
+    cancelTitle: string
+    cancelDetail: string
+  }
+> = {
+  extract: {
+    phases: [
+      {
+        after: 0,
+        title: 'Extrayendo datos con IA',
+        detail: 'Estamos leyendo el mensaje del cliente.',
+      },
+      {
+        after: 8,
+        title: 'Identificando el viaje',
+        detail: 'Origen, destino y datos del cliente. Esto puede tardar.',
+      },
+      {
+        after: 20,
+        title: 'Sigue procesando',
+        detail: 'No toques nada: al terminar pasamos a Puntos.',
+      },
+      {
+        after: 40,
+        title: 'Todavía trabajando',
+        detail: 'La IA a veces tarda más. Si pasa de un minuto, revisa la conexión.',
+      },
+    ],
+    cancelTitle: '¿Cancelar la extracción?',
+    cancelDetail:
+      'Esto puede tardar, pero si cancelas ahora no se rellenarán los datos. ¿Seguro que quieres cancelar?',
   },
-  {
-    after: 8,
-    title: 'Identificando el viaje',
-    detail: 'Origen, destino y datos del cliente. Esto puede tardar.',
+  transcribe: {
+    phases: [
+      {
+        after: 0,
+        title: 'Transcribiendo audio',
+        detail: 'Gemini está convirtiendo el dictado en texto.',
+      },
+      {
+        after: 12,
+        title: 'Sigue transcribiendo',
+        detail: 'Si Gemini está saturado esto puede tardar. Puedes cancelar y dictar de nuevo.',
+      },
+      {
+        after: 30,
+        title: 'Todavía trabajando',
+        detail: 'La API a veces se queda esperando. Cancela si no quieres seguir esperando.',
+      },
+    ],
+    cancelTitle: '¿Cancelar la transcripción?',
+    cancelDetail: 'Se corta la espera a Gemini. El audio no se convertirá en texto.',
   },
-  {
-    after: 20,
-    title: 'Sigue procesando',
-    detail: 'No toques nada: al terminar pasamos a Puntos.',
+  ocr: {
+    phases: [
+      {
+        after: 0,
+        title: 'Leyendo captura',
+        detail: 'Gemini está extrayendo el texto de la imagen.',
+      },
+      {
+        after: 12,
+        title: 'Sigue leyendo',
+        detail: 'Si Gemini está saturado esto puede tardar. Puedes cancelar e intentar otra captura.',
+      },
+      {
+        after: 30,
+        title: 'Todavía trabajando',
+        detail: 'La API a veces se queda esperando. Cancela si no quieres seguir esperando.',
+      },
+    ],
+    cancelTitle: '¿Cancelar la lectura?',
+    cancelDetail: 'Se corta la espera a Gemini. El texto de la imagen no se pegará.',
   },
-  {
-    after: 40,
-    title: 'Todavía trabajando',
-    detail: 'La IA a veces tarda más. Si pasa de un minuto, revisa la conexión.',
-  },
-] as const
+}
 
 interface BlockingProgressOverlayProps {
   open: boolean
   onCancel: () => void
+  mode?: OverlayMode
 }
 
-export default function BlockingProgressOverlay({ open, onCancel }: BlockingProgressOverlayProps) {
+export default function BlockingProgressOverlay({
+  open,
+  onCancel,
+  mode = 'extract',
+}: BlockingProgressOverlayProps) {
   const [elapsed, setElapsed] = useState(0)
   const [confirming, setConfirming] = useState(false)
 
@@ -54,11 +117,12 @@ export default function BlockingProgressOverlay({ open, onCancel }: BlockingProg
       window.clearInterval(id)
       document.body.style.overflow = previousOverflow
     }
-  }, [open])
+  }, [open, mode])
 
   if (!open) return null
 
-  const phase = [...PHASES].reverse().find((item) => elapsed >= item.after) ?? PHASES[0]
+  const copy = COPY[mode]
+  const phase = [...copy.phases].reverse().find((item) => elapsed >= item.after) ?? copy.phases[0]
 
   return createPortal(
     <div
@@ -74,11 +138,10 @@ export default function BlockingProgressOverlay({ open, onCancel }: BlockingProg
         {confirming ? (
           <>
             <h2 id="extract-cancel-title" className="text-base font-semibold text-snow">
-              ¿Cancelar la extracción?
+              {copy.cancelTitle}
             </h2>
             <p id="extract-cancel-detail" className="mt-2 text-sm leading-relaxed text-mist">
-              Esto puede tardar, pero si cancelas ahora no se rellenarán los datos. ¿Seguro que
-              quieres cancelar?
+              {copy.cancelDetail}
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button

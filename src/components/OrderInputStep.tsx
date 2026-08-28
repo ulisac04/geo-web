@@ -11,7 +11,7 @@ import {
 } from '../lib/audio'
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
 import { ParserError, ocrImage, transcribeAudio } from '../lib/parser'
-import { ApiError } from '../lib/api'
+import { ApiError, isAbortError } from '../lib/api'
 import BlockingProgressOverlay from './BlockingProgressOverlay'
 
 export default function OrderInputStep() {
@@ -34,8 +34,13 @@ export default function OrderInputStep() {
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<number | null>(null)
+  const mediaAbortRef = useRef<AbortController | null>(null)
   const rawTextRef = useRef(rawText)
   rawTextRef.current = rawText
+
+  function cancelMedia() {
+    mediaAbortRef.current?.abort()
+  }
 
   function appendText(chunk: string) {
     const current = rawTextRef.current
@@ -56,19 +61,27 @@ export default function OrderInputStep() {
   }
 
   async function processImage(dataUrl: string) {
+    mediaAbortRef.current?.abort()
+    const controller = new AbortController()
+    mediaAbortRef.current = controller
     setOcring(true)
     setMediaError(null)
     await waitForPaint()
     try {
-      const text = await ocrImage(dataUrl)
+      const text = await ocrImage(dataUrl, controller.signal)
+      if (controller.signal.aborted) return
       appendText(text)
     } catch (error) {
+      if (controller.signal.aborted || isAbortError(error)) return
       const message =
         error instanceof ParserError || error instanceof ApiError
           ? error.message
           : 'No se pudo leer la imagen'
       setMediaError(message)
     } finally {
+      if (mediaAbortRef.current === controller) {
+        mediaAbortRef.current = null
+      }
       setOcring(false)
     }
   }
@@ -115,20 +128,29 @@ export default function OrderInputStep() {
   }
 
   async function processRecording(blob: Blob) {
+    mediaAbortRef.current?.abort()
+    const controller = new AbortController()
+    mediaAbortRef.current = controller
     setTranscribing(true)
     setMediaError(null)
     await waitForPaint()
     try {
       const dataUrl = await prepareRecordingDataUrl(blob)
-      const transcript = await transcribeAudio(dataUrl)
+      if (controller.signal.aborted) return
+      const transcript = await transcribeAudio(dataUrl, controller.signal)
+      if (controller.signal.aborted) return
       appendText(transcript)
     } catch (error) {
+      if (controller.signal.aborted || isAbortError(error)) return
       const message =
         error instanceof ParserError || error instanceof ApiError
           ? error.message
           : 'No se pudo transcribir el audio'
       setMediaError(message)
     } finally {
+      if (mediaAbortRef.current === controller) {
+        mediaAbortRef.current = null
+      }
       setTranscribing(false)
     }
   }
@@ -197,6 +219,7 @@ export default function OrderInputStep() {
   useEffect(() => {
     return () => {
       clearTimer()
+      mediaAbortRef.current?.abort()
       if (recorderRef.current && recorderRef.current.state !== 'inactive') {
         recorderRef.current.stop()
       }
@@ -321,7 +344,11 @@ export default function OrderInputStep() {
         </p>
       ) : null}
 
-      <BlockingProgressOverlay open={extracting} onCancel={cancelExtract} />
+      <BlockingProgressOverlay
+        open={extracting || transcribing || ocring}
+        mode={extracting ? 'extract' : transcribing ? 'transcribe' : 'ocr'}
+        onCancel={extracting ? cancelExtract : cancelMedia}
+      />
     </div>
   )
 }

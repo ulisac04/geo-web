@@ -41,7 +41,7 @@ export async function extractOrder(
   }
 }
 
-export async function transcribeAudio(audioDataUrl: string): Promise<string> {
+export async function transcribeAudio(audioDataUrl: string, signal?: AbortSignal): Promise<string> {
   const audio = splitDataUrl(audioDataUrl)
   if (!audio) {
     throw new ParserError('No hay audio para transcribir', 400)
@@ -50,6 +50,7 @@ export async function transcribeAudio(audioDataUrl: string): Promise<string> {
     const result = await api<{ text: string }>('/api/v1/parser/transcribe', {
       method: 'POST',
       body: { audio_base64: audio.base64, mime_type: audio.mimeType },
+      signal,
     })
     const text = result.text?.trim() ?? ''
     if (!text) {
@@ -65,7 +66,7 @@ export async function transcribeAudio(audioDataUrl: string): Promise<string> {
   }
 }
 
-export async function ocrImage(imageDataUrl: string): Promise<string> {
+export async function ocrImage(imageDataUrl: string, signal?: AbortSignal): Promise<string> {
   const image = splitDataUrl(imageDataUrl)
   if (!image) {
     throw new ParserError('No hay imagen para leer', 400)
@@ -74,6 +75,7 @@ export async function ocrImage(imageDataUrl: string): Promise<string> {
     const result = await api<{ text: string }>('/api/v1/parser/ocr', {
       method: 'POST',
       body: { image_base64: image.base64, mime_type: image.mimeType },
+      signal,
     })
     const text = result.text?.trim() ?? ''
     if (!text) {
