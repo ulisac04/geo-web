@@ -10,7 +10,7 @@ import {
   waitForPaint,
 } from '../lib/audio'
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
-import { ParserError, ocrImage, transcribeAudio } from '../lib/parser'
+import { ParserError, ocrImage } from '../lib/parser'
 import { ApiError, isAbortError } from '../lib/api'
 import BlockingProgressOverlay from './BlockingProgressOverlay'
 
@@ -25,7 +25,6 @@ export default function OrderInputStep() {
     extractError,
   } = useDispatchFlow()
   const [recording, setRecording] = useState(false)
-  const [transcribing, setTranscribing] = useState(false)
   const [ocring, setOcring] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [mediaError, setMediaError] = useState<string | null>(null)
@@ -128,30 +127,13 @@ export default function OrderInputStep() {
   }
 
   async function processRecording(blob: Blob) {
-    mediaAbortRef.current?.abort()
-    const controller = new AbortController()
-    mediaAbortRef.current = controller
-    setTranscribing(true)
     setMediaError(null)
-    await waitForPaint()
     try {
       const dataUrl = await prepareRecordingDataUrl(blob)
-      if (controller.signal.aborted) return
-      const transcript = await transcribeAudio(dataUrl, controller.signal)
-      if (controller.signal.aborted) return
-      appendText(transcript)
+      await extractWithAI({ audioDataUrl: dataUrl })
     } catch (error) {
-      if (controller.signal.aborted || isAbortError(error)) return
-      const message =
-        error instanceof ParserError || error instanceof ApiError
-          ? error.message
-          : 'No se pudo transcribir el audio'
+      const message = error instanceof Error ? error.message : 'No se pudo leer el audio'
       setMediaError(message)
-    } finally {
-      if (mediaAbortRef.current === controller) {
-        mediaAbortRef.current = null
-      }
-      setTranscribing(false)
     }
   }
 
@@ -208,13 +190,13 @@ export default function OrderInputStep() {
   useEffect(() => {
     function onWindowPaste(event: globalThis.ClipboardEvent) {
       if (event.defaultPrevented) return
-      if (recording || transcribing || ocring || extracting) return
+      if (recording || ocring || extracting) return
       takeImageFromClipboard(event)
     }
 
     window.addEventListener('paste', onWindowPaste)
     return () => window.removeEventListener('paste', onWindowPaste)
-  }, [recording, transcribing, ocring, extracting])
+  }, [recording, ocring, extracting])
 
   useEffect(() => {
     return () => {
@@ -227,9 +209,9 @@ export default function OrderInputStep() {
     }
   }, [])
 
-  const busy = extracting || recording || transcribing || ocring
+  const busy = extracting || recording || ocring
   const canExtract = rawText.trim().length > 0
-  const iconBusy = transcribing || ocring || extracting
+  const iconBusy = ocring || extracting
 
   return (
     <div className="space-y-4">
@@ -275,9 +257,9 @@ export default function OrderInputStep() {
                 onClick={() => void startRecording()}
                 className="rounded-md border border-line bg-elevated p-1.5 text-mist hover:border-signal/50 hover:text-signal disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Grabar audio"
-                title="Dictar al micrófono"
+                title="Dictar y extraer el pedido"
               >
-                {transcribing ? (
+                {extracting ? (
                   <Loader2 className="size-4 animate-spin text-signal" />
                 ) : (
                   <Mic className="size-4" />
@@ -303,8 +285,6 @@ export default function OrderInputStep() {
           </button>
           {ocring ? (
             <span className="text-xs text-mist">Leyendo captura…</span>
-          ) : transcribing ? (
-            <span className="text-xs text-mist">Transcribiendo…</span>
           ) : recording ? (
             <span className="text-xs text-mist">Grabando · máx. {MAX_AUDIO_SECONDS}s</span>
           ) : null}
@@ -345,8 +325,8 @@ export default function OrderInputStep() {
       ) : null}
 
       <BlockingProgressOverlay
-        open={extracting || transcribing || ocring}
-        mode={extracting ? 'extract' : transcribing ? 'transcribe' : 'ocr'}
+        open={extracting || ocring}
+        mode={extracting ? 'extract' : 'ocr'}
         onCancel={extracting ? cancelExtract : cancelMedia}
       />
     </div>

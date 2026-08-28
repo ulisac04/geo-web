@@ -17,7 +17,7 @@ const COPY: Record<
       {
         after: 0,
         title: 'Extrayendo datos con IA',
-        detail: 'Estamos leyendo el mensaje del cliente.',
+        detail: 'Estamos leyendo el mensaje o la nota de voz.',
       },
       {
         after: 8,

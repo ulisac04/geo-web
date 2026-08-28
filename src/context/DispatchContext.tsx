@@ -19,6 +19,7 @@ import type {
   ServiceStatus,
 } from '../types'
 import { ApiError, isAbortError } from '../lib/api'
+import { waitForPaint } from '../lib/audio'
 import { closestAssignable, fetchCandidates, withFleetProfile } from '../lib/fleet'
 import { copyImageToClipboard } from '../lib/image'
 import { formatPlaceHint, geocodeFirst, reverseGeocode } from '../lib/geocode'
@@ -69,7 +70,7 @@ interface DispatchContextValue {
   setRawText: (value: string) => void
   setActivePin: (pin: PinFocus) => void
   updateOrder: (patch: Partial<OrderDraft>) => void
-  extractWithAI: () => Promise<void>
+  extractWithAI: (input?: { audioDataUrl?: string }) => Promise<void>
   cancelExtract: () => void
   continueManually: () => void
   acceptService: () => Promise<void>
@@ -359,14 +360,18 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     [liveTrips],
   )
 
-  const extractWithAI = useCallback(async () => {
+  const extractWithAI = useCallback(async (input?: { audioDataUrl?: string }) => {
     extractAbortRef.current?.abort()
     const controller = new AbortController()
     extractAbortRef.current = controller
     setExtractError(null)
     setExtracting(true)
+    await waitForPaint()
     try {
-      const extracted = await extractOrder({ rawText }, controller.signal)
+      const extracted = await extractOrder(
+        input?.audioDataUrl ? { audioDataUrl: input.audioDataUrl } : { rawText },
+        controller.signal,
+      )
       if (controller.signal.aborted) return
       const draft = extractedToDraft(extracted, order.serviceTypeId, {
         usdToCop: settings.usdToCop,
