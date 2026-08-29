@@ -178,15 +178,42 @@ export async function deleteServiceType(id: string): Promise<void> {
   await api<void>(`/api/v1/service-types/${id}`, { method: 'DELETE' })
 }
 
-export async function fetchServiceRecords(query?: {
+export interface ServiceRecordsQuery {
   status?: ServiceStatus
   q?: string
   cityId?: CityId
-}): Promise<ServiceRecord[]> {
+  from?: string
+  to?: string
+  driverId?: string
+  serviceTypeId?: string
+  limit?: number
+  offset?: number
+  signal?: AbortSignal
+}
+
+export async function listServiceRecords(
+  query?: ServiceRecordsQuery,
+): Promise<{ items: ServiceRecord[]; total: number }> {
   const data = await api<RecordsResponse>('/api/v1/services', {
-    query: { status: query?.status, q: query?.q, city_id: query?.cityId },
+    signal: query?.signal,
+    query: {
+      status: query?.status,
+      q: query?.q,
+      city_id: query?.cityId,
+      from: query?.from,
+      to: query?.to,
+      driver_id: query?.driverId,
+      service_type_id: query?.serviceTypeId,
+      limit: query?.limit,
+      offset: query?.offset,
+    },
   })
-  return data.items.map(fromRecord)
+  return { items: data.items.map(fromRecord), total: data.total }
+}
+
+export async function fetchServiceRecords(query?: ServiceRecordsQuery): Promise<ServiceRecord[]> {
+  const { items } = await listServiceRecords(query)
+  return items
 }
 
 export interface CreateServiceInput {

@@ -371,7 +371,10 @@ completed / cancelled → no reabrir
 | `status`           | Chips del historial                                                        |
 | `q`                | origin, destination, client_name, **client_phone**, driver_name, type_name |
 | `city_id`          | Historial y stats de Ciudades                                              |
-| `limit` / `offset` | Opcional; default devolver todo (como hoy)                                 |
+| `from` / `to`      | RFC3339 sobre `created_at` (`from` inclusive, `to` exclusivo)              |
+| `driver_id`        | UUID del conductor asignado                                                |
+| `service_type_id`  | UUID del tipo de servicio                                                  |
+| `limit` / `offset` | Opcional; default devolver todo (como hoy). `limit` máximo 100             |
 
 
 Orden `created_at DESC`. `{ "items", "total" }`.
