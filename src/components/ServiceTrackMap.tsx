@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import GoogleMapFrame from './GoogleMapFrame'
+import { useTheme } from '../context/ThemeContext'
 import { hasGoogleMapsKey } from '../lib/mapsConfig'
 import {
   clearPolyline,
   createRoutePolyline,
   fitTo,
+  pickupRouteColor,
+  ROUTE_COLOR_DROPOFF,
   setPolylineCoords,
 } from '../lib/mapGeometry'
 import {
@@ -61,6 +64,8 @@ function ServiceTrackController({
   estimated: boolean
 }) {
   const map = useMap('service-track-map')
+  const { theme } = useTheme()
+  const pickupColor = pickupRouteColor(theme !== 'light')
   const markerLib = useMapsLibrary('marker')
   const originMarkerRef = useRef<MapPinMarker | null>(null)
   const destMarkerRef = useRef<MapPinMarker | null>(null)
@@ -72,7 +77,7 @@ function ServiceTrackController({
     if (!map) return
     lineRef.current = createRoutePolyline({
       map,
-      color: estimated ? '#fbbf24' : '#34d399',
+      color: estimated ? pickupColor : ROUTE_COLOR_DROPOFF,
       dashed: estimated,
       weight: 3.5,
     })
@@ -83,7 +88,7 @@ function ServiceTrackController({
       clearPolyline(lineRef.current)
       lineRef.current = null
     }
-  }, [map, estimated])
+  }, [map, estimated, pickupColor])
 
   useEffect(() => {
     if (!map || !markerLib) return

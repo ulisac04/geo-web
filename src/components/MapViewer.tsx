@@ -9,10 +9,14 @@ import { rankNearestToOrigin } from '../lib/fleet'
 import { isPickupLeg } from '../lib/services'
 import { fetchDrivingRoute } from '../lib/routing'
 import { hasGoogleMapsKey } from '../lib/mapsConfig'
+import { useTheme } from '../context/ThemeContext'
 import {
   clearPolyline,
   createRoutePolyline,
   fitTo,
+  pickupRouteColor,
+  ROUTE_COLOR_DROPOFF,
+  ROUTE_COLOR_TRIP,
   setPolylineCoords,
 } from '../lib/mapGeometry'
 import {
@@ -61,7 +65,7 @@ const NEAREST_LIMIT = 5
 
 function mapToolbarHint(mode: MapMode, activePin: PinFocus): string {
   if (mode === 'live') {
-    return 'Ámbar: va a buscar · Verde: va a dejar. Click en un viaje o chofer para enfocar la ruta.'
+    return 'Punteada: va a buscar · Verde continua: va a dejar. Click en un viaje o chofer para enfocar la ruta.'
   }
   if (mode === 'scheduled') {
     return 'La flota se muestra para despachar cuando llegue el momento.'
@@ -237,6 +241,9 @@ function MapViewerController({
   onTakeOffline,
 }: MapViewerProps & { nearestOnly: boolean; driverPinSize: number }) {
   const map = useMap('dispatch-map')
+  const { theme } = useTheme()
+  const isDark = theme !== 'light'
+  const pickupColor = pickupRouteColor(isDark)
   const markerLib = useMapsLibrary('marker')
   const driverMarkersRef = useRef<MapPinMarker[]>([])
   const originMarkerRef = useRef<MapPinMarker | null>(null)
@@ -286,12 +293,12 @@ function MapViewerController({
 
     tripLineRef.current = createRoutePolyline({
       map,
-      color: '#3b82f6',
+      color: ROUTE_COLOR_TRIP,
       weight: 3.5,
     })
     driverLineRef.current = createRoutePolyline({
       map,
-      color: '#fbbf24',
+      color: pickupColor,
       dashed: true,
       weight: 2.5,
     })
@@ -582,7 +589,7 @@ function MapViewerController({
         const pickup = isPickupLeg(trip.record.status)
         const line = createRoutePolyline({
           map,
-          color: pickup ? '#fbbf24' : '#34d399',
+          color: pickup ? pickupColor : ROUTE_COLOR_DROPOFF,
           dashed: pickup,
           weight: pickup ? 2.5 : 3.5,
           clickable: true,
@@ -636,7 +643,7 @@ function MapViewerController({
           const pickup = isPickupLeg(item.trip.record.status)
           const line = createRoutePolyline({
             map,
-            color: pickup ? '#fbbf24' : '#34d399',
+            color: pickup ? pickupColor : ROUTE_COLOR_DROPOFF,
             dashed: pickup,
             weight: pickup ? 2.5 : 3.5,
             clickable: true,
@@ -657,7 +664,7 @@ function MapViewerController({
       })
 
     return () => abortLiveRef.current?.abort()
-  }, [liveRouteKey, liveTrips, mode, map])
+  }, [liveRouteKey, liveTrips, mode, map, pickupColor])
 
   useEffect(() => {
     if (!map || mode !== 'live') {

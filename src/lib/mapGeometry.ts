@@ -2,6 +2,15 @@ import { toLatLng } from './mapsConfig'
 
 const DASH_REPEAT = '14px'
 
+export const ROUTE_COLOR_TRIP = '#3b82f6'
+export const ROUTE_COLOR_DROPOFF = '#34d399'
+export const ROUTE_COLOR_PICKUP_DARK = '#fbbf24'
+export const ROUTE_COLOR_PICKUP_LIGHT = '#dc2626'
+
+export function pickupRouteColor(isDark: boolean) {
+  return isDark ? ROUTE_COLOR_PICKUP_DARK : ROUTE_COLOR_PICKUP_LIGHT
+}
+
 export function fitTo(
   map: google.maps.Map,
   coordinates: [number, number][],
@@ -46,9 +55,9 @@ export function createRoutePolyline({
           {
             icon: {
               path: 'M 0,-1 0,1',
-              strokeOpacity: 0.85,
+              strokeOpacity: 1,
               strokeColor: color,
-              scale: 3,
+              scale: 3.5,
             },
             offset: '0',
             repeat: DASH_REPEAT,
