@@ -4,10 +4,26 @@ import type { HeatmapPoint } from '../lib/reports'
 import { hasGoogleMapsKey } from '../lib/mapsConfig'
 import GoogleMapFrame from './GoogleMapFrame'
 
-const ORIGIN_CORE = 'rgba(52, 211, 153, 0.55)'
-const ORIGIN_EDGE = 'rgba(52, 211, 153, 0)'
-const DEST_CORE = 'rgba(251, 191, 36, 0.55)'
-const DEST_EDGE = 'rgba(251, 191, 36, 0)'
+type HeatStop = [offset: number, color: string]
+
+/** Azul → magenta → naranja → rojo: contrasta con vegetación del mapa. */
+const ORIGIN_STOPS: HeatStop[] = [
+  [0, 'rgba(255, 248, 240, 0.92)'],
+  [0.18, 'rgba(239, 68, 68, 0.78)'],
+  [0.42, 'rgba(249, 115, 22, 0.55)'],
+  [0.68, 'rgba(244, 63, 94, 0.28)'],
+  [1, 'rgba(79, 70, 229, 0)'],
+]
+
+/** Cian → violeta: se distingue de orígenes al ver ambos. */
+const DEST_STOPS: HeatStop[] = [
+  [0, 'rgba(240, 253, 255, 0.88)'],
+  [0.2, 'rgba(34, 211, 238, 0.72)'],
+  [0.48, 'rgba(99, 102, 241, 0.48)'],
+  [0.75, 'rgba(139, 92, 246, 0.22)'],
+  [1, 'rgba(14, 165, 233, 0)'],
+]
+
 const RADIUS_PX = 42
 
 export default function HeatmapMap({
@@ -121,8 +137,8 @@ function createHeatOverlay(
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, width, height)
       ctx.globalCompositeOperation = 'lighter'
-      paintPoints(ctx, projection, sw, ne, destPoints, DEST_CORE, DEST_EDGE)
-      paintPoints(ctx, projection, sw, ne, originPoints, ORIGIN_CORE, ORIGIN_EDGE)
+      paintPoints(ctx, projection, sw, ne, destPoints, DEST_STOPS)
+      paintPoints(ctx, projection, sw, ne, originPoints, ORIGIN_STOPS)
     }
 
     onRemove() {
@@ -141,8 +157,7 @@ function paintPoints(
   sw: google.maps.Point,
   ne: google.maps.Point,
   points: HeatmapPoint[],
-  core: string,
-  edge: string,
+  stops: HeatStop[],
 ) {
   for (const point of points) {
     const pixel = projection.fromLatLngToDivPixel(new google.maps.LatLng(point.lat, point.lng))
@@ -150,8 +165,9 @@ function paintPoints(
     const x = pixel.x - sw.x
     const y = pixel.y - ne.y
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, RADIUS_PX)
-    gradient.addColorStop(0, core)
-    gradient.addColorStop(1, edge)
+    for (const [offset, color] of stops) {
+      gradient.addColorStop(offset, color)
+    }
     ctx.fillStyle = gradient
     ctx.fillRect(x - RADIUS_PX, y - RADIUS_PX, RADIUS_PX * 2, RADIUS_PX * 2)
   }
