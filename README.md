@@ -84,6 +84,3 @@ npm run preview  # servir el build
 npm run lint     # oxlint
 ```
 ## Claves Demo
-```
-Demo operador (sin cambios): operador@andina.logistic / demo1234.
-```

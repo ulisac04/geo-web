@@ -106,10 +106,6 @@ export default function LoginForm() {
       >
         {loading ? 'Autenticando…' : 'Iniciar sesión'}
       </button>
-
-      <p className="text-center text-xs text-mist/80">
-        Demo: operador@andina.logistic / demo1234 · Admin: admin@geo.local / admin1234
-      </p>
     </form>
   )
 }
