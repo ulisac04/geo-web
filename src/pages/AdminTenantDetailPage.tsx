@@ -346,7 +346,7 @@ export default function AdminTenantDetailPage() {
               <p>Cancelados {stats.services.cancelled}</p>
               <p>En el periodo {stats.services.in_range}</p>
             </StatCard>
-            <StatCard title="Gemini">
+            <StatCard title="Parser">
               <p>Total {stats.gemini.total}</p>
               <p>OK {stats.gemini.ok}</p>
               <p>Errores {stats.gemini.errors}</p>

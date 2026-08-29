@@ -44,12 +44,12 @@ const COPY: Record<
       {
         after: 0,
         title: 'Transcribiendo audio',
-        detail: 'Gemini está convirtiendo el dictado en texto.',
+        detail: 'Convirtiendo el dictado en texto.',
       },
       {
         after: 12,
         title: 'Sigue transcribiendo',
-        detail: 'Si Gemini está saturado esto puede tardar. Puedes cancelar y dictar de nuevo.',
+        detail: 'Si el servicio está saturado esto puede tardar. Puedes cancelar y dictar de nuevo.',
       },
       {
         after: 30,
@@ -58,19 +58,19 @@ const COPY: Record<
       },
     ],
     cancelTitle: '¿Cancelar la transcripción?',
-    cancelDetail: 'Se corta la espera a Gemini. El audio no se convertirá en texto.',
+    cancelDetail: 'Se corta la espera. El audio no se convertirá en texto.',
   },
   ocr: {
     phases: [
       {
         after: 0,
         title: 'Leyendo captura',
-        detail: 'Gemini está extrayendo el texto de la imagen.',
+        detail: 'Extrayendo el texto de la imagen.',
       },
       {
         after: 12,
         title: 'Sigue leyendo',
-        detail: 'Si Gemini está saturado esto puede tardar. Puedes cancelar e intentar otra captura.',
+        detail: 'Si el servicio está saturado esto puede tardar. Puedes cancelar e intentar otra captura.',
       },
       {
         after: 30,
@@ -79,7 +79,7 @@ const COPY: Record<
       },
     ],
     cancelTitle: '¿Cancelar la lectura?',
-    cancelDetail: 'Se corta la espera a Gemini. El texto de la imagen no se pegará.',
+    cancelDetail: 'Se corta la espera. El texto de la imagen no se pegará.',
   },
 }
 

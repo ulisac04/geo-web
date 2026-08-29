@@ -75,7 +75,7 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-/** Envía el contenedor nativo (webm/ogg/mp4). Convertir a WAV infla el payload y retrasa Gemini. */
+/** Envía el contenedor nativo (webm/ogg/mp4). Convertir a WAV infla el payload. */
 export async function prepareRecordingDataUrl(blob: Blob): Promise<string> {
   return blobToDataUrl(blob)
 }

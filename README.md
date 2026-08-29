@@ -45,7 +45,7 @@ Ya no hay flota/servicios/costos en `localStorage`. El poll del mapa **no** muev
 | Agenda + mapa | CRUD + poll `GET /api/v1/drivers` |
 | Catálogo / historial | `/api/v1/service-types`, `/api/v1/services` |
 | Costos + tarifa | `/api/v1/cost-rules` + `.../estimate` |
-| Extraer pedido | `POST /api/v1/parser/extract` (Gemini; `503` sin `GEMINI_API_KEY` en Geo) |
+| Extraer pedido | `POST /api/v1/parser/extract` (OpenAI; Gemini backup; `503` si no hay proveedor) |
 | Candidatos al aceptar | `POST /api/v1/dispatch/candidates` |
 | Ofrecer chofer | `PATCH /api/v1/services/{id}` `{ driver_id }` → `assigned` |
 

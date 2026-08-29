@@ -12,7 +12,6 @@ import {
 import { SAMPLE_WHATSAPP } from '../lib/mock-data'
 import { ParserError, ocrImage, transcribeAudio } from '../lib/parser'
 import { ApiError, isAbortError } from '../lib/api'
-import { useVoiceExtractMode } from '../lib/voiceExtractMode'
 import BlockingProgressOverlay from './BlockingProgressOverlay'
 
 export default function OrderInputStep() {
@@ -25,7 +24,6 @@ export default function OrderInputStep() {
     extracting,
     extractError,
   } = useDispatchFlow()
-  const [voiceMode] = useVoiceExtractMode()
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const [ocring, setOcring] = useState(false)
@@ -136,33 +134,29 @@ export default function OrderInputStep() {
     setMediaError(null)
     try {
       const dataUrl = await prepareRecordingDataUrl(blob)
-      if (voiceMode === 'transcribe') {
-        mediaAbortRef.current?.abort()
-        const controller = new AbortController()
-        mediaAbortRef.current = controller
-        setTranscribing(true)
-        await waitForPaint()
-        try {
-          const transcript = await transcribeAudio(dataUrl, controller.signal)
-          if (controller.signal.aborted) return
-          const combined = appendText(transcript)
-          await extractWithAI({ rawText: combined })
-        } catch (error) {
-          if (controller.signal.aborted || isAbortError(error)) return
-          const message =
-            error instanceof ParserError || error instanceof ApiError
-              ? error.message
-              : 'No se pudo transcribir el audio'
-          setMediaError(message)
-        } finally {
-          if (mediaAbortRef.current === controller) {
-            mediaAbortRef.current = null
-          }
-          setTranscribing(false)
+      mediaAbortRef.current?.abort()
+      const controller = new AbortController()
+      mediaAbortRef.current = controller
+      setTranscribing(true)
+      await waitForPaint()
+      try {
+        const transcript = await transcribeAudio(dataUrl, controller.signal)
+        if (controller.signal.aborted) return
+        const combined = appendText(transcript)
+        await extractWithAI({ rawText: combined })
+      } catch (error) {
+        if (controller.signal.aborted || isAbortError(error)) return
+        const message =
+          error instanceof ParserError || error instanceof ApiError
+            ? error.message
+            : 'No se pudo transcribir el audio'
+        setMediaError(message)
+      } finally {
+        if (mediaAbortRef.current === controller) {
+          mediaAbortRef.current = null
         }
-        return
+        setTranscribing(false)
       }
-      await extractWithAI({ audioDataUrl: dataUrl })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo leer el audio'
       setMediaError(message)
@@ -289,11 +283,7 @@ export default function OrderInputStep() {
                 onClick={() => void startRecording()}
                 className="rounded-md border border-line bg-elevated p-1.5 text-mist hover:border-signal/50 hover:text-signal disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Grabar audio"
-                title={
-                  voiceMode === 'transcribe'
-                    ? 'Dictar, transcribir y extraer'
-                    : 'Dictar y extraer el pedido'
-                }
+                title="Dictar, transcribir y extraer"
               >
                 {transcribing || extracting ? (
                   <Loader2 className="size-4 animate-spin text-signal" />
@@ -326,11 +316,7 @@ export default function OrderInputStep() {
           ) : recording ? (
             <span className="text-xs text-mist">Grabando · máx. {MAX_AUDIO_SECONDS}s</span>
           ) : (
-            <span className="text-xs text-mist">
-              {voiceMode === 'transcribe'
-                ? 'Nota de voz: transcribir y luego extraer'
-                : 'Nota de voz: extraer de una vez'}
-            </span>
+            <span className="text-xs text-mist">Nota de voz: transcribir y luego extraer</span>
           )}
         </div>
         {mediaError ? (

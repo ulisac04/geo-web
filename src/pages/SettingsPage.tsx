@@ -11,7 +11,6 @@ import {
   resolveWhatsAppTemplate,
 } from '../lib/whatsapp'
 import { useSettings } from '../context/SettingsContext'
-import { useVoiceExtractMode, type VoiceExtractMode } from '../lib/voiceExtractMode'
 import type { CityId, Driver, MapRefreshSeconds, OfferWaitSeconds, OrderDraft } from '../types'
 
 export default function SettingsPage() {
@@ -206,8 +205,6 @@ export default function SettingsPage() {
             </label>
             <NotificationPermissionButton enabled={settings.schedulingEnabled} />
           </section>
-
-          <VoiceExtractModeSection />
         </div>
 
         <section className="min-w-0 rounded-xl border border-line bg-panel p-5">
@@ -250,56 +247,6 @@ export default function SettingsPage() {
         </section>
       </div>
     </div>
-  )
-}
-
-function VoiceExtractModeSection() {
-  const [mode, setMode] = useVoiceExtractMode()
-  const options: { id: VoiceExtractMode; title: string; detail: string }[] = [
-    {
-      id: 'direct',
-      title: 'Del audio a los puntos (1 llamada)',
-      detail: 'Gemini infiere las calles en la nota de voz y pasa a Puntos.',
-    },
-    {
-      id: 'transcribe',
-      title: 'Transcribir y luego extraer (2 llamadas)',
-      detail: 'Primero pega el texto literal; después extrae el pedido y pasa a Puntos.',
-    },
-  ]
-
-  return (
-    <section className="rounded-xl border border-line bg-panel p-5">
-      <h2 className="text-sm font-semibold text-snow">Pruebas de nota de voz</h2>
-      <p className="mt-1 text-xs text-mist">
-        Solo en este navegador. Cambia el modo, dicta la misma ruta y compara los pines en Puntos.
-      </p>
-      <div className="mt-4 space-y-2">
-        {options.map((option) => {
-          const selected = mode === option.id
-          return (
-            <label
-              key={option.id}
-              className={`flex cursor-pointer gap-3 rounded-lg border px-3 py-2.5 ${
-                selected ? 'border-signal/50 bg-signal/10' : 'border-line bg-ink'
-              }`}
-            >
-              <input
-                type="radio"
-                name="voice-extract-mode"
-                className="mt-1 accent-emerald-400"
-                checked={selected}
-                onChange={() => setMode(option.id)}
-              />
-              <span>
-                <span className="block text-sm text-snow">{option.title}</span>
-                <span className="mt-0.5 block text-xs text-mist">{option.detail}</span>
-              </span>
-            </label>
-          )
-        })}
-      </div>
-    </section>
   )
 }
 

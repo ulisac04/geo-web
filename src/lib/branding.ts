@@ -33,21 +33,74 @@ export function tenantSlugFromHost(hostname = window.location.hostname): string 
   return null
 }
 
-export function contrastOn(hex: string): string {
+type Rgb = { r: number; g: number; b: number }
+
+let lastBranding: PublicBranding | null = null
+let lastTitle: string | null | undefined
+
+function parseRgb(hex: string): Rgb | null {
   const raw = hex.replace('#', '')
-  if (raw.length !== 6) return '#07090d'
+  if (raw.length !== 6) return null
   const n = Number.parseInt(raw, 16)
-  if (Number.isNaN(n)) return '#07090d'
-  const r = (n >> 16) & 255
-  const g = (n >> 8) & 255
-  const b = n & 255
-  const y = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  if (Number.isNaN(n)) return null
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+
+function toHex({ r, g, b }: Rgb): string {
+  const ch = (n: number) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, '0')
+  return `#${ch(r)}${ch(g)}${ch(b)}`
+}
+
+function relativeLuminance({ r, g, b }: Rgb): number {
+  const lin = (c: number) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+function contrastRatio(a: string, b: string): number {
+  const fg = parseRgb(a)
+  const bg = parseRgb(b)
+  if (!fg || !bg) return 0
+  const l1 = relativeLuminance(fg)
+  const l2 = relativeLuminance(bg)
+  const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1]
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+function mix(from: Rgb, to: Rgb, t: number): Rgb {
+  return {
+    r: from.r + (to.r - from.r) * t,
+    g: from.g + (to.g - from.g) * t,
+    b: from.b + (to.b - from.b) * t,
+  }
+}
+
+/** Darkens a brand color until it reads on a light page background. */
+export function readableOnLight(hex: string, bg = '#f4f6f9', minRatio = 4.5): string {
+  if (contrastRatio(hex, bg) >= minRatio) return hex
+  const from = parseRgb(hex)
+  if (!from) return '#047857'
+  const black: Rgb = { r: 0, g: 0, b: 0 }
+  for (let t = 0.05; t <= 0.9; t += 0.05) {
+    const next = toHex(mix(from, black, t))
+    if (contrastRatio(next, bg) >= minRatio) return next
+  }
+  return '#047857'
+}
+
+export function contrastOn(hex: string): string {
+  const rgb = parseRgb(hex)
+  if (!rgb) return '#07090d'
+  const y = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255
   return y > 0.55 ? '#07090d' : '#f8fafc'
 }
 
-export function applyBranding(branding: PublicBranding | null, title?: string | null): void {
+function paintBranding(): void {
   const root = document.documentElement
-  const name = branding?.name?.trim() || title?.trim()
+  const branding = lastBranding
+  const name = branding?.name?.trim() || lastTitle?.trim()
   document.title = name || PLATFORM_TITLE
   if (!branding) {
     root.style.removeProperty('--signal')
@@ -55,9 +108,30 @@ export function applyBranding(branding: PublicBranding | null, title?: string | 
     root.style.removeProperty('--on-signal')
     return
   }
-  root.style.setProperty('--signal', branding.primary_color)
-  root.style.setProperty('--signal-dim', branding.accent_color)
-  root.style.setProperty('--on-signal', contrastOn(branding.primary_color))
+  const light = root.classList.contains('light')
+  const primary = branding.primary_color
+  const accent = branding.accent_color
+  if (light) {
+    const preferred = contrastRatio(accent, '#f4f6f9') >= contrastRatio(primary, '#f4f6f9') ? accent : primary
+    const signal = readableOnLight(preferred)
+    root.style.setProperty('--signal', signal)
+    root.style.setProperty('--signal-dim', primary)
+    root.style.setProperty('--on-signal', contrastOn(signal))
+  } else {
+    root.style.setProperty('--signal', primary)
+    root.style.setProperty('--signal-dim', accent)
+    root.style.setProperty('--on-signal', contrastOn(primary))
+  }
+}
+
+export function applyBranding(branding: PublicBranding | null, title?: string | null): void {
+  lastBranding = branding
+  lastTitle = title
+  paintBranding()
+}
+
+export function refreshBrandingColors(): void {
+  paintBranding()
 }
 
 export function logoSrc(logoUrl: string | null | undefined): string | null {

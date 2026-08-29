@@ -23,8 +23,6 @@ export interface ExtractedOrder {
 export async function extractOrder(
   input: {
     rawText?: string
-    imageDataUrl?: string | null
-    audioDataUrl?: string | null
   },
   signal?: AbortSignal,
 ): Promise<ExtractedOrder> {
@@ -93,25 +91,11 @@ export async function ocrImage(imageDataUrl: string, signal?: AbortSignal): Prom
   }
 }
 
-function buildRequestBody(input: {
-  rawText?: string
-  imageDataUrl?: string | null
-  audioDataUrl?: string | null
-}) {
-  const audio = splitDataUrl(input.audioDataUrl)
-  if (audio) {
-    return { audio_base64: audio.base64, mime_type: audio.mimeType }
-  }
-
+function buildRequestBody(input: { rawText?: string }) {
   const rawText = input.rawText?.trim()
   if (rawText) return { raw_text: rawText }
 
-  const image = splitDataUrl(input.imageDataUrl)
-  if (image) {
-    return { image_base64: image.base64, mime_type: image.mimeType }
-  }
-
-  throw new ParserError('Pega un texto, una captura o una nota de voz para extraer el pedido', 400)
+  throw new ParserError('Pega un texto, una captura o dicta para extraer el pedido', 400)
 }
 
 function splitDataUrl(dataUrl: string | null | undefined): { base64: string; mimeType: string } | null {

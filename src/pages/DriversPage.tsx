@@ -314,9 +314,20 @@ export default function DriversPage() {
                     <div>
                       <p className="font-medium text-snow">{driver.name}</p>
                       {driver.inviteCode ? (
-                        <p className="font-mono text-[11px] tracking-wide text-signal">
-                          {driver.inviteCode}
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className="font-mono text-[11px] tracking-wide text-signal">
+                            {driver.inviteCode}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => void copyInvite(driver)}
+                            className="rounded p-0.5 text-mist hover:bg-elevated hover:text-signal"
+                            title={copiedId === driver.id ? 'Copiado' : 'Copiar código'}
+                            aria-label={copiedId === driver.id ? 'Copiado' : 'Copiar código'}
+                          >
+                            <Copy className="size-3" />
+                          </button>
+                        </div>
                       ) : null}
                       {driver.notes ? <p className="text-xs text-mist">{driver.notes}</p> : null}
                     </div>
@@ -372,14 +383,6 @@ export default function DriversPage() {
                 </td>
                 <td className="py-3">
                   <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => void copyInvite(driver)}
-                      className="rounded-md p-1.5 text-mist hover:bg-elevated hover:text-snow"
-                      title={copiedId === driver.id ? 'Copiado' : 'Copiar código'}
-                    >
-                      <Copy className="size-4" />
-                    </button>
                     <a
                       href={buildDriverInviteWhatsAppUrl(
                         driver.phone,

@@ -115,7 +115,7 @@ function fallbackMessage(status: number): string {
   if (status === 403) return 'No tienes acceso a este tenant'
   if (status === 404) return 'No se encontró el recurso'
   if (status === 409) return 'La operación entra en conflicto con el estado actual'
-  if (status === 429) return 'Cuota de Gemini agotada. Intenta de nuevo en un momento.'
-  if (status === 503) return 'El parser no está configurado (falta GEMINI_API_KEY en el servidor)'
+  if (status === 429) return 'Cuota del parser agotada. Intenta de nuevo en un momento.'
+  if (status === 503) return 'El parser no está configurado en el servidor'
   return `Error del servidor (${status})`
 }

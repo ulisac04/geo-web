@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { refreshBrandingColors } from '../lib/branding'
 
 export type Theme = 'dark' | 'light'
 
@@ -40,6 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useLayoutEffect(() => {
     applyThemeClass(theme)
+    refreshBrandingColors()
     try {
       localStorage.setItem(STORAGE_KEY, theme)
     } catch {
