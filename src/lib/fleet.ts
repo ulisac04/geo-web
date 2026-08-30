@@ -133,15 +133,6 @@ export async function patchDriverStatus(id: string, status: DriverStatus): Promi
   return fromApi(updated)
 }
 
-export async function patchDriverCity(id: string, cityId: CityId): Promise<Driver> {
-  const [lng, lat] = getCity(cityId).center
-  const updated = await api<ApiDriver>(`/api/v1/drivers/${id}`, {
-    method: 'PATCH',
-    body: { city_id: cityId, lng, lat },
-  })
-  return fromApi(updated)
-}
-
 export async function patchDriverLocation(
   id: string,
   lng: number,

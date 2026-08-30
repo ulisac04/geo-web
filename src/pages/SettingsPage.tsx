@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { CITIES } from '../lib/cities'
 import { parseUsd } from '../lib/money'
 import { MAP_REFRESH_OPTIONS, OFFER_WAIT_OPTIONS, REMINDER_MINUTE_OPTIONS, type ReminderMinutes } from '../lib/settings'
 import {
@@ -11,13 +10,12 @@ import {
   resolveWhatsAppTemplate,
 } from '../lib/whatsapp'
 import { useSettings } from '../context/SettingsContext'
-import type { CityId, Driver, MapRefreshSeconds, OfferWaitSeconds, OrderDraft } from '../types'
+import type { Driver, MapRefreshSeconds, OfferWaitSeconds, OrderDraft } from '../types'
 
 export default function SettingsPage() {
   const {
     settings,
     city,
-    setCityId,
     setMapRefreshSeconds,
     setUsdToCop,
     setUsdToVes,
@@ -55,25 +53,12 @@ export default function SettingsPage() {
           <section className="rounded-xl border border-line bg-panel p-5">
             <h2 className="text-sm font-semibold text-snow">Ciudad operativa</h2>
             <p className="mt-1 text-xs text-mist">
-              El mapa, el autocomplete y la flota siguen esta ciudad. Cambia a San Cristóbal para
-              probar el despacho allá.
+              El mapa, el autocomplete y la flota siguen la ciudad asignada a la empresa. Solo el
+              administrador de plataforma puede cambiarla.
             </p>
-            <label className="mt-4 block space-y-1">
-              <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
-                Ciudad
-              </span>
-              <select
-                value={settings.cityId}
-                onChange={(e) => void setCityId(e.target.value as CityId)}
-                className="w-full rounded-md border border-line bg-ink px-2.5 py-2 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
-              >
-                {CITIES.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} · {item.country}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <p className="mt-4 text-sm font-medium text-snow">
+              {city.name} · {city.country}
+            </p>
           </section>
 
           <section className="rounded-xl border border-line bg-panel p-5">

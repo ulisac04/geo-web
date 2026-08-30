@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AppSettings, CityId, MapRefreshSeconds, OfferWaitSeconds } from '../types'
+import type { AppSettings, MapRefreshSeconds, OfferWaitSeconds } from '../types'
 import { getCity, type City } from '../lib/cities'
 import {
   cacheSettings,
@@ -22,7 +22,6 @@ interface SettingsContextValue {
   settings: AppSettings
   city: City
   setMapRefreshSeconds: (seconds: MapRefreshSeconds) => Promise<void>
-  setCityId: (cityId: CityId) => Promise<void>
   setUsdToCop: (rate: number) => Promise<void>
   setUsdToVes: (rate: number) => Promise<void>
   setWhatsappDriverTemplate: (template: string) => Promise<void>
@@ -71,23 +70,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         apply(await patchSettings({ mapRefreshSeconds: seconds }))
       } catch {
         // Keep the local interval so the map poll still follows the operator.
-      }
-    },
-    [apply],
-  )
-
-  const setCityId = useCallback(
-    async (cityId: CityId) => {
-      generation.current += 1
-      setSettings((current) => {
-        const next = { ...current, cityId }
-        cacheSettings(next)
-        return next
-      })
-      try {
-        apply(await patchSettings({ cityId }))
-      } catch {
-        // Keep the local city so map/autocomplete/fleet still switch.
       }
     },
     [apply],
@@ -219,7 +201,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       settings,
       city,
       setMapRefreshSeconds,
-      setCityId,
       setUsdToCop,
       setUsdToVes,
       setWhatsappDriverTemplate,
@@ -232,7 +213,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       settings,
       city,
       setMapRefreshSeconds,
-      setCityId,
       setUsdToCop,
       setUsdToVes,
       setWhatsappDriverTemplate,

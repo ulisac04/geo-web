@@ -7,12 +7,11 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { CityId, Driver, DriverDraft, DriverStatus } from '../types'
+import type { Driver, DriverDraft, DriverStatus } from '../types'
 import {
   createDriver,
   deleteDriver,
   fetchDrivers,
-  patchDriverCity,
   patchDriverLocation,
   patchDriverStatus,
   regenerateDriverInvite,
@@ -27,7 +26,6 @@ interface FleetContextValue {
   updateDriver: (id: string, draft: DriverDraft) => Promise<void>
   removeDriver: (id: string) => Promise<void>
   setStatus: (id: string, status: DriverStatus) => Promise<void>
-  moveDriverCity: (id: string, cityId: CityId) => Promise<void>
   setDriverLocation: (id: string, coords: [number, number]) => Promise<void>
   rotateInvite: (id: string) => Promise<Driver>
 }
@@ -80,11 +78,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
   }, [])
 
-  const moveDriverCity = useCallback(async (id: string, cityId: CityId) => {
-    const updated = await patchDriverCity(id, cityId)
-    setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
-  }, [])
-
   const setDriverLocation = useCallback(async (id: string, coords: [number, number]) => {
     const updated = await patchDriverLocation(id, coords[0], coords[1])
     setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
@@ -104,7 +97,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       updateDriver,
       removeDriver,
       setStatus,
-      moveDriverCity,
       setDriverLocation,
       rotateInvite,
     }),
@@ -115,7 +107,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       updateDriver,
       removeDriver,
       setStatus,
-      moveDriverCity,
       setDriverLocation,
       rotateInvite,
     ],

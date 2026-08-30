@@ -110,6 +110,7 @@ export function patchTenant(
     accent_color?: string
     subdomain?: string
     service_limit?: number
+    city_id?: string
   },
 ) {
   return api<AdminTenant>(`/api/v1/admin/tenants/${id}`, { method: 'PATCH', body })

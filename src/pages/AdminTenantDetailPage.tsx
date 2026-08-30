@@ -15,7 +15,8 @@ import {
   type TenantStats,
 } from '../lib/admin'
 import { appBaseHost, contrastOn, logoSrc } from '../lib/branding'
-import { getCity } from '../lib/cities'
+import { CITIES, getCity, isCityId } from '../lib/cities'
+import type { CityId } from '../types'
 
 function isoRange(days: number): { from: string; to: string } {
   const to = new Date()
@@ -31,9 +32,11 @@ export default function AdminTenantDetailPage() {
   const [days, setDays] = useState<7 | 30>(30)
   const [error, setError] = useState('')
   const [savingBrand, setSavingBrand] = useState(false)
+  const [savingCity, setSavingCity] = useState(false)
   const [logoBusy, setLogoBusy] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
+  const [cityId, setCityId] = useState<CityId>('caracas')
   const [primaryColor, setPrimaryColor] = useState('#34d399')
   const [accentColor, setAccentColor] = useState('#059669')
   const [subdomain, setSubdomain] = useState('')
@@ -46,6 +49,7 @@ export default function AdminTenantDetailPage() {
     const detail = await getTenant(tenantId)
     setTenant(detail)
     setName(detail.name)
+    setCityId(isCityId(detail.city_id) ? detail.city_id : 'caracas')
     setPrimaryColor(detail.primary_color)
     setAccentColor(detail.accent_color)
     setSubdomain(detail.subdomain ?? '')
@@ -96,6 +100,21 @@ export default function AdminTenantDetailPage() {
       setError(err instanceof Error ? err.message : 'No se pudo guardar la marca')
     } finally {
       setSavingBrand(false)
+    }
+  }
+
+  async function saveCity(event: FormEvent) {
+    event.preventDefault()
+    if (!tenant) return
+    setSavingCity(true)
+    setError('')
+    try {
+      await patchTenant(tenant.id, { city_id: cityId })
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la ciudad')
+    } finally {
+      setSavingCity(false)
     }
   }
 
@@ -195,6 +214,39 @@ export default function AdminTenantDetailPage() {
         </button>
       </div>
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+
+      <section className="rounded-xl border border-line p-4">
+        <h2 className="mb-3 text-sm font-semibold text-snow">Ciudad</h2>
+        <p className="mb-3 text-xs text-mist">
+          La empresa opera solo en esta ciudad. El operador no puede cambiarla.
+        </p>
+        <form onSubmit={saveCity} className="flex flex-wrap items-end gap-3">
+          <label className="min-w-56 flex-1 space-y-1">
+            <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+              Ciudad asignada
+            </span>
+            <select
+              required
+              value={cityId}
+              onChange={(e) => setCityId(e.target.value as CityId)}
+              className={inputClass}
+            >
+              {CITIES.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.name} · {city.country}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            disabled={savingCity || cityId === tenant.city_id}
+            className="rounded-md bg-signal px-3 py-2 text-sm font-semibold text-on-signal disabled:opacity-60"
+          >
+            {savingCity ? 'Guardando…' : 'Guardar ciudad'}
+          </button>
+        </form>
+      </section>
 
       <section className="rounded-xl border border-line p-4">
         <h2 className="mb-3 text-sm font-semibold text-snow">Marca</h2>

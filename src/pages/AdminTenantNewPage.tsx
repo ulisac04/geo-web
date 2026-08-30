@@ -77,6 +77,7 @@ export default function AdminTenantNewPage() {
         </Field>
         <Field label="Ciudad">
           <select
+            required
             value={cityId}
             onChange={(e) => setCityId(e.target.value as CityId)}
             className={inputClass}
@@ -87,6 +88,7 @@ export default function AdminTenantNewPage() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-mist">La empresa opera solo en esta ciudad.</p>
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Color primario">
