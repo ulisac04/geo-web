@@ -127,7 +127,9 @@ export function createDriverPopup(
       ? 'En un servicio'
       : driver.status === 'offline'
         ? 'Fuera de servicio'
-        : 'Disponible'
+        : driver.status === 'stale'
+          ? 'Sin señal'
+          : 'Disponible'
   meta.textContent = driver.licensePlate ? `${driver.licensePlate} · ${statusLabel}` : statusLabel
   title.append(meta)
 

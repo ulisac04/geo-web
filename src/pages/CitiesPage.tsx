@@ -13,6 +13,7 @@ function cityStats(city: City, drivers: Driver[], records: ServiceRecord[]) {
     total: fleet.length,
     available: fleet.filter((driver) => driver.status === 'available').length,
     busy: fleet.filter((driver) => driver.status === 'busy').length,
+    stale: fleet.filter((driver) => driver.status === 'stale').length,
     offline: fleet.filter((driver) => driver.status === 'offline').length,
     open: trips.filter(
       (record) => record.status === 'pending' || isLiveServiceStatus(record.status),
@@ -61,7 +62,7 @@ export default function CitiesPage() {
             <div>
               <dt className="text-mist">En servicio</dt>
               <dd className="text-snow">
-                {stats.available} disp. · {stats.busy} ocup.
+                {stats.available} disp. · {stats.busy} ocup. · {stats.stale} sin señal
               </dd>
             </div>
             <div>

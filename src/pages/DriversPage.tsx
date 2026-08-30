@@ -8,16 +8,17 @@ import { useFleet } from '../context/FleetContext'
 import { useSettings } from '../context/SettingsContext'
 import { formatVehicleLine, vehicleTypeLabel } from '../lib/vehicles'
 import { buildDriverInviteWhatsAppUrl } from '../lib/whatsapp'
-import type { Driver, DriverDraft, DriverStatus, VehicleFilter, VehicleType } from '../types'
+import type { Driver, DriverDraft, DriverStatus, VehicleFilter, VehicleType, WritableDriverStatus } from '../types'
 
 const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
   { value: 'all', label: 'Todos' },
   { value: 'available', label: 'Disponibles' },
   { value: 'busy', label: 'Ocupados' },
+  { value: 'stale', label: 'Sin señal' },
   { value: 'offline', label: 'Fuera de servicio' },
 ]
 
-const STATUS_BUTTONS: { value: DriverStatus; label: string; short: string }[] = [
+const STATUS_BUTTONS: { value: WritableDriverStatus; label: string; short: string }[] = [
   { value: 'available', label: 'Disponible', short: 'Disp.' },
   { value: 'busy', label: 'Ocupado', short: 'Ocup.' },
   { value: 'offline', label: 'Fuera de servicio', short: 'Fuera' },
@@ -39,7 +40,7 @@ function VehicleTypeIcon({ type, className }: { type: VehicleType; className?: s
   return <Icon className={className ?? 'size-4'} />
 }
 
-function statusButtonClass(value: DriverStatus, active: boolean) {
+function statusButtonClass(value: WritableDriverStatus, active: boolean) {
   return `status-toggle-btn status-toggle-btn--${value}${active ? ' is-active' : ''}`
 }
 
@@ -78,6 +79,7 @@ export default function DriversPage() {
 
   const available = cityDrivers.filter((d) => d.status === 'available').length
   const busy = cityDrivers.filter((d) => d.status === 'busy').length
+  const stale = cityDrivers.filter((d) => d.status === 'stale').length
   const offline = cityDrivers.filter((d) => d.status === 'offline').length
 
   const visible = useMemo(() => {
@@ -146,7 +148,7 @@ export default function DriversPage() {
     }
   }
 
-  function requestStatus(driver: Driver, status: DriverStatus) {
+  function requestStatus(driver: Driver, status: WritableDriverStatus) {
     if (status === driver.status) return
     if (status === 'offline') {
       setPendingOffline(driver)
@@ -200,8 +202,8 @@ export default function DriversPage() {
         <div>
           <h1 className="text-lg font-semibold text-snow">Agenda de conductores</h1>
           <p className="text-xs text-mist">
-            Mostrando {city.name} · {available} disponibles · {busy} ocupados · {offline} fuera de
-            servicio
+            Mostrando {city.name} · {available} disponibles · {busy} ocupados · {stale} sin señal ·{' '}
+            {offline} fuera de servicio
           </p>
         </div>
         <button
@@ -332,26 +334,31 @@ export default function DriversPage() {
                   </div>
                 </td>
                 <td className="py-3 pr-3">
-                  <div
-                    role="group"
-                    aria-label={`Estado de ${driver.name}`}
-                    className="status-toggle"
-                  >
-                    {STATUS_BUTTONS.map((item) => {
-                      const active = driver.status === item.value
-                      return (
-                        <button
-                          key={item.value}
-                          type="button"
-                          title={item.label}
-                          aria-pressed={active}
-                          onClick={() => requestStatus(driver, item.value)}
-                          className={statusButtonClass(item.value, active)}
-                        >
-                          {item.short}
-                        </button>
-                      )
-                    })}
+                  <div className="flex flex-col gap-1">
+                    <div
+                      role="group"
+                      aria-label={`Estado de ${driver.name}`}
+                      className="status-toggle"
+                    >
+                      {STATUS_BUTTONS.map((item) => {
+                        const active = driver.status === item.value
+                        return (
+                          <button
+                            key={item.value}
+                            type="button"
+                            title={item.label}
+                            aria-pressed={active}
+                            onClick={() => requestStatus(driver, item.value)}
+                            className={statusButtonClass(item.value, active)}
+                          >
+                            {item.short}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {driver.status === 'stale' ? (
+                      <p className="text-[11px] font-medium text-mist">Sin señal</p>
+                    ) : null}
                   </div>
                 </td>
                 <td className="py-3">

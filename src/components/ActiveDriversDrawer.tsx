@@ -8,7 +8,8 @@ import DriverAvatar from './DriverAvatar'
 const STATUS_RANK: Record<DriverStatus, number> = {
   available: 0,
   busy: 1,
-  offline: 2,
+  stale: 2,
+  offline: 3,
 }
 
 function matchesQuery(driver: Driver, query: string): boolean {
@@ -20,6 +21,7 @@ function matchesQuery(driver: Driver, query: string): boolean {
 function statusDot(status: DriverStatus): { className: string; label: string } {
   if (status === 'available') return { className: 'bg-signal', label: 'Disponible' }
   if (status === 'busy') return { className: 'bg-warn', label: 'Ocupado' }
+  if (status === 'stale') return { className: 'bg-mist', label: 'Sin señal' }
   return { className: 'bg-danger', label: 'Fuera de servicio' }
 }
 

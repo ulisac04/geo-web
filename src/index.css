@@ -125,6 +125,11 @@ html.light .driver-marker {
   border-color: #ef4444;
 }
 
+.driver-pin.stale .driver-marker {
+  background: #78716c;
+  border-color: #a8a29e;
+}
+
 .driver-marker-label {
   position: absolute;
   left: 50%;

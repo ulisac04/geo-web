@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Copy, MessageCircle, RefreshCw, X } from 'lucide-react'
 import PhoneField from './PhoneField'
 import PhotoUploadField from './PhotoUploadField'
-import type { Driver, DriverDraft, DriverStatus } from '../types'
+import type { Driver, DriverDraft, WritableDriverStatus } from '../types'
 import { EMPTY_DRAFT } from '../lib/fleet'
 import { VEHICLE_TYPE_OPTIONS } from '../lib/vehicles'
 
@@ -16,7 +16,7 @@ interface DriverFormProps {
   onRegenerateInvite?: () => void
 }
 
-const STATUSES: { value: DriverStatus; label: string }[] = [
+const STATUSES: { value: WritableDriverStatus; label: string }[] = [
   { value: 'available', label: 'Disponible' },
   { value: 'busy', label: 'Ocupado' },
   { value: 'offline', label: 'Fuera de servicio' },
@@ -49,7 +49,7 @@ export default function DriverForm({
             driverPhoto: driver.driverPhoto,
             vehiclePhoto: driver.vehiclePhoto,
             fichaPhoto: driver.fichaPhoto,
-            status: driver.status,
+            status: driver.status === 'stale' ? 'available' : driver.status,
             notes: driver.notes,
           }
         : EMPTY_DRAFT,
@@ -206,7 +206,7 @@ export default function DriverForm({
             <select
               value={draft.status}
               onChange={(e) =>
-                setDraft((prev) => ({ ...prev, status: e.target.value as DriverStatus }))
+                setDraft((prev) => ({ ...prev, status: e.target.value as WritableDriverStatus }))
               }
               className="w-full rounded-md border border-line bg-ink px-2.5 py-1.5 text-sm text-snow focus:border-signal/50 focus:ring-1 focus:ring-signal/30 focus:outline-none"
             >

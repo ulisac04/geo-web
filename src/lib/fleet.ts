@@ -1,4 +1,4 @@
-import type { CityId, Driver, DriverDraft, DriverStatus, VehicleType } from '../types'
+import type { CityId, Driver, DriverDraft, DriverStatus, VehicleType, WritableDriverStatus } from '../types'
 import { api } from './api'
 import { getCity } from './cities'
 import { defaultPhoneCountry, toWhatsAppDigits } from './phone'
@@ -125,7 +125,7 @@ export async function updateDriver(id: string, draft: DriverDraft): Promise<Driv
   return fromApi(updated)
 }
 
-export async function patchDriverStatus(id: string, status: DriverStatus): Promise<Driver> {
+export async function patchDriverStatus(id: string, status: WritableDriverStatus): Promise<Driver> {
   const updated = await api<ApiDriver>(`/api/v1/drivers/${id}`, {
     method: 'PATCH',
     body: { status },
@@ -251,7 +251,7 @@ export function closestAssignable(
   limit = 5,
 ): Driver[] {
   return rankByDistanceToOrigin(drivers, origin, limit, Infinity, (driver) =>
-    driver.status !== 'offline',
+    driver.status !== 'offline' && driver.status !== 'stale',
   )
 }
 

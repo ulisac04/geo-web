@@ -53,6 +53,7 @@ interface DispatchContextValue {
   copied: CopiedFeedback
   availableCount: number
   busyCount: number
+  staleCount: number
   offlineCount: number
   activePin: PinFocus
   mapMode: MapMode
@@ -147,6 +148,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
 
   const availableCount = fleet.filter((d) => d.status === 'available').length
   const busyCount = fleet.filter((d) => d.status === 'busy').length
+  const staleCount = fleet.filter((d) => d.status === 'stale').length
   const offlineCount = fleet.filter((d) => d.status === 'offline').length
 
   useEffect(() => {
@@ -898,6 +900,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       copied,
       availableCount,
       busyCount,
+      staleCount,
       offlineCount,
       activePin,
       mapMode,
@@ -966,6 +969,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       copied,
       availableCount,
       busyCount,
+      staleCount,
       offlineCount,
       activePin,
       mapMode,

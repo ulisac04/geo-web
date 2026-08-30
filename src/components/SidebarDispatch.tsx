@@ -28,6 +28,7 @@ export default function SidebarDispatch() {
     rawText,
     availableCount,
     busyCount,
+    staleCount,
     offlineCount,
     mapMode,
     setMapMode,
@@ -81,6 +82,11 @@ export default function SidebarDispatch() {
           <span className="inline-flex items-center gap-1.5 font-medium text-warn">
             <span className="size-1.5 rounded-full bg-warn" />
             {busyCount} Ocupados
+          </span>
+          <span className="text-line">|</span>
+          <span className="inline-flex items-center gap-1.5 font-medium text-mist">
+            <span className="size-1.5 rounded-full bg-mist" />
+            {staleCount} Sin señal
           </span>
           <span className="text-line">|</span>
           <span className="inline-flex items-center gap-1.5 font-medium text-danger">

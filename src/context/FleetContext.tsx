@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Driver, DriverDraft, DriverStatus } from '../types'
+import type { Driver, DriverDraft, WritableDriverStatus } from '../types'
 import {
   createDriver,
   deleteDriver,
@@ -25,7 +25,7 @@ interface FleetContextValue {
   addDriver: (draft: DriverDraft) => Promise<void>
   updateDriver: (id: string, draft: DriverDraft) => Promise<void>
   removeDriver: (id: string) => Promise<void>
-  setStatus: (id: string, status: DriverStatus) => Promise<void>
+  setStatus: (id: string, status: WritableDriverStatus) => Promise<void>
   setDriverLocation: (id: string, coords: [number, number]) => Promise<void>
   rotateInvite: (id: string) => Promise<Driver>
 }
@@ -73,7 +73,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     setDrivers((current) => current.filter((driver) => driver.id !== id))
   }, [])
 
-  const setStatus = useCallback(async (id: string, status: DriverStatus) => {
+  const setStatus = useCallback(async (id: string, status: WritableDriverStatus) => {
     const updated = await patchDriverStatus(id, status)
     setDrivers((current) => current.map((driver) => (driver.id === id ? updated : driver)))
   }, [])

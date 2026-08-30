@@ -1,5 +1,6 @@
 export type CityId = 'caracas' | 'san_cristobal' | 'cucuta' | 'bogota'
-export type DriverStatus = 'available' | 'busy' | 'offline'
+export type DriverStatus = 'available' | 'busy' | 'offline' | 'stale'
+export type WritableDriverStatus = Exclude<DriverStatus, 'stale'>
 export type DispatchStep = 1 | 2 | 3 | 4
 export type ServiceStatus =
   | 'pending'
