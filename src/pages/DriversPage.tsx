@@ -18,10 +18,16 @@ const FILTERS: { value: 'all' | DriverStatus; label: string }[] = [
   { value: 'offline', label: 'Fuera de servicio' },
 ]
 
-const STATUS_BUTTONS: { value: WritableDriverStatus; label: string; short: string }[] = [
-  { value: 'available', label: 'Disponible', short: 'Disp.' },
-  { value: 'busy', label: 'Ocupado', short: 'Ocup.' },
-  { value: 'offline', label: 'Fuera de servicio', short: 'Fuera' },
+const STATUS_BUTTONS: {
+  value: DriverStatus
+  label: string
+  short: string
+  writable: boolean
+}[] = [
+  { value: 'available', label: 'Disponible', short: 'Disp.', writable: true },
+  { value: 'busy', label: 'Ocupado', short: 'Ocup.', writable: true },
+  { value: 'offline', label: 'Fuera de servicio', short: 'Fuera', writable: true },
+  { value: 'stale', label: 'Sin señal', short: 'Sin s.', writable: false },
 ]
 
 const VEHICLE_FILTERS: {
@@ -40,7 +46,7 @@ function VehicleTypeIcon({ type, className }: { type: VehicleType; className?: s
   return <Icon className={className ?? 'size-4'} />
 }
 
-function statusButtonClass(value: WritableDriverStatus, active: boolean) {
+function statusButtonClass(value: DriverStatus, active: boolean) {
   return `status-toggle-btn status-toggle-btn--${value}${active ? ' is-active' : ''}`
 }
 
@@ -334,31 +340,30 @@ export default function DriversPage() {
                   </div>
                 </td>
                 <td className="py-3 pr-3">
-                  <div className="flex flex-col gap-1">
-                    <div
-                      role="group"
-                      aria-label={`Estado de ${driver.name}`}
-                      className="status-toggle"
-                    >
-                      {STATUS_BUTTONS.map((item) => {
-                        const active = driver.status === item.value
-                        return (
-                          <button
-                            key={item.value}
-                            type="button"
-                            title={item.label}
-                            aria-pressed={active}
-                            onClick={() => requestStatus(driver, item.value)}
-                            className={statusButtonClass(item.value, active)}
-                          >
-                            {item.short}
-                          </button>
-                        )
-                      })}
-                    </div>
-                    {driver.status === 'stale' ? (
-                      <p className="text-[11px] font-medium text-mist">Sin señal</p>
-                    ) : null}
+                  <div
+                    role="group"
+                    aria-label={`Estado de ${driver.name}`}
+                    className="status-toggle"
+                  >
+                    {STATUS_BUTTONS.map((item) => {
+                      const active = driver.status === item.value
+                      return (
+                        <button
+                          key={item.value}
+                          type="button"
+                          title={item.label}
+                          aria-pressed={active}
+                          aria-disabled={!item.writable}
+                          onClick={() => {
+                            if (item.value === 'stale') return
+                            requestStatus(driver, item.value)
+                          }}
+                          className={statusButtonClass(item.value, active)}
+                        >
+                          {item.short}
+                        </button>
+                      )
+                    })}
                   </div>
                 </td>
                 <td className="py-3">
