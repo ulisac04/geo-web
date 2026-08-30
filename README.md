@@ -6,6 +6,8 @@ Requisito: Node.js 20+ y la API **geo** en `http://127.0.0.1:8080` (`cargo run -
 
 Repos hermanos: **geo** (API) · **geo-mobile** (app conductor).
 
+Pausar/prender la EC2 sin perder datos: **[APAGAR.md](./APAGAR.md)**.
+
 ## Levantar
 
 ```bash
