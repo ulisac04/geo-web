@@ -5,8 +5,8 @@ import { login, homePath } from '../lib/auth'
 
 export default function LoginForm() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('operador@andina.logistic')
-  const [password, setPassword] = useState('demo1234')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
