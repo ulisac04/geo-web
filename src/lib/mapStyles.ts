@@ -16,12 +16,17 @@ export const darkDispatchMapStyles: google.maps.MapTypeStyle[] = [
   {
     featureType: 'poi',
     elementType: 'labels.icon',
-    stylers: [{ visibility: 'off' }],
+    stylers: [{ visibility: 'on' }],
   },
   {
     featureType: 'poi',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#8b9bb0' }],
+    stylers: [{ color: '#c5d0dc' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.stroke',
+    stylers: [{ color: '#242f3e' }],
   },
   {
     featureType: 'poi.park',
