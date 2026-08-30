@@ -241,7 +241,7 @@ export function rankNearestToOrigin(
   limit = 5,
 ): Driver[] {
   return rankByDistanceToOrigin(drivers, origin, limit, Infinity, (driver) =>
-    driver.status !== 'offline',
+    driver.status !== 'offline' && driver.status !== 'stale',
   )
 }
 

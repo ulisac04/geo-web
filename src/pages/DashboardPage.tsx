@@ -44,13 +44,18 @@ function DashboardLayout() {
     moveDest,
     clearPin,
   } = useDispatchFlow()
-  const liveFleet = fleet.filter((driver) => driver.status !== 'offline')
+  const liveFleet = fleet.filter(
+    (driver) => driver.status !== 'offline' && driver.status !== 'stale',
+  )
   const mapDrivers =
     mapMode === 'none'
       ? []
       : mapMode === 'live'
         ? liveTrips
-            .filter((trip) => trip.driver.status !== 'offline')
+            .filter(
+              (trip) =>
+                trip.driver.status !== 'offline' && trip.driver.status !== 'stale',
+            )
             .map((trip) => trip.driver)
         : liveFleet
 
