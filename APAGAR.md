@@ -61,28 +61,31 @@ Si SSH se queja de host key (solo si **reemplazaste** la caja): `ssh-keygen -R 1
 
 ---
 
-## Parser (Groq + OpenAI)
+## Parser (Groq + OpenAI) y push FCM
 
-El userdata **no** escribe esas claves (solo `GEMINI_API_KEY` si estaba en Terraform). Extraer pedido da **503** hasta que estén en `/etc/geo/app.env`.
+Userdata **solo corre el primer boot**. Esta caja ya existe: hay que editar `/etc/geo/app.env` a mano. Un `terraform apply` **no** actualiza ese archivo (y **no** debe reemplazar la instancia).
 
-En la EC2 (no pegues las keys en el chat):
+Tras `start-instances` y compose (arriba), en la EC2 (no pegues las keys en el chat):
 
 ```bash
-sudo grep -E '^(GROQ|OPENAI|GEMINI)_API_KEY=' /etc/geo/app.env || true
+sudo grep -E '^(GROQ|OPENAI|GEMINI)_API_KEY=|^GOOGLE_APPLICATION_CREDENTIALS=' /etc/geo/app.env || true
 sudo nano /etc/geo/app.env
 ```
 
-Añade o completa (sin comillas, una línea cada una):
+Completa (sin comillas):
 
 ```
 GROQ_API_KEY=gsk_...
 OPENAI_API_KEY=sk-...
+GOOGLE_APPLICATION_CREDENTIALS=/etc/geo/firebase-adminsdk.json
 ```
+
+La cuenta de servicio de Firebase (`taxirubio`) va en `/etc/geo/firebase-adminsdk.json` (`chmod 640`, `chown root:ubuntu`). Evita `FIREBASE_SERVICE_ACCOUNT_JSON` en una sola línea.
 
 ```bash
 sudo systemctl restart geo-api
 sudo systemctl status geo-api --no-pager
 ```
 
-Al boot, si faltan, el log avisa `GROQ_API_KEY` / `OPENAI_API_KEY` unset. No hace falta `cargo` ni `terraform apply`.
+Parser: 503 si faltan Groq/OpenAI (Gemini es backup). FCM: sin el JSON, asignar sigue; no hay push.
 
