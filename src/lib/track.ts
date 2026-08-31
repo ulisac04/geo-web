@@ -64,6 +64,6 @@ export async function fetchPublicTrack(
     driverCoords: coords(data.driver_lng, data.driver_lat),
     driverUpdatedAt: data.driver_updated_at ?? null,
     branding: data.branding,
-    refreshSeconds: data.refresh_seconds || 8,
+    refreshSeconds: data.refresh_seconds || 15,
   }
 }
