@@ -57,7 +57,7 @@ En Google Cloud activa **Maps JavaScript API**, **Places API (New)** y **Directi
 
 ## Asignación híbrida
 
-Wizard: crear `pending` → ofrecer candidato (`assigned`) → el chofer acepta en la app **o** el operador confirma (`en_route`). El operador marca **En viaje** y **Finalizar**.
+Wizard: crear `pending` → ofrecer candidato (`assigned`) → el chofer acepta en la app **o** el operador confirma (`en_route`). El operador marca **Finalizar**. El chofer puede **solicitar finalización**; llega aviso (badge + notificación + tono) y el operador cierra.
 
 Al pulsar **Ofrecer**:
 

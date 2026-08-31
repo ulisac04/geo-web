@@ -56,6 +56,12 @@ export function isScheduledPending(record: {
   return record.status === 'pending' && Boolean(record.scheduledAt)
 }
 
+export function isCompletionRequested(record: {
+  completionRequestedAt?: string | null
+}): boolean {
+  return Boolean(record.completionRequestedAt)
+}
+
 export function isPickupLeg(status: ServiceStatus): boolean {
   return status === 'assigned'
 }
@@ -95,6 +101,7 @@ interface ApiServiceRecord {
   created_at: string
   share_token?: string | null
   scheduled_at?: string | null
+  completion_requested_at?: string | null
 }
 
 interface RecordsResponse {
@@ -138,6 +145,7 @@ function fromRecord(item: ApiServiceRecord): ServiceRecord {
     cityId: item.city_id,
     shareToken: item.share_token ?? null,
     scheduledAt: item.scheduled_at ?? null,
+    completionRequestedAt: item.completion_requested_at ?? null,
   }
 }
 

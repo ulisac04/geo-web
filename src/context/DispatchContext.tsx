@@ -28,8 +28,8 @@ import { EMPTY_ORDER } from '../lib/mock-data'
 import { localAmountsFromUsd } from '../lib/money'
 import { formatDestLabel, formatOriginLabel } from '../lib/orderStops'
 import { extractOrder, extractedToDraft, ParserError } from '../lib/parser'
-import { defaultServiceTypeId, isLiveServiceStatus, isScheduledPending } from '../lib/services'
-import { FOCUS_SCHEDULED_EVENT, playReminderTone, recordsDueForReminder, showScheduleNotification, takeUnnotified } from '../lib/scheduleReminders'
+import { defaultServiceTypeId, isCompletionRequested, isLiveServiceStatus, isScheduledPending } from '../lib/services'
+import { FOCUS_LIVE_EVENT, FOCUS_SCHEDULED_EVENT, playReminderTone, recordsDueForReminder, showCompletionRequestNotification, showScheduleNotification, takeUnnotified, takeUnnotifiedCompletionRequests } from '../lib/scheduleReminders'
 import { buildClientMessage, buildClientWhatsAppUrl, buildDispatchMessage, buildWhatsAppUrl, clientTrackingUrl, copyAndOpenWhatsApp } from '../lib/whatsapp'
 import { useFleet } from './FleetContext'
 import { useServices } from './ServicesContext'
@@ -62,6 +62,7 @@ interface DispatchContextValue {
   scheduledRecords: ServiceRecord[]
   showScheduledTab: boolean
   reminderDue: ServiceRecord[]
+  completionRequestedCount: number
   focusedScheduledId: string | null
   offeredRecord: LiveTrip['record'] | null
   acceptedServiceId: string | null
@@ -195,6 +196,12 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     [nowTick, scheduledRecords, settings.schedulingReminderMinutes],
   )
 
+  const completionRequestedTrips = useMemo(
+    () => liveTrips.filter((trip) => isCompletionRequested(trip.record)),
+    [liveTrips],
+  )
+  const completionRequestedCount = completionRequestedTrips.length
+
   useEffect(() => {
     if (!showScheduledTab && mapMode === 'scheduled') {
       setMapMode('fleet')
@@ -211,6 +218,15 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
   }, [reminderDue])
 
   useEffect(() => {
+    const fresh = takeUnnotifiedCompletionRequests(completionRequestedTrips.map((trip) => trip.record))
+    if (fresh.length === 0) return
+    playReminderTone()
+    for (const record of fresh) {
+      showCompletionRequestNotification(record)
+    }
+  }, [completionRequestedTrips])
+
+  useEffect(() => {
     const onFocus = (event: Event) => {
       const id = (event as CustomEvent<string>).detail
       if (!id) return
@@ -220,6 +236,19 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
     window.addEventListener(FOCUS_SCHEDULED_EVENT, onFocus)
     return () => window.removeEventListener(FOCUS_SCHEDULED_EVENT, onFocus)
   }, [])
+
+  useEffect(() => {
+    const onFocus = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail
+      if (!id) return
+      setMapMode('live')
+      setFocusedTripId(id)
+      const trip = liveTrips.find((item) => item.record.id === id)
+      setFocusedDriverId(trip?.driver.id ?? null)
+    }
+    window.addEventListener(FOCUS_LIVE_EVENT, onFocus)
+    return () => window.removeEventListener(FOCUS_LIVE_EVENT, onFocus)
+  }, [liveTrips])
 
   const offeredRecord = useMemo(
     () => records.find((record) => record.id === acceptedServiceId) ?? null,
@@ -909,6 +938,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       scheduledRecords,
       showScheduledTab,
       reminderDue,
+      completionRequestedCount,
       focusedScheduledId,
       offeredRecord,
       acceptedServiceId,
@@ -978,6 +1008,7 @@ export function DispatchProvider({ children }: { children: ReactNode }) {
       scheduledRecords,
       showScheduledTab,
       reminderDue,
+      completionRequestedCount,
       focusedScheduledId,
       offeredRecord,
       acceptedServiceId,

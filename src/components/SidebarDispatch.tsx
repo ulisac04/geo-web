@@ -36,6 +36,7 @@ export default function SidebarDispatch() {
     scheduledRecords,
     showScheduledTab,
     reminderDue,
+    completionRequestedCount,
     focusScheduled,
     resetOrder,
   } = useDispatchFlow()
@@ -103,6 +104,7 @@ export default function SidebarDispatch() {
             fleetLabel="Nuevo"
             liveLabel="En curso"
             liveCount={liveTrips.length}
+            liveAlert={completionRequestedCount > 0}
             showScheduled={showScheduledTab}
             scheduledCount={scheduledRecords.length}
           />
@@ -121,6 +123,17 @@ export default function SidebarDispatch() {
               : `${reminderDue.length} servicios agendados están por comenzar`}
           </button>
         ) : null}
+        {completionRequestedCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => setMapMode('live')}
+            className="mt-3 w-full rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-left text-xs font-medium text-amber-200"
+          >
+            {completionRequestedCount === 1
+              ? '1 chofer solicita finalizar'
+              : `${completionRequestedCount} choferes solicitan finalizar`}
+          </button>
+        ) : null}
       </header>
 
       {mapMode === 'live' ? (
@@ -130,6 +143,9 @@ export default function SidebarDispatch() {
             {liveTrips.length === 1
               ? '1 viaje activo en la ciudad'
               : `${liveTrips.length} viajes activos en la ciudad`}
+            {completionRequestedCount > 0
+              ? ` · ${completionRequestedCount === 1 ? '1 solicitud de cierre' : `${completionRequestedCount} solicitudes de cierre`}`
+              : ''}
           </p>
         </div>
       ) : mapMode === 'scheduled' ? (

@@ -126,6 +126,7 @@ export interface ServiceRecord {
   cityId: CityId
   shareToken: string | null
   scheduledAt: string | null
+  completionRequestedAt: string | null
 }
 
 export interface CostRule {

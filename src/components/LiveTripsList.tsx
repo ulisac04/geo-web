@@ -3,7 +3,7 @@ import DriverAvatar from './DriverAvatar'
 import TakeOfflineButton from './TakeOfflineButton'
 import { useDispatchFlow } from '../context/DispatchContext'
 import { etaFromMeters, formatDistance, haversineMeters } from '../lib/geo'
-import { isPickupLeg } from '../lib/services'
+import { isCompletionRequested, isPickupLeg } from '../lib/services'
 
 export default function LiveTripsList() {
   const {
@@ -32,20 +32,23 @@ export default function LiveTripsList() {
         const { record, driver } = trip
         const pickup = isPickupLeg(record.status)
         const waiting = record.status === 'assigned'
+        const requesting = isCompletionRequested(record)
         const target = pickup ? record.originCoords : record.destCoords
         const meters = target ? haversineMeters(driver.coords, target) : 0
         const highlighted = focusedTripId === record.id
         const acting = actingTripId === record.id
-        const badge = waiting ? 'Esperando respuesta' : 'En curso'
+        const badge = waiting ? 'Esperando respuesta' : requesting ? 'Chofer solicita finalizar' : 'En curso'
 
         return (
           <article
             key={record.id}
             onClick={() => focusTrip(record.id)}
             className={`cursor-pointer rounded-lg border p-3 transition ${
-              highlighted
-                ? 'border-signal/60 bg-signal/10'
-                : 'border-line bg-card hover:border-mist/40'
+              requesting
+                ? 'border-amber-400/70 bg-amber-400/10'
+                : highlighted
+                  ? 'border-signal/60 bg-signal/10'
+                  : 'border-line bg-card hover:border-mist/40'
             }`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -60,7 +63,9 @@ export default function LiveTripsList() {
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                   waiting
                     ? 'bg-amber-400/15 text-amber-300'
-                    : 'bg-signal/15 text-signal'
+                    : requesting
+                      ? 'bg-amber-400/20 text-amber-200'
+                      : 'bg-signal/15 text-signal'
                 }`}
               >
                 <Navigation className="size-3" />
@@ -108,7 +113,8 @@ export default function LiveTripsList() {
                   disabled={acting}
                   onClick={() => void completeTrip(record.id)}
                   label="Finalizar"
-                  primary
+                  primary={!requesting}
+                  warn={requesting}
                 />
               ) : null}
               <TripAction
@@ -143,12 +149,14 @@ function TripAction({
   disabled,
   primary,
   danger,
+  warn,
 }: {
   label: string
   onClick: () => void
   disabled?: boolean
   primary?: boolean
   danger?: boolean
+  warn?: boolean
 }) {
   return (
     <button
@@ -158,9 +166,11 @@ function TripAction({
       className={`rounded-md px-2.5 py-1 text-[11px] font-semibold disabled:opacity-40 ${
         danger
           ? 'border border-danger/40 text-rose-300 hover:bg-danger/15'
-          : primary
-            ? 'bg-signal text-on-signal hover:bg-emerald-300'
-            : 'border border-line text-snow hover:border-mist/50'
+          : warn
+            ? 'bg-amber-400 text-ink hover:bg-amber-300'
+            : primary
+              ? 'bg-signal text-on-signal hover:bg-emerald-300'
+              : 'border border-line text-snow hover:border-mist/50'
       }`}
     >
       {label}

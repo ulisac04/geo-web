@@ -8,6 +8,7 @@ interface MapModeToggleProps {
   fleetLabel?: string
   liveLabel?: string
   liveCount?: number
+  liveAlert?: boolean
   scheduledLabel?: string
   scheduledCount?: number
   showScheduled?: boolean
@@ -36,6 +37,7 @@ export default function MapModeToggle({
   fleetLabel = 'Flota',
   liveLabel = 'En curso',
   liveCount,
+  liveAlert,
   scheduledLabel = 'Agendados',
   scheduledCount,
   showScheduled,
@@ -87,9 +89,11 @@ export default function MapModeToggle({
               {showCount ? (
                 <span
                   className={`inline-grid h-4 min-w-4 place-items-center rounded-full px-0.5 text-[10px] font-bold ${
-                    active
-                      ? 'bg-signal text-on-signal'
-                      : 'bg-elevated text-mist'
+                    item.value === 'live' && liveAlert
+                      ? 'bg-amber-400 text-ink'
+                      : active
+                        ? 'bg-signal text-on-signal'
+                        : 'bg-elevated text-mist'
                   }`}
                 >
                   {count}

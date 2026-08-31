@@ -141,6 +141,7 @@ export default function MapViewer(props: MapViewerProps) {
             onChange={props.onModeChange}
             showNone
             liveCount={props.liveTrips.length}
+            liveAlert={props.liveTrips.some((trip) => Boolean(trip.record.completionRequestedAt))}
             vehicleFilter={vehicleFilter}
             onVehicleFilterChange={setVehicleFilter}
             embedded
