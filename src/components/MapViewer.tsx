@@ -49,8 +49,6 @@ interface MapViewerProps {
   liveTrips: LiveTrip[]
   focusedTripId: string | null
   center: [number, number]
-  showScheduled?: boolean
-  scheduledCount?: number
   onModeChange: (mode: MapMode) => void
   onFocusDriver: (id: string | null) => void
   onFocusTrip: (id: string | null) => void
@@ -66,9 +64,6 @@ const NEAREST_LIMIT = 5
 function mapToolbarHint(mode: MapMode, activePin: PinFocus): string {
   if (mode === 'live') {
     return 'Punteada: va a buscar · Verde continua: va a dejar. Click en un viaje o chofer para enfocar la ruta.'
-  }
-  if (mode === 'scheduled') {
-    return 'La flota se muestra para despachar cuando llegue el momento.'
   }
   if (mode === 'none') {
     return 'Solo puntos de la orden. Click coloca A o B; si ambos están, se confirma el cambio.'
@@ -142,12 +137,10 @@ export default function MapViewer(props: MapViewerProps) {
           title={mapToolbarHint(props.mode, props.activePin)}
         >
           <MapModeToggle
-            mode={props.mode}
+            mode={props.mode === 'scheduled' ? 'fleet' : props.mode}
             onChange={props.onModeChange}
             showNone
             liveCount={props.liveTrips.length}
-            showScheduled={props.showScheduled}
-            scheduledCount={props.scheduledCount}
             vehicleFilter={vehicleFilter}
             onVehicleFilterChange={setVehicleFilter}
             embedded
