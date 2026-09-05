@@ -13,6 +13,11 @@ export class ApiError extends Error {
 }
 
 export function apiBaseUrl(): string {
+  // SPA and API share CloudFront / tu-ruta.app. Same-origin avoids the ugly
+  // dxxxxx.cloudfront.net host in fetch URLs when the user is already on HTTPS.
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    return window.location.origin
+  }
   const raw = import.meta.env.VITE_API_URL
   if (typeof raw === 'string' && raw.trim()) {
     return raw.replace(/\/$/, '')
