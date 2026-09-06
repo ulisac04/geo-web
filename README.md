@@ -18,6 +18,13 @@ npm run dev
 
 Abre [http://localhost:5173/](http://localhost:5173/).
 
+Páginas públicas (también en producción en el apex, sin login):
+
+- https://tu-ruta.app/privacidad
+- https://tu-ruta.app/eliminar-datos
+
+Los mismos paths existen con `.html` al final, por si Play Console pide una URL tipo archivo. El canal de solicitudes es `contacto@tu-ruta.app`.
+
 | | |
 |---|---|
 | Demo | `operador@andina.logistic` / `demo1234` |

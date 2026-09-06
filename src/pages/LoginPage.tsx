@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { RadioTower } from 'lucide-react'
 import LoginForm from '../components/LoginForm'
+import { LegalFooterLinks } from './LegalPages'
 import { getSession, homePath, isAuthenticated } from '../lib/auth'
 import {
   applyBranding,
@@ -118,6 +119,7 @@ export function AuthShell({
           <h2 className="text-xl font-semibold text-snow">{title}</h2>
           <p className="mt-1 mb-6 text-sm text-mist">{subtitle}</p>
           {children}
+          <LegalFooterLinks />
         </div>
       </section>
     </div>

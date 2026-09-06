@@ -10,6 +10,7 @@ import CostsPage from './pages/CostsPage'
 import DashboardPage from './pages/DashboardPage'
 import DriversPage from './pages/DriversPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import { EliminarDatosPage, PrivacidadPage } from './pages/LegalPages'
 import LoginPage from './pages/LoginPage'
 import ReportsPage from './pages/ReportsPage'
 import ServicesPage from './pages/ServicesPage'
@@ -29,6 +30,10 @@ export default function App() {
         <Route path="/s/:token" element={<TrackServicePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/privacidad" element={<PrivacidadPage />} />
+        <Route path="/privacidad.html" element={<PrivacidadPage />} />
+        <Route path="/eliminar-datos" element={<EliminarDatosPage />} />
+        <Route path="/eliminar-datos.html" element={<EliminarDatosPage />} />
         <Route
           element={
             <ProtectedRoute role="platform_admin">
