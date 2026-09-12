@@ -37,6 +37,7 @@ export interface Driver {
   updatedAt?: string | null
   distanceM: number
   etaMin: number
+  /** Vueltas de hoy: completados del día + servicio live. */
   completedToday?: number
   /** ETA incluye el viaje actual (dropoff → pickup nuevo). */
   afterCurrent?: boolean

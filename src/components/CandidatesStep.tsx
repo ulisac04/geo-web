@@ -16,6 +16,10 @@ export default function CandidatesStep() {
     refreshCandidates,
     takeOffline,
   } = useDispatchFlow()
+  const minTurns =
+    candidates.length === 0
+      ? 0
+      : Math.min(...candidates.map((item) => item.completedToday ?? 0))
 
   return (
     <div className="space-y-2">
@@ -44,13 +48,15 @@ export default function CandidatesStep() {
       ) : (
         <>
           <p className="text-xs text-mist">
-            Top {candidates.length} por ETA al punto A. Incluye ocupados si, al
-            terminar su entrega, llegan antes que un libre.
+            Top {candidates.length} por ETA al punto A. A igualdad (~2 min),
+            menos vueltas hoy. Incluye ocupados si, al terminar, llegan antes
+            que un libre.
           </p>
           {candidates.map((driver) => (
             <CandidateCard
               key={driver.id}
               driver={driver}
+              nextTurn={(driver.completedToday ?? 0) === minTurns}
               highlighted={
                 hoveredDriverId === driver.id ||
                 focusedDriverId === driver.id ||

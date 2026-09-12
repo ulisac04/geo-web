@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, MapPin, UserCheck } from 'lucide-react'
+import { Clock, MapPin, UserCheck } from 'lucide-react'
 import DriverAvatar from './DriverAvatar'
 import TakeOfflineButton from './TakeOfflineButton'
 import type { Driver } from '../types'
@@ -8,6 +8,7 @@ import { formatVehicleLine } from '../lib/vehicles'
 interface CandidateCardProps {
   driver: Driver
   highlighted: boolean
+  nextTurn: boolean
   onHover: (id: string | null) => void
   onFocus: (id: string) => void
   onAssign: (driver: Driver) => void | Promise<void>
@@ -17,6 +18,7 @@ interface CandidateCardProps {
 export default function CandidateCard({
   driver,
   highlighted,
+  nextTurn,
   onHover,
   onFocus,
   onAssign,
@@ -24,6 +26,7 @@ export default function CandidateCard({
 }: CandidateCardProps) {
   const busy = driver.status === 'busy'
   const afterCurrent = Boolean(driver.afterCurrent)
+  const turns = driver.completedToday ?? 0
   return (
     <article
       onMouseEnter={() => onHover(driver.id)}
@@ -48,29 +51,34 @@ export default function CandidateCard({
             ) : null}
           </div>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] text-mist">
-          <Clock className="size-3" />
-          {afterCurrent ? 'Al terminar · ' : ''}
-          {driver.etaMin} min · {formatDistance(driver.distanceM)}
-        </span>
+        <div className="shrink-0 text-right">
+          <p
+            className={`text-3xl font-semibold leading-none tabular-nums ${
+              nextTurn ? 'text-signal' : 'text-snow'
+            }`}
+          >
+            {turns}
+          </p>
+          <p className={`mt-1 text-[11px] font-medium ${nextTurn ? 'text-signal' : 'text-mist'}`}>
+            {nextTurn ? 'le toca' : 'ya pasó'}
+          </p>
+          <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-mist">
+            <Clock className="size-3" />
+            {afterCurrent ? 'Al terminar · ' : ''}
+            {driver.etaMin} min · {formatDistance(driver.distanceM)}
+          </p>
+        </div>
       </div>
 
       <div className="mt-2 flex items-center justify-between">
-        <div className="min-w-0 space-y-1">
-          <p className="inline-flex items-center gap-1 text-[11px] text-mist">
-            <CheckCircle2 className="size-3 text-signal" />
-            {driver.completedToday ?? 0}{' '}
-            {(driver.completedToday ?? 0) === 1 ? 'servicio' : 'servicios'} hoy
-          </p>
-          <span className="flex items-center gap-1 text-[11px] text-mist">
-            <MapPin className="size-3 text-signal" />
-            {afterCurrent
-              ? 'ETA al terminar el pedido actual'
-              : busy
-                ? 'En un servicio ahora'
-                : 'Cercano al punto A'}
-          </span>
-        </div>
+        <span className="flex min-w-0 items-center gap-1 text-[11px] text-mist">
+          <MapPin className="size-3 text-signal" />
+          {afterCurrent
+            ? 'ETA al terminar el pedido actual'
+            : busy
+              ? 'En un servicio ahora'
+              : 'Cercano al punto A'}
+        </span>
         {busy ? (
           <span className="rounded-md border border-line bg-ink px-2.5 py-1.5 text-xs font-medium text-mist">
             Ocupado
