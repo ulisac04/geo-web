@@ -14,7 +14,7 @@ Instancia: `i-017fe3e2cfcc3bd96` · EIP `184.192.214.17` · `us-east-1`
 
 | | Email | Clave |
 |---|---|---|
-| Demo (SPA) | `operador@andina.logistic` | `demo1234` |
+| Operador (SPA) | El que creaste con `POST /api/v1/admin/tenants` | La que elegiste al crearlo |
 | Admin (`/admin`) | `terraform output -raw platform_admin_email` | `terraform output -raw platform_admin_password` |
 
 ```bash

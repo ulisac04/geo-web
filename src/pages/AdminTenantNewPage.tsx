@@ -157,7 +157,7 @@ export default function AdminTenantNewPage() {
         <Field label="Contraseña inicial">
           <input
             required
-            minLength={6}
+            minLength={10}
             value={operatorPassword}
             onChange={(e) => setOperatorPassword(e.target.value)}
             className={inputClass}

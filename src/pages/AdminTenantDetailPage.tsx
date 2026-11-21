@@ -168,7 +168,7 @@ export default function AdminTenantDetailPage() {
 
   async function handleReset(userId: string) {
     if (!tenant) return
-    const password = window.prompt('Nueva contraseña (mínimo 6 caracteres)')
+    const password = window.prompt('Nueva contraseña (mínimo 10 caracteres)')
     if (!password) return
     try {
       await resetOperatorPassword(tenant.id, userId, password)
@@ -480,7 +480,7 @@ export default function AdminTenantDetailPage() {
           />
           <input
             required
-            minLength={6}
+            minLength={10}
             placeholder="Contraseña"
             value={opPassword}
             onChange={(e) => setOpPassword(e.target.value)}

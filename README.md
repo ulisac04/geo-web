@@ -27,8 +27,7 @@ Los mismos paths existen con `.html` al final, por si Play Console pide una URL 
 
 | | |
 |---|---|
-| Demo | `operador@andina.logistic` / `demo1234` |
-| Tenant | `tenant_andina_001` |
+| Operador | No hay usuario demo. El admin de plataforma crea la empresa y su primer operador (`POST /api/v1/admin/tenants`) |
 | Auth | `POST /api/v1/auth/login` → `Authorization: Bearer <jwt>` |
 
 Vite hay que reiniciarlo si cambias el `.env`. Si tenías sesión mock antigua, cierra sesión y vuelve a entrar.

@@ -150,8 +150,8 @@ Mientras tanto la SPA puede seguir en `POST /v1/parser/extract` + `X-API-Key`.
 | Ítem       | Valor                                                                             |
 | ---------- | --------------------------------------------------------------------------------- |
 | Auth SPA   | `Authorization: Bearer <jwt>`                                                     |
-| Claim JWT  | `tenant_id` (demo `tenant_andina_001`)                                            |
-| Demo login | `operador@andina.logistic` / `demo1234`                                           |
+| Claim JWT  | `tenant_id`, `sub` (correo del operador; debe seguir activo)                      |
+| Login      | Operadores creados por el admin o por su empresa; no hay usuario demo             |
 | HTTP       | `400` validación, `401` auth, `403` tenant, `404`, `409` conflicto                |
 | Poll mapa  | El **cliente** llama `GET /api/v1/drivers` cada N s. El backend **no** simula GPS |
 
@@ -167,7 +167,7 @@ Mientras tanto la SPA puede seguir en `POST /v1/parser/extract` + `X-API-Key`.
 ### `POST /api/v1/auth/login`
 
 ```json
-{ "email": "operador@andina.logistic", "password": "demo1234" }
+{ "email": "ana@norte.com", "password": "<clave del operador>" }
 ```
 
 `200`:
@@ -175,10 +175,10 @@ Mientras tanto la SPA puede seguir en `POST /v1/parser/extract` + `X-API-Key`.
 ```json
 {
   "token": "<jwt>",
-  "tenant_id": "tenant_andina_001",
-  "company": "Tu Ruta",
-  "operator": "Carlos Méndez",
-  "operator_email": "operador@andina.logistic"
+  "tenant_id": "tenant_norte",
+  "company": "Transportes Norte",
+  "operator": "Ana",
+  "operator_email": "ana@norte.com"
 }
 ```
 
@@ -187,7 +187,7 @@ El JWT debe incluir `tenant_id`, `sub` (email), `exp`. `401` si credenciales inv
 ### `POST /api/v1/auth/forgot-password`
 
 ```json
-{ "email": "operador@andina.logistic" }
+{ "email": "ana@norte.com" }
 ```
 
 Siempre `204` (no enumerar usuarios). El mail/admin puede ser stub.
