@@ -56,7 +56,10 @@ export function AuthShell({
   const company = branding?.name ?? 'Tu Ruta'
 
   return (
-    <div className="grid min-h-full bg-ink lg:grid-cols-[1.1fr_0.9fr]">
+    <div className="relative grid min-h-full bg-ink lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
       <section className="relative hidden overflow-hidden border-r border-black/20 lg:flex lg:flex-col lg:p-12">
         <div
           className="absolute inset-0 bg-cover"
@@ -117,13 +120,8 @@ export function AuthShell({
             ) : null}
             <p className="text-sm font-semibold text-snow">{company}</p>
           </div>
-          <div className="mb-6 flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold text-snow">{title}</h2>
-              <p className="mt-1 text-sm text-mist">{subtitle}</p>
-            </div>
-            <ThemeToggle />
-          </div>
+          <h2 className="text-xl font-semibold text-snow">{title}</h2>
+          <p className="mt-1 mb-6 text-sm text-mist">{subtitle}</p>
           {children}
           <LegalFooterLinks />
         </div>
