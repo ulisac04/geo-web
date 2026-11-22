@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import ServiceTrackMap from '../components/ServiceTrackMap'
 import TrackLiveMap from '../components/TrackLiveMap'
 import ThemeToggle from '../components/ThemeToggle'
 import { ApiError, isAbortError } from '../lib/api'
@@ -8,7 +9,17 @@ import { getCity } from '../lib/cities'
 import { fetchPublicTrack, type PublicTrack } from '../lib/track'
 import type { Driver } from '../types'
 
-function statusCopy(status: string, hasGps: boolean): { title: string; detail: string } {
+function formatDistance(meters: number | null): string {
+  if (meters == null || meters <= 0) return ''
+  if (meters < 1000) return `${Math.round(meters)} m`
+  return `${(meters / 1000).toFixed(1).replace('.', ',')} km`
+}
+
+function statusCopy(
+  status: string,
+  hasGps: boolean,
+  hasRoute: boolean,
+): { title: string; detail: string } {
   switch (status) {
     case 'assigned':
       return {
@@ -30,7 +41,9 @@ function statusCopy(status: string, hasGps: boolean): { title: string; detail: s
     case 'completed':
       return {
         title: 'El servicio finalizó',
-        detail: 'El seguimiento en vivo ya no está activo.',
+        detail: hasRoute
+          ? 'Así fue el recorrido del conductor.'
+          : 'El seguimiento en vivo ya no está activo.',
       }
     case 'cancelled':
       return {
@@ -90,6 +103,7 @@ export default function TrackServicePage() {
         setTrack(next)
         setError(null)
         applyBranding(next.branding, next.branding.name)
+        if (next.status === 'completed' || next.status === 'cancelled') return
         const delay = Math.max(5, next.refreshSeconds) * 1000
         timer = window.setTimeout(() => {
           void load()
@@ -119,7 +133,9 @@ export default function TrackServicePage() {
 
   const closed = track?.status === 'completed' || track?.status === 'cancelled'
   const driver = useMemo(() => (track && !closed ? stubDriver(track) : null), [closed, track])
-  const copy = statusCopy(track?.status ?? '', Boolean(track?.driverCoords))
+  const showRoute = track?.status === 'completed' && track.route.length >= 2
+  const copy = statusCopy(track?.status ?? '', Boolean(track?.driverCoords), showRoute)
+  const distance = showRoute ? formatDistance(track?.routeDistanceM ?? null) : ''
   const center = track?.driverCoords ?? track?.originCoords ?? getCity(null).center
   const company = track?.branding.name?.trim() || 'Tu Ruta'
   const logo = logoSrc(track?.branding.logo_url)
@@ -153,12 +169,20 @@ export default function TrackServicePage() {
         <div className="relative min-h-0 flex-1">
           {error === 'not_found' ? (
             <div className="flex h-full items-center justify-center px-6 text-center">
-              <p className="text-sm text-mist">Este enlace de seguimiento no es válido o ya no existe.</p>
+              <p className="text-sm text-mist">Este enlace de seguimiento venció o no es válido.</p>
             </div>
           ) : error === 'network' && !track ? (
             <div className="flex h-full items-center justify-center px-6 text-center">
               <p className="text-sm text-mist">No se pudo cargar el mapa. Revisa tu conexión.</p>
             </div>
+          ) : showRoute && track ? (
+            <ServiceTrackMap
+              center={center}
+              originCoords={track.originCoords}
+              destCoords={track.destCoords}
+              coordinates={track.route}
+              estimated={false}
+            />
           ) : (
             <TrackLiveMap
               center={center}
@@ -172,6 +196,11 @@ export default function TrackServicePage() {
         <footer className="shrink-0 space-y-1 border-t border-line bg-card px-4 py-3">
           <p className="text-sm font-semibold text-snow">{copy.title}</p>
           <p className="text-xs text-mist">{copy.detail}</p>
+          {distance ? (
+            <p className="text-xs text-mist">
+              Distancia recorrida: <span className="text-snow">{distance}</span>
+            </p>
+          ) : null}
           {track?.origin ? (
             <p className="text-xs text-mist">
               Recogida: <span className="text-snow">{track.origin}</span>

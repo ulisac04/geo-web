@@ -14,6 +14,10 @@ export interface PublicTrack {
   driverUpdatedAt: string | null
   branding: PublicBranding
   refreshSeconds: number
+  /** Recorrido GPS `[lng, lat]` del servicio finalizado. */
+  route: [number, number][]
+  routeDistanceM: number | null
+  destCoords: [number, number] | null
 }
 
 interface ApiPublicTrack {
@@ -30,6 +34,21 @@ interface ApiPublicTrack {
   driver_updated_at?: string | null
   branding: PublicBranding
   refresh_seconds: number
+  route?: [number, number][]
+  route_distance_m?: number | null
+  dest_lng?: number | null
+  dest_lat?: number | null
+}
+
+function parseRoute(raw: unknown): [number, number][] {
+  if (!Array.isArray(raw)) return []
+  const out: [number, number][] = []
+  for (const point of raw) {
+    if (!Array.isArray(point)) continue
+    const parsed = coords(point[0], point[1])
+    if (parsed) out.push(parsed)
+  }
+  return out
 }
 
 function coords(
@@ -65,5 +84,8 @@ export async function fetchPublicTrack(
     driverUpdatedAt: data.driver_updated_at ?? null,
     branding: data.branding,
     refreshSeconds: data.refresh_seconds || 15,
+    route: parseRoute(data.route),
+    routeDistanceM: data.route_distance_m ?? null,
+    destCoords: coords(data.dest_lng, data.dest_lat),
   }
 }
