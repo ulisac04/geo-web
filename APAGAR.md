@@ -15,12 +15,15 @@ Instancia: `i-017fe3e2cfcc3bd96` · EIP `184.192.214.17` · `us-east-1`
 | | Email | Clave |
 |---|---|---|
 | Operador (SPA) | El que creaste con `POST /api/v1/admin/tenants` | La que elegiste al crearlo |
-| Admin (`/admin`) | `terraform output -raw platform_admin_email` | `terraform output -raw platform_admin_password` |
+| Admin (`/admin`) | El que creaste con `geo-api admin create` | Solo la sabes tú; no está en ningún archivo |
+
+Crear, resetear o desactivar el admin, por SSH en la EC2 (la clave se pide sin mostrarla):
 
 ```bash
-cd ~/geo/deploy/terraform
-terraform output -raw platform_admin_email
-terraform output -raw platform_admin_password
+cd /opt/geo
+./target/release/geo-api admin list
+./target/release/geo-api admin create --email tu@correo.com
+./target/release/geo-api admin disable --email viejo@correo.com
 ```
 
 ---

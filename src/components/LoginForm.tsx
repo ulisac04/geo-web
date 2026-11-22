@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { login, homePath } from '../lib/auth'
+import { loginErrorMessage } from '../lib/loginError'
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -26,7 +27,7 @@ export default function LoginForm() {
       const session = await login(email, password, remember)
       navigate(homePath(session), { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión')
+      setError(loginErrorMessage(err))
     } finally {
       setLoading(false)
     }

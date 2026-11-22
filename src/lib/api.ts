@@ -92,7 +92,15 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
   const text = await response.text()
   if (!text) return undefined as T
-  return JSON.parse(text) as T
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new ApiError(
+      'No se pudo leer la respuesta del servidor.',
+      response.status,
+      'NON_JSON',
+    )
+  }
 }
 
 async function readApiError(response: Response): Promise<ApiError> {
