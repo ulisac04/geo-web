@@ -1,4 +1,5 @@
 import type { City } from './cities'
+import { isPlusCode } from './orderStops'
 import { fromLatLng, hasGoogleMapsKey, toLatLng, waitForMaps } from './mapsConfig'
 
 export interface PlaceHit {
@@ -200,6 +201,37 @@ async function fetchGeocodeHits(
   })
 }
 
+const PLACE_COMPONENT_TYPES = [
+  'premise',
+  'establishment',
+  'point_of_interest',
+  'neighborhood',
+  'sublocality_level_1',
+  'sublocality',
+  'locality',
+] as const
+
+export function readablePlaceLabel(
+  formattedAddress: string,
+  components: Array<{ long_name: string; types: string[] }> = [],
+): string {
+  const component = (type: string) =>
+    components.find((item) => item.types.includes(type))?.long_name.trim() ?? ''
+  const street = [component('route'), component('street_number')]
+    .filter((part) => part && !isPlusCode(part))
+    .join(' ')
+  if (street) return street
+  for (const type of PLACE_COMPONENT_TYPES) {
+    const name = component(type)
+    if (name && !isPlusCode(name)) return name
+  }
+  const parts = formattedAddress
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part && !isPlusCode(part))
+  return parts[0] ?? ''
+}
+
 function hitFromGeocodeResult(
   result: google.maps.GeocoderResult,
   city: City,
@@ -207,11 +239,17 @@ function hitFromGeocodeResult(
 ): PlaceHit | null {
   const coords = fromLatLng(result.geometry.location)
   if (!coords) return null
-  const parts = result.formatted_address.split(',').map((part) => part.trim())
+  const label = readablePlaceLabel(result.formatted_address, result.address_components ?? [])
+  if (!label) return null
+  const secondary = result.formatted_address
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part && part !== label && !isPlusCode(part))
+    .join(', ')
   return {
     id: result.place_id || `geocode-${index}`,
-    label: parts[0] || result.formatted_address,
-    secondary: parts.slice(1).join(', ') || city.name,
+    label,
+    secondary: secondary || city.name,
     coords,
     placeId: result.place_id,
   }
@@ -235,9 +273,11 @@ export async function reverseGeocode(
       language: 'es',
     })
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-    const result = response.results[0]
-    if (!result) return null
-    return hitFromGeocodeResult(result, city)
+    for (const result of response.results) {
+      const hit = hitFromGeocodeResult(result, city)
+      if (hit) return hit
+    }
+    return null
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error
     return null
