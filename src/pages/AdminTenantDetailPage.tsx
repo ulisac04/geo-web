@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { ImagePlus } from 'lucide-react'
+import { Eye, EyeOff, ImagePlus } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import {
   addOperator,
@@ -10,6 +10,7 @@ import {
   patchTenant,
   resetOperatorPassword,
   uploadTenantLogo,
+  type AdminOperator,
   type AdminTenantDetail,
   type ServiceSettlement,
   type TenantStats,
@@ -43,6 +44,10 @@ export default function AdminTenantDetailPage() {
   const [opName, setOpName] = useState('')
   const [opEmail, setOpEmail] = useState('')
   const [opPassword, setOpPassword] = useState('')
+  const [resetTarget, setResetTarget] = useState<AdminOperator | null>(null)
+  const [resetBusy, setResetBusy] = useState(false)
+  const [resetError, setResetError] = useState('')
+  const [resetNotice, setResetNotice] = useState('')
   const hostSuffix = appBaseHost() || 'tudominio.com'
 
   async function refresh() {
@@ -166,15 +171,24 @@ export default function AdminTenantDetailPage() {
     }
   }
 
-  async function handleReset(userId: string) {
-    if (!tenant) return
-    const password = window.prompt('Nueva contraseña (mínimo 10 caracteres)')
-    if (!password) return
+  function openReset(operator: AdminOperator) {
+    setResetNotice('')
+    setResetError('')
+    setResetTarget(operator)
+  }
+
+  async function handleReset(password: string) {
+    if (!tenant || !resetTarget) return
+    setResetBusy(true)
+    setResetError('')
     try {
-      await resetOperatorPassword(tenant.id, userId, password)
-      window.alert('Contraseña actualizada')
+      await resetOperatorPassword(tenant.id, resetTarget.id, password)
+      setResetNotice(`Contraseña de ${resetTarget.name} actualizada.`)
+      setResetTarget(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo resetear')
+      setResetError(passwordResetError(err))
+    } finally {
+      setResetBusy(false)
     }
   }
 
@@ -446,6 +460,11 @@ export default function AdminTenantDetailPage() {
 
       <section className="rounded-xl border border-line p-4">
         <h2 className="mb-3 text-sm font-semibold text-snow">Operadores</h2>
+        {resetNotice ? (
+          <p className="mb-3 rounded-md border border-signal/30 bg-signal/10 px-3 py-2 text-sm text-signal">
+            {resetNotice}
+          </p>
+        ) : null}
         <ul className="space-y-2 text-sm">
           {tenant.operators.map((operator) => (
             <li key={operator.id} className="flex items-center justify-between gap-3">
@@ -454,10 +473,10 @@ export default function AdminTenantDetailPage() {
               </span>
               <button
                 type="button"
-                onClick={() => void handleReset(operator.id)}
+                onClick={() => openReset(operator)}
                 className="text-xs text-signal hover:underline"
               >
-                Reset password
+                Cambiar contraseña
               </button>
             </li>
           ))}
@@ -494,8 +513,176 @@ export default function AdminTenantDetailPage() {
           </button>
         </form>
       </section>
+
+      {resetTarget ? (
+        <ResetPasswordDialog
+          key={resetTarget.id}
+          operator={resetTarget}
+          busy={resetBusy}
+          error={resetError}
+          onClose={() => {
+            if (!resetBusy) setResetTarget(null)
+          }}
+          onSubmit={(password) => void handleReset(password)}
+        />
+      ) : null}
     </div>
   )
+}
+
+function ResetPasswordDialog({
+  operator,
+  busy,
+  error,
+  onClose,
+  onSubmit,
+}: {
+  operator: AdminOperator
+  busy: boolean
+  error: string
+  onClose: () => void
+  onSubmit: (password: string) => void
+}) {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [visible, setVisible] = useState(false)
+  const [localError, setLocalError] = useState('')
+  const shownError = localError || error
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !busy) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [busy, onClose])
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    const problem = validateNewPassword(password, confirm)
+    if (problem) {
+      setLocalError(problem)
+      return
+    }
+    setLocalError('')
+    onSubmit(password)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      onClick={() => {
+        if (!busy) onClose()
+      }}
+    >
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reset-password-title"
+        onSubmit={handleSubmit}
+        onClick={(event) => event.stopPropagation()}
+        className="w-full max-w-md rounded-2xl border border-line bg-panel p-5"
+      >
+        <h2 id="reset-password-title" className="text-base font-semibold text-snow">
+          Cambiar contraseña
+        </h2>
+        <p className="mt-1 text-sm text-snow">{operator.name}</p>
+        <p className="text-xs text-mist">{operator.email}</p>
+        <p className="mt-3 text-sm leading-relaxed text-mist">
+          La clave anterior deja de servir. El operador entra con esta.
+        </p>
+
+        <label className="mt-4 block space-y-1">
+          <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+            Nueva contraseña
+          </span>
+          <div className="relative">
+            <input
+              autoFocus
+              required
+              type={visible ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value)
+                setLocalError('')
+              }}
+              className={`${inputClass} pr-10`}
+            />
+            <button
+              type="button"
+              onClick={() => setVisible((current) => !current)}
+              className="absolute top-1/2 right-2.5 -translate-y-1/2 text-mist hover:text-snow"
+              aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            >
+              {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        </label>
+
+        <label className="mt-3 block space-y-1">
+          <span className="text-[11px] font-medium tracking-wide text-mist uppercase">
+            Confirmar contraseña
+          </span>
+          <input
+            required
+            type={visible ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(event) => {
+              setConfirm(event.target.value)
+              setLocalError('')
+            }}
+            className={inputClass}
+          />
+        </label>
+        <p className="mt-2 text-xs text-mist">Mínimo 10 caracteres.</p>
+
+        {shownError ? (
+          <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-rose-200">
+            {shownError}
+          </p>
+        ) : null}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+            className="rounded-lg border border-line bg-card px-3 py-2 text-sm text-snow hover:border-mist/50 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-on-signal hover:bg-emerald-300 disabled:opacity-50"
+          >
+            {busy ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+const WEAK_PASSWORDS = ['admin1234', 'demo1234', 'change-me', 'changeme']
+
+function validateNewPassword(password: string, confirm: string): string {
+  if (password.trim().length < 10) return 'La contraseña debe tener al menos 10 caracteres.'
+  if (password !== confirm) return 'Las contraseñas no coinciden.'
+  if (WEAK_PASSWORDS.some((weak) => password.trim().toLowerCase() === weak)) {
+    return 'Esa contraseña es demasiado común.'
+  }
+  return ''
+}
+
+function passwordResetError(err: unknown): string {
+  const raw = err instanceof Error ? err.message.toLowerCase() : ''
+  if (raw.includes('at least')) return 'La contraseña debe tener al menos 10 caracteres.'
+  if (raw.includes('known default')) return 'Esa contraseña es demasiado común.'
+  if (err instanceof Error && err.message) return err.message
+  return 'No se pudo cambiar la contraseña.'
 }
 
 function StatCard({ title, children }: { title: string; children: React.ReactNode }) {

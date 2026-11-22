@@ -90,7 +90,7 @@ export default function MapModeToggle({
                 <span
                   className={`inline-grid h-4 min-w-4 place-items-center rounded-full px-0.5 text-[10px] font-bold ${
                     item.value === 'live' && liveAlert
-                      ? 'bg-amber-400 text-ink'
+                      ? 'bg-amber-400 text-on-bright'
                       : active
                         ? 'bg-signal text-on-signal'
                         : 'bg-elevated text-mist'

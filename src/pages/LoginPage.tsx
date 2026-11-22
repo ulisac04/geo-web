@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { RadioTower } from 'lucide-react'
 import LoginForm from '../components/LoginForm'
+import ThemeToggle from '../components/ThemeToggle'
 import { LegalFooterLinks } from './LegalPages'
 import { getSession, homePath, isAuthenticated } from '../lib/auth'
 import {
@@ -116,8 +117,13 @@ export function AuthShell({
             ) : null}
             <p className="text-sm font-semibold text-snow">{company}</p>
           </div>
-          <h2 className="text-xl font-semibold text-snow">{title}</h2>
-          <p className="mt-1 mb-6 text-sm text-mist">{subtitle}</p>
+          <div className="mb-6 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-snow">{title}</h2>
+              <p className="mt-1 text-sm text-mist">{subtitle}</p>
+            </div>
+            <ThemeToggle />
+          </div>
           {children}
           <LegalFooterLinks />
         </div>

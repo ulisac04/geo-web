@@ -15,10 +15,18 @@ const STORAGE_KEY = 'tu-ruta-theme'
 
 interface ThemeContextValue {
   theme: Theme
+  setTheme: (theme: Theme) => void
   toggleTheme: () => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
+
+function systemTheme(): Theme {
+  if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    return 'light'
+  }
+  return 'dark'
+}
 
 function readStoredTheme(): Theme {
   try {
@@ -27,7 +35,7 @@ function readStoredTheme(): Theme {
   } catch {
     /* ignore quota / privacy mode */
   }
-  return 'dark'
+  return systemTheme()
 }
 
 function applyThemeClass(theme: Theme) {
@@ -37,7 +45,7 @@ function applyThemeClass(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(readStoredTheme)
+  const [theme, setThemeState] = useState<Theme>(readStoredTheme)
 
   useLayoutEffect(() => {
     applyThemeClass(theme)
@@ -49,13 +57,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [theme])
 
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next)
+  }, [])
+
   const toggleTheme = useCallback(() => {
-    setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
+    setThemeState((current) => (current === 'dark' ? 'light' : 'dark'))
   }, [])
 
   const value = useMemo(
-    () => ({ theme, toggleTheme }),
-    [theme, toggleTheme],
+    () => ({ theme, setTheme, toggleTheme }),
+    [theme, setTheme, toggleTheme],
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

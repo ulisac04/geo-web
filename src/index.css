@@ -14,10 +14,12 @@
   --color-warn: var(--warn);
   --color-danger: var(--danger);
   --color-on-signal: var(--on-signal);
+  --color-on-bright: #121821;
 }
 
 :root,
 html.dark {
+  color-scheme: dark;
   --ink: #07090d;
   --panel: #0c1118;
   --card: #121821;
@@ -35,6 +37,10 @@ html.dark {
 }
 
 html.light {
+  color-scheme: light;
+  --color-rose-200: #9f1239;
+  --color-rose-300: #be123c;
+  --color-amber-200: #92400e;
   --ink: #f4f6f9;
   --panel: #ffffff;
   --card: #ffffff;
@@ -400,9 +406,13 @@ html.light .status-toggle-btn--offline.is-active {
   color: var(--danger);
 }
 
+html.light .text-amber-300 {
+  color: #92400e;
+}
+
 html.light .status-toggle-btn--stale.is-active {
   background: color-mix(in srgb, var(--mist) 20%, var(--card));
-  color: var(--ink);
+  color: var(--snow);
 }
 
 @keyframes offer-wait-pulse {

@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { RadioTower } from 'lucide-react'
+import ThemeToggle from '../components/ThemeToggle'
 
 function LegalShell({
   title,
@@ -11,9 +12,9 @@ function LegalShell({
 }) {
   return (
     <div className="min-h-full bg-ink">
-      <header className="border-b border-line px-6 py-4">
+      <header className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
         <Link to="/login" className="inline-flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-lg bg-emerald-400/20 text-emerald-300 ring-1 ring-white/10">
+          <span className="grid size-9 place-items-center rounded-lg bg-signal/15 text-signal">
             <RadioTower className="size-4" />
           </span>
           <span>
@@ -21,6 +22,7 @@ function LegalShell({
             <p className="text-xs text-mist">Human-in-the-Loop · B2B</p>
           </span>
         </Link>
+        <ThemeToggle />
       </header>
       <article className="mx-auto max-w-xl px-6 py-10 pb-16">
         <h1 className="text-2xl font-semibold tracking-tight text-snow">{title}</h1>
@@ -47,7 +49,7 @@ const metaClass = 'mt-2 mb-8 text-sm text-mist'
 const h2Class = 'mt-8 mb-2 text-sm font-semibold text-snow'
 const pClass = 'mb-3 text-sm leading-relaxed text-snow/85'
 const listClass = 'mb-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-snow/85'
-const linkClass = 'text-signal underline underline-offset-2 hover:text-emerald-300'
+const linkClass = 'text-signal underline underline-offset-2 hover:text-snow'
 
 export function PrivacidadPage() {
   return (

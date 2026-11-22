@@ -1,13 +1,16 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es">
   <head>
     <script>
       try {
         var theme = localStorage.getItem('tu-ruta-theme')
-        if (theme === 'light' || theme === 'dark') {
-          document.documentElement.className = theme
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
         }
-      } catch (e) {}
+        document.documentElement.classList.add(theme)
+      } catch (e) {
+        document.documentElement.classList.add('dark')
+      }
     </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />

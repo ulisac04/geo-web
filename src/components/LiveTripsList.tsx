@@ -167,7 +167,7 @@ function TripAction({
         danger
           ? 'border border-danger/40 text-rose-300 hover:bg-danger/15'
           : warn
-            ? 'bg-amber-400 text-ink hover:bg-amber-300'
+            ? 'bg-amber-400 text-on-bright hover:bg-amber-300'
             : primary
               ? 'bg-signal text-on-signal hover:bg-emerald-300'
               : 'border border-line text-snow hover:border-mist/50'

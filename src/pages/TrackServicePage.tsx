@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import TrackLiveMap from '../components/TrackLiveMap'
+import ThemeToggle from '../components/ThemeToggle'
 import { ApiError, isAbortError } from '../lib/api'
 import { applyBranding, contrastOn, logoSrc } from '../lib/branding'
 import { getCity } from '../lib/cities'
@@ -140,12 +141,13 @@ export default function TrackServicePage() {
               {company.slice(0, 1).toUpperCase()}
             </span>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-snow">{company}</p>
             <p className="truncate text-xs text-mist">
               {track?.driverName || 'Seguimiento del servicio'}
             </p>
           </div>
+          <ThemeToggle />
         </header>
 
         <div className="relative min-h-0 flex-1">

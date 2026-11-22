@@ -182,7 +182,7 @@ export default function ConfirmationStep() {
                   )
                 })
               }}
-              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 border-l border-emerald-700/70 bg-card px-2 py-2.5 text-xs font-semibold text-snow transition hover:bg-white/5"
+              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 border-l border-emerald-700/70 bg-card px-2 py-2.5 text-xs font-semibold text-snow transition hover:bg-elevated"
             >
               <Copy
                 className={`size-3.5 shrink-0 ${copied === 'driver-text' ? 'text-signal' : ''}`}
@@ -203,7 +203,7 @@ export default function ConfirmationStep() {
                 setFichaError(null)
                 setFichaOpen(true)
               }}
-              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 border-l border-emerald-700/70 bg-card px-2 py-2.5 text-xs font-semibold text-snow transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 border-l border-emerald-700/70 bg-card px-2 py-2.5 text-xs font-semibold text-snow transition hover:bg-elevated disabled:cursor-not-allowed disabled:opacity-40"
             >
               <IdCard className="size-3.5 shrink-0" />
               <span className="truncate">Ficha</span>
@@ -218,7 +218,7 @@ export default function ConfirmationStep() {
               type="button"
               disabled={!canMessageClient}
               onClick={() => void sendWhatsApp('client')}
-              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 bg-emerald-950/40 px-2 py-2.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 bg-emerald-600 px-2 py-2.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Send className="size-3.5 shrink-0" />
               <span className="truncate">{copied === 'client' ? 'Abierto' : 'WhatsApp'}</span>
@@ -234,7 +234,7 @@ export default function ConfirmationStep() {
                   )
                 })
               }}
-              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 border-l border-emerald-700/70 bg-card px-2 py-2.5 text-xs font-semibold text-snow transition hover:bg-white/5"
+              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 border-l border-emerald-700/70 bg-card px-2 py-2.5 text-xs font-semibold text-snow transition hover:bg-elevated"
             >
               <Copy
                 className={`size-3.5 shrink-0 ${copied === 'client-text' ? 'text-signal' : ''}`}
@@ -282,7 +282,7 @@ export default function ConfirmationStep() {
                 type="button"
                 aria-label="Cerrar"
                 onClick={() => setFichaOpen(false)}
-                className="rounded-md p-1 text-mist hover:bg-white/5 hover:text-snow"
+                className="rounded-md p-1 text-mist hover:bg-elevated hover:text-snow"
               >
                 <X className="size-4" />
               </button>

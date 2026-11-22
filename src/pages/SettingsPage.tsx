@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { Moon, Sun } from 'lucide-react'
 import { parseUsd } from '../lib/money'
 import { MAP_REFRESH_OPTIONS, OFFER_WAIT_OPTIONS, REMINDER_MINUTE_OPTIONS, type ReminderMinutes } from '../lib/settings'
 import {
@@ -10,6 +11,7 @@ import {
   resolveWhatsAppTemplate,
 } from '../lib/whatsapp'
 import { useSettings } from '../context/SettingsContext'
+import { useTheme } from '../context/ThemeContext'
 import type { Driver, MapRefreshSeconds, OfferWaitSeconds, OrderDraft } from '../types'
 
 export default function SettingsPage() {
@@ -25,6 +27,7 @@ export default function SettingsPage() {
     setSchedulingReminderMinutes,
     setOfferWaitSeconds,
   } = useSettings()
+  const { theme, setTheme } = useTheme()
   const [copDraft, setCopDraft] = useState(rateDraft(settings.usdToCop))
   const [vesDraft, setVesDraft] = useState(rateDraft(settings.usdToVes))
 
@@ -50,6 +53,27 @@ export default function SettingsPage() {
 
       <div className="grid flex-1 grid-cols-1 items-start gap-4 overflow-auto px-6 py-6 lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)]">
         <div className="space-y-4">
+          <section className="rounded-xl border border-line bg-panel p-5">
+            <h2 className="text-sm font-semibold text-snow">Apariencia</h2>
+            <p className="mt-1 text-xs text-mist">
+              El panel se puede usar en claro o en oscuro. La elección se guarda en este navegador.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Tema">
+              <ThemeChoice
+                active={theme === 'light'}
+                icon={<Sun className="size-4" />}
+                label="Claro"
+                onSelect={() => setTheme('light')}
+              />
+              <ThemeChoice
+                active={theme === 'dark'}
+                icon={<Moon className="size-4" />}
+                label="Oscuro"
+                onSelect={() => setTheme('dark')}
+              />
+            </div>
+          </section>
+
           <section className="rounded-xl border border-line bg-panel p-5">
             <h2 className="text-sm font-semibold text-snow">Ciudad operativa</h2>
             <p className="mt-1 text-xs text-mist">
@@ -352,6 +376,34 @@ function insertToken(
     const pos = start + token.length
     el.setSelectionRange(pos, pos)
   })
+}
+
+function ThemeChoice({
+  active,
+  icon,
+  label,
+  onSelect,
+}: {
+  active: boolean
+  icon: ReactNode
+  label: string
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onSelect}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+        active
+          ? 'border-signal/50 bg-signal/15 text-signal'
+          : 'border-line bg-ink text-mist hover:border-signal/30 hover:text-snow'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  )
 }
 
 function rateDraft(value: number): string {

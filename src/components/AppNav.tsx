@@ -5,14 +5,12 @@ import {
   Flame,
   LayoutDashboard,
   LogOut,
-  Moon,
   RadioTower,
   Settings,
-  Sun,
 } from 'lucide-react'
 import { getSession, logout } from '../lib/auth'
 import { useSettings } from '../context/SettingsContext'
-import { useTheme } from '../context/ThemeContext'
+import ThemeToggle from './ThemeToggle'
 
 const LINKS = [
   { to: '/dashboard', label: 'Despacho', icon: LayoutDashboard },
@@ -24,7 +22,6 @@ const LINKS = [
 
 export default function AppNav() {
   const navigate = useNavigate()
-  const { theme, toggleTheme } = useTheme()
   const { city } = useSettings()
   const session = getSession()
   const initials = (session?.operator ?? 'OP')
@@ -74,15 +71,7 @@ export default function AppNav() {
       </div>
 
       <div className="flex flex-col items-center gap-2">
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="rounded-md p-2 text-mist hover:bg-elevated hover:text-snow"
-          aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-          title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-        >
-          {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-        </button>
+        <ThemeToggle nav />
         <div
           className="grid size-9 place-items-center rounded-full bg-elevated text-[11px] font-semibold text-snow"
           title={session?.operator}

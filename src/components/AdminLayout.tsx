@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Building2, LogOut, RadioTower } from 'lucide-react'
 import { getSession, logout } from '../lib/auth'
 import { applyBranding } from '../lib/branding'
+import ThemeToggle from './ThemeToggle'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
@@ -42,7 +43,8 @@ export default function AdminLayout() {
           Empresas
         </NavLink>
         <div className="mt-auto border-t border-line px-2 pt-3">
-          <p className="truncate text-xs text-snow">{session?.operator}</p>
+          <ThemeToggle />
+          <p className="mt-3 truncate text-xs text-snow">{session?.operator}</p>
           <p className="truncate text-[11px] text-mist">{session?.operatorEmail}</p>
           <button
             type="button"
