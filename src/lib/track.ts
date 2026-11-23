@@ -1,4 +1,4 @@
-import { api } from './api'
+import { api, apiBaseUrl } from './api'
 import type { VehicleType } from '../types'
 import type { PublicBranding } from './branding'
 
@@ -18,6 +18,8 @@ export interface PublicTrack {
   route: [number, number][]
   routeDistanceM: number | null
   destCoords: [number, number] | null
+  driverPhotoUrl: string | null
+  vehiclePhotoUrl: string | null
 }
 
 interface ApiPublicTrack {
@@ -38,6 +40,12 @@ interface ApiPublicTrack {
   route_distance_m?: number | null
   dest_lng?: number | null
   dest_lat?: number | null
+  has_driver_photo?: boolean
+  has_vehicle_photo?: boolean
+}
+
+export function publicTrackPhotoUrl(token: string, kind: 'driver' | 'vehicle'): string {
+  return `${apiBaseUrl()}/api/v1/public/track/${encodeURIComponent(token)}/photo/${kind}`
 }
 
 function parseRoute(raw: unknown): [number, number][] {
@@ -87,5 +95,7 @@ export async function fetchPublicTrack(
     route: parseRoute(data.route),
     routeDistanceM: data.route_distance_m ?? null,
     destCoords: coords(data.dest_lng, data.dest_lat),
+    driverPhotoUrl: data.has_driver_photo ? publicTrackPhotoUrl(token, 'driver') : null,
+    vehiclePhotoUrl: data.has_vehicle_photo ? publicTrackPhotoUrl(token, 'vehicle') : null,
   }
 }

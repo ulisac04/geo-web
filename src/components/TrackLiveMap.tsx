@@ -22,6 +22,11 @@ import {
 
 const MAP_ID = 'client-track-map'
 
+/** Rehacer el pin en cada consulta recargaría la foto y lo haría parpadear. */
+function pinContentKey(driver: Driver): string {
+  return [driver.name, driver.licensePlate, driver.driverPhoto, driver.vehicleType].join('|')
+}
+
 export default function TrackLiveMap({
   center,
   originCoords,
@@ -66,6 +71,7 @@ function TrackLiveController({
   const driverRef = useRef<MapPinMarker | null>(null)
   const lineRef = useRef<google.maps.Polyline | null>(null)
   const fitKeyRef = useRef('')
+  const contentKeyRef = useRef('')
   const visualRef = useRef<[number, number] | null>(null)
   const fromRef = useRef<[number, number] | null>(null)
   const targetRef = useRef<[number, number] | null>(null)
@@ -151,12 +157,17 @@ function TrackLiveController({
         title: driver.name,
         zIndex: 20,
       })
+      contentKeyRef.current = pinContentKey(driver)
       visualRef.current = driverCoords
       targetRef.current = driverCoords
       paintVisual(driverCoords)
       return
     }
-    driverRef.current.content = createDriverPinElement(driver, { focused: true, size: 26 })
+    const contentKey = pinContentKey(driver)
+    if (contentKeyRef.current !== contentKey) {
+      contentKeyRef.current = contentKey
+      driverRef.current.content = createDriverPinElement(driver, { focused: true, size: 26 })
+    }
     const current = visualRef.current ?? driverCoords
     if (sameLngLat(current, driverCoords) && sameLngLat(targetRef.current ?? driverCoords, driverCoords)) {
       return

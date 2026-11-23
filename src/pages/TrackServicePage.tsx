@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import ServiceTrackMap from '../components/ServiceTrackMap'
 import TrackLiveMap from '../components/TrackLiveMap'
 import ThemeToggle from '../components/ThemeToggle'
+import TrackDriverCard from '../components/TrackDriverCard'
 import { ApiError, isAbortError } from '../lib/api'
 import { applyBranding, contrastOn, logoSrc } from '../lib/branding'
 import { getCity } from '../lib/cities'
@@ -15,10 +16,15 @@ function formatDistance(meters: number | null): string {
   return `${(meters / 1000).toFixed(1).replace('.', ',')} km`
 }
 
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? ''
+}
+
 function statusCopy(
   status: string,
   hasGps: boolean,
   hasRoute: boolean,
+  driverName: string,
 ): { title: string; detail: string } {
   switch (status) {
     case 'assigned':
@@ -40,7 +46,7 @@ function statusCopy(
       }
     case 'completed':
       return {
-        title: 'El servicio finalizó',
+        title: driverName.trim() ? `Tu viaje con ${firstName(driverName)}` : 'El servicio finalizó',
         detail: hasRoute
           ? 'Así fue el recorrido del conductor.'
           : 'El seguimiento en vivo ya no está activo.',
@@ -67,8 +73,8 @@ function stubDriver(track: PublicTrack): Driver | null {
     vehicleType: track.vehicleType ?? 'car',
     vehicle: track.vehicle,
     licensePlate: track.licensePlate,
-    driverPhoto: '',
-    vehiclePhoto: '',
+    driverPhoto: track.driverPhotoUrl ?? '',
+    vehiclePhoto: track.vehiclePhotoUrl ?? '',
     fichaPhoto: '',
     status: 'busy',
     coords: track.driverCoords,
@@ -134,14 +140,18 @@ export default function TrackServicePage() {
   const closed = track?.status === 'completed' || track?.status === 'cancelled'
   const driver = useMemo(() => (track && !closed ? stubDriver(track) : null), [closed, track])
   const showRoute = track?.status === 'completed' && track.route.length >= 2
-  const copy = statusCopy(track?.status ?? '', Boolean(track?.driverCoords), showRoute)
+  const copy = statusCopy(
+    track?.status ?? '',
+    Boolean(track?.driverCoords),
+    showRoute,
+    track?.driverName ?? '',
+  )
   const distance = showRoute ? formatDistance(track?.routeDistanceM ?? null) : ''
   const center = track?.driverCoords ?? track?.originCoords ?? getCity(null).center
   const company = track?.branding.name?.trim() || 'Tu Ruta'
   const logo = logoSrc(track?.branding.logo_url)
   const accent = track?.branding.primary_color || '#34d399'
   const onAccent = contrastOn(accent)
-  const vehicleLine = [track?.vehicle, track?.licensePlate].filter(Boolean).join(' · ')
 
   return (
     <div className="flex min-h-dvh justify-center bg-ink">
@@ -193,21 +203,21 @@ export default function TrackServicePage() {
           )}
         </div>
 
-        <footer className="shrink-0 space-y-1 border-t border-line bg-card px-4 py-3">
-          <p className="text-sm font-semibold text-snow">{copy.title}</p>
-          <p className="text-xs text-mist">{copy.detail}</p>
-          {distance ? (
-            <p className="text-xs text-mist">
-              Distancia recorrida: <span className="text-snow">{distance}</span>
-            </p>
-          ) : null}
-          {track?.origin ? (
-            <p className="text-xs text-mist">
-              Recogida: <span className="text-snow">{track.origin}</span>
-            </p>
-          ) : null}
-          {vehicleLine ? <p className="text-xs text-mist">{vehicleLine}</p> : null}
-        </footer>
+        {track ? (
+          <TrackDriverCard
+            track={track}
+            title={copy.title}
+            detail={copy.detail}
+            distance={distance}
+            accent={accent}
+            onAccent={onAccent}
+          />
+        ) : error === 'not_found' ? null : (
+          <footer className="shrink-0 space-y-1 border-t border-line bg-card px-4 py-3">
+            <p className="text-sm font-semibold text-snow">{copy.title}</p>
+            <p className="text-xs text-mist">{copy.detail}</p>
+          </footer>
+        )}
       </div>
     </div>
   )
